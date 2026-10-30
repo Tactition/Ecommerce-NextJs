@@ -1,0 +1,71 @@
+/*----------------------------------------------
+    # Container  style here
+----------------------------------------------*/
+
+@media (min-width: 1500px) {
+    .container-xxl, .container-xl, .container-lg, .container-md, .container-sm, .container {
+      max-width: 1440px;
+    }
+  }
+
+@media (min-width:1400px) {
+    .header-1 {
+        .container {
+            max-width: 1830px;
+        }
+    }
+ 
+
+    .header-4 {
+        .container {
+            max-width: 1790px;
+        }
+    }
+
+    .marquee-section1 {
+        .container { 
+            max-width: 1800px;
+        }
+    }
+
+    .intro-container-wrapper {
+        &.style1,
+        &.style2, 
+        &.style4{
+            .container { 
+                max-width: 1800px;
+            }
+        }
+
+    }
+
+    .offer-container-wrapper {
+        &.style2 {
+            .container { 
+                max-width: 1530px;
+            }
+        }
+    }
+
+    .cart-wrapper  {
+        .container { 
+            max-width: 1200px;
+        }
+    }
+
+    .order-tracking-section {
+        .container { 
+            max-width: 1170px;
+        }
+    }
+ 
+    .contact-section {
+        .container { 
+            max-width: 1230px;
+        }
+    }
+
+}
+ 
+
+  

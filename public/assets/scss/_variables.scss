@@ -1,0 +1,80 @@
+/*----------------------------------------------
+    # All Variables here
+----------------------------------------------*/
+:root {
+    
+    --body: #fff;
+    --black: #000;
+    --white: #fff; 
+    --theme: #FF4035;
+    --theme2: #685EE1; 
+    --theme3: #FF4035;    
+    --theme4: #80B501;   
+    --theme5: #C97F5F;      
+    --theme6: #1CA8CB;
+    --theme7: #CB8161;
+    --theme8: #FFB22C;
+    --theme9: #00C9D5;
+    --title: #0A111E;
+    --title2: #1E1E1E;
+    --orange: #e78c45;
+    --orange2: #F39F5F;
+    --orange3: #FFA31A;
+    --text: #555555;
+    --text2: #cbcbcb;
+    --text3: #5F5F5F;
+    --border: rgba(0, 0, 0, 0.20);;
+    --border-2: rgba(255, 255, 255, 0.20);; 
+    --border-3: #E5E5E5; 
+    --border-4: #E0E0E0;  
+    --border-5: #565656;
+    --border-6:#E6E6E6;  
+    --bg-1: #FFF5F4;  
+    --bg-2: #F6F6F6;  
+    --bg-3: #FFF5F4;   
+    --bg-6: #FCF7EE;  
+    --bg-7: rgba(10, 17, 30, 0.65);
+    --bg-8: #F3F3F3;
+    --bg-9: #F7DDD6; 
+    --bg-10: #FFECEB; 
+    --green-gray: #002603; 
+    --box-shadow: 0px 4px 25px 0px rgba(0, 0, 0, 0.06);
+}
+
+// Theme Color - Defualt Colors
+$black: var(--black);
+$white: var(--white);
+$theme-color: var(--theme);
+$theme-color-2: var(--theme2);
+$theme-color-3: var(--theme3);
+$theme-color-4: var(--theme4);
+$theme-color-5: var(--theme5);
+$theme-color-6: var(--theme6);
+$theme-color-7: var(--theme7);
+$theme-color-8: var(--theme8);
+$theme-color-9: var(--theme9);
+$title-color: var(--title);
+$title-color2: var(--title2);
+$orange-color: var(--orange);
+$orange-color2: var(--orange2);
+$orange-color3: var(--orange3);
+$text-color: var(--text); 
+$text-color2: var(--text2); 
+$text-color3: var(--text3); 
+$border-color: var(--border);
+$border-color-2: var(--border-2); 
+$border-color-3: var(--border-3); 
+$border-color-4: var(--border-4); 
+$border-color-5: var(--border-5); 
+$border-color-6: var(--border-6); 
+$bg-color-1: var(--bg-1); 
+$bg-color-2: var(--bg-2); 
+$bg-color-3: var(--bg-3); 
+$bg-color-6: var(--bg-6); 
+$bg-color-7: var(--bg-7); 
+$bg-color-8: var(--bg-8); 
+$bg-color-9: var(--bg-9); 
+$bg-color-10: var(--bg-10); 
+$green-gray: var(--green-gray); 
+
+$shadow: var(--box-shadow);
