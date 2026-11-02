@@ -46,9 +46,9 @@ export default function GsapScrollAnimation() {
 
         ScrollTrigger.create({
           trigger: sec,
-          start: "top 86%",
-          end: "bottom 14%",
-          // When scrolling DOWN: enters from left/right with smooth fade-in
+          start: "top 88%",
+          once: true,
+          // When scrolling into view: enters from left/right with smooth fade-in and remains permanently visible
           onEnter: () => {
             gsap.fromTo(
               sec,
@@ -56,45 +56,12 @@ export default function GsapScrollAnimation() {
               {
                 opacity: 1,
                 x: 0,
-                duration: 0.95,
+                duration: 0.85,
                 ease: "power2.out",
                 overwrite: "auto",
+                clearProps: "transform,opacity",
               }
             );
-          },
-          // When scrolling past going downwards: gentle fade-out
-          onLeave: () => {
-            gsap.to(sec, {
-              opacity: 0.15,
-              x: isFromLeft ? -40 : 40,
-              duration: 0.6,
-              ease: "power2.inOut",
-              overwrite: "auto",
-            });
-          },
-          // When scrolling UP: re-enters smoothly from left/right with fade-in
-          onEnterBack: () => {
-            gsap.fromTo(
-              sec,
-              { opacity: 0.15, x: isFromLeft ? -40 : 40 },
-              {
-                opacity: 1,
-                x: 0,
-                duration: 0.95,
-                ease: "power2.out",
-                overwrite: "auto",
-              }
-            );
-          },
-          // When scrolling past going upwards: fade-out back to initial side
-          onLeaveBack: () => {
-            gsap.to(sec, {
-              opacity: 0,
-              x: initialX,
-              duration: 0.6,
-              ease: "power2.inOut",
-              overwrite: "auto",
-            });
           },
         });
       });

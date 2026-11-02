@@ -291,7 +291,7 @@ export default function SettingsDashboardPage() {
           style={{ padding: "10px 20px", fontSize: "0.9rem" }}
         >
           <Tag size={17} />
-          <span>Promos &amp; Weekly Deals</span>
+          <span>Promos, Deals &amp; CTA Offer</span>
         </button>
       </div>
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import { HomepagePromo, getAllHomepagePromosAdmin, saveHomepagePromoAction } from "@/lib/actions/promos";
-import { updateWeeklyDealsSettingsAction, getHomepageSettings } from "@/lib/actions/settings";
+import { updateWeeklyDealsSettingsAction, updateBundleOfferSettingsAction, getHomepageSettings } from "@/lib/actions/settings";
 import { getAllProductsAdmin, Product } from "@/lib/actions/products";
 import ImageUploader from "@/components/dashboard/ImageUploader";
 import {
@@ -56,6 +56,16 @@ export default function PromosWeeklySettings() {
   const [promo1, setPromo1] = useState<HomepagePromo | null>(null);
   const [promo2, setPromo2] = useState<HomepagePromo | null>(null);
 
+  // Bundle Offer form state
+  const [bundleOfferEnabled, setBundleOfferEnabled] = useState(true);
+  const [bundleOfferTitle, setBundleOfferTitle] = useState("Get Bundle Products Offer");
+  const [bundleOfferSubtitle, setBundleOfferSubtitle] = useState("Curated package selections and bespoke furniture combinations at preferential rates.");
+  const [bundleOfferBadge, setBundleOfferBadge] = useState("25% OFF");
+  const [bundleOfferButtonText, setBundleOfferButtonText] = useState("View All");
+  const [bundleOfferButtonLink, setBundleOfferButtonLink] = useState("/shop");
+  const [bundleOfferImage, setBundleOfferImage] = useState("/assets/images/cta/ctaThumb1_1.png");
+  const [bundleOfferBgImage, setBundleOfferBgImage] = useState("/assets/images/cta/ctaBg1_1.jpg");
+
   const [feedback, setFeedback] = useState<{ success?: boolean; message?: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -99,6 +109,15 @@ export default function PromosWeeklySettings() {
             setSelectedProductIds([]);
           }
         }
+
+        setBundleOfferEnabled(homeSettings.bundle_offer_enabled !== 0 && homeSettings.bundle_offer_enabled !== false);
+        setBundleOfferTitle(homeSettings.bundle_offer_title || "Get Bundle Products Offer");
+        setBundleOfferSubtitle(homeSettings.bundle_offer_subtitle || "Curated package selections and bespoke furniture combinations at preferential rates.");
+        setBundleOfferBadge(homeSettings.bundle_offer_badge || "25% OFF");
+        setBundleOfferButtonText(homeSettings.bundle_offer_button_text || "View All");
+        setBundleOfferButtonLink(homeSettings.bundle_offer_button_link || "/shop");
+        setBundleOfferImage(homeSettings.bundle_offer_image || "/assets/images/cta/ctaThumb1_1.png");
+        setBundleOfferBgImage(homeSettings.bundle_offer_bg_image || "/assets/images/cta/ctaBg1_1.jpg");
       }
     } catch (err) {
       console.error("Error loading promo settings:", err);
@@ -168,6 +187,31 @@ export default function PromosWeeklySettings() {
     setSelectedProductIds((prev) =>
       prev.includes(id) ? prev.filter((pId) => pId !== id) : [...prev, id]
     );
+  };
+
+  const handleSaveBundleOffer = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+
+    const formData = new FormData();
+    formData.append("bundle_offer_enabled", bundleOfferEnabled ? "1" : "0");
+    formData.append("bundle_offer_title", bundleOfferTitle);
+    formData.append("bundle_offer_subtitle", bundleOfferSubtitle);
+    formData.append("bundle_offer_badge", bundleOfferBadge);
+    formData.append("bundle_offer_button_text", bundleOfferButtonText);
+    formData.append("bundle_offer_button_link", bundleOfferButtonLink);
+    formData.append("bundle_offer_image", bundleOfferImage);
+    formData.append("bundle_offer_bg_image", bundleOfferBgImage);
+
+    startTransition(async () => {
+      const res = await updateBundleOfferSettingsAction(formData);
+      if (res.success) {
+        setFeedback({ success: true, message: "Bundle Products Offer banner updated successfully!" });
+        await loadData();
+      } else {
+        setFeedback({ success: false, message: res.error || "Failed to update bundle offer banner" });
+      }
+    });
   };
 
   if (isLoading) {
@@ -651,6 +695,272 @@ export default function PromosWeeklySettings() {
             >
               <Save size={18} />
               <span>{isPending ? "Saving..." : "Save Products of the Week & Timer"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ========================================================
+          SECTION 3: BUNDLE PRODUCTS OFFER (CTA BANNER)
+      ======================================================== */}
+      <div
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: "14px",
+          border: "1px solid #E2E8F0",
+          padding: "28px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Sparkles size={22} color="var(--theme)" />
+            <div>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0, color: "var(--color-secondary)" }}>
+                Bundle Products Offer (CTA Banner)
+              </h2>
+              <p style={{ margin: "2px 0 0", fontSize: "0.86rem", color: "#64748B" }}>
+                Customize the full-width promotional CTA banner on the homepage, including title, subtitle, discount badge, button destination, showcase product image, and background artwork
+              </p>
+            </div>
+          </div>
+          <span style={{ fontSize: "0.82rem", background: "#FEF3C7", color: "#B45309", padding: "4px 12px", borderRadius: "16px", fontWeight: 700 }}>
+            Homepage CTA Banner
+          </span>
+        </div>
+
+        <form onSubmit={handleSaveBundleOffer}>
+          {/* Banner Controls & Visibility */}
+          <div
+            style={{
+              padding: "20px",
+              backgroundColor: "#F8FAFC",
+              borderRadius: "10px",
+              border: "1px solid #E2E8F0",
+              marginBottom: "24px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: 700, color: "var(--color-secondary)" }}>
+                <input
+                  type="checkbox"
+                  checked={bundleOfferEnabled}
+                  onChange={(e) => setBundleOfferEnabled(e.target.checked)}
+                  style={{ width: "18px", height: "18px", accentColor: "var(--theme)" }}
+                />
+                <span>Enable &quot;Get Bundle Products Offer&quot; Banner on Homepage</span>
+              </label>
+              <span style={{ fontSize: "0.8rem", color: bundleOfferEnabled ? "#166534" : "#991B1B", fontWeight: 600 }}>
+                {bundleOfferEnabled ? "Banner Active on Homepage" : "Banner Hidden from Homepage"}
+              </span>
+            </div>
+
+            {/* Title & Badge */}
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "18px", marginBottom: "18px" }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                  Offer Title / Heading
+                </label>
+                <input
+                  type="text"
+                  value={bundleOfferTitle}
+                  onChange={(e) => setBundleOfferTitle(e.target.value)}
+                  placeholder="Get Bundle Products Offer"
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                  Floating Badge / Discount Tag
+                </label>
+                <input
+                  type="text"
+                  value={bundleOfferBadge}
+                  onChange={(e) => setBundleOfferBadge(e.target.value)}
+                  placeholder="25% OFF"
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            {/* Subtitle */}
+            <div className="form-group" style={{ marginBottom: "18px" }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                Offer Subtitle / Description Text
+              </label>
+              <textarea
+                value={bundleOfferSubtitle}
+                onChange={(e) => setBundleOfferSubtitle(e.target.value)}
+                placeholder="Curated package selections and bespoke furniture combinations at preferential rates."
+                className="form-input"
+                rows={2}
+                style={{ resize: "vertical" }}
+              />
+            </div>
+
+            {/* Button text & link */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                  Action Button Label
+                </label>
+                <input
+                  type="text"
+                  value={bundleOfferButtonText}
+                  onChange={(e) => setBundleOfferButtonText(e.target.value)}
+                  placeholder="View All"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                  Button Destination Link (URL)
+                </label>
+                <input
+                  type="text"
+                  value={bundleOfferButtonLink}
+                  onChange={(e) => setBundleOfferButtonLink(e.target.value)}
+                  placeholder="/shop"
+                  className="form-input"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Image Uploaders */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "28px" }}>
+            <div
+              style={{
+                backgroundColor: "#F8FAFC",
+                borderRadius: "10px",
+                border: "1px solid #E2E8F0",
+                padding: "20px",
+              }}
+            >
+              <h4 style={{ fontSize: "0.95rem", fontWeight: 700, margin: "0 0 4px", color: "var(--color-secondary)" }}>
+                Showcase Product / Bundle Image
+              </h4>
+              <p style={{ fontSize: "0.8rem", color: "#64748B", margin: "0 0 16px" }}>
+                The right-hand featured image (transparent PNG or cutout of furniture/bundle works best).
+              </p>
+              <ImageUploader
+                value={bundleOfferImage}
+                onChange={setBundleOfferImage}
+                label="Product Showcase Image"
+              />
+            </div>
+
+            <div
+              style={{
+                backgroundColor: "#F8FAFC",
+                borderRadius: "10px",
+                border: "1px solid #E2E8F0",
+                padding: "20px",
+              }}
+            >
+              <h4 style={{ fontSize: "0.95rem", fontWeight: 700, margin: "0 0 4px", color: "var(--color-secondary)" }}>
+                Banner Background Cover Artwork
+              </h4>
+              <p style={{ fontSize: "0.8rem", color: "#64748B", margin: "0 0 16px" }}>
+                Full-bleed background artwork, texture, or interior photograph (~1400x400).
+              </p>
+              <ImageUploader
+                value={bundleOfferBgImage}
+                onChange={setBundleOfferBgImage}
+                label="Banner Background Artwork"
+              />
+            </div>
+          </div>
+
+          {/* Live Preview Box */}
+          <div style={{ marginBottom: "28px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+              <Eye size={16} color="#64748B" />
+              <span style={{ fontSize: "0.86rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Live Banner Preview
+              </span>
+            </div>
+
+            <div
+              style={{
+                backgroundImage: `url(${bundleOfferBgImage || "/assets/images/cta/ctaBg1_1.jpg"})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                borderRadius: "18px",
+                padding: "36px 36px",
+                position: "relative",
+                overflow: "hidden",
+                minHeight: "220px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+              }}
+            >
+              <div style={{ maxWidth: "440px", zIndex: 2 }}>
+                {bundleOfferBadge && (
+                  <div
+                    style={{
+                      display: "inline-block",
+                      background: "rgba(255,255,255,0.2)",
+                      backdropFilter: "blur(10px)",
+                      WebkitBackdropFilter: "blur(10px)",
+                      borderRadius: "50px",
+                      padding: "4px 14px",
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      color: "#FFFFFF",
+                      fontWeight: 800,
+                      fontSize: "0.8rem",
+                      letterSpacing: "0.5px",
+                      marginBottom: "10px",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {bundleOfferBadge}
+                  </div>
+                )}
+                <h3 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#FFFFFF", margin: "0 0 10px", lineHeight: 1.25 }}>
+                  {bundleOfferTitle || "Get Bundle Products Offer"}
+                </h3>
+                <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem", margin: "0 0 18px", lineHeight: 1.5 }}>
+                  {bundleOfferSubtitle || "Curated package selections and bespoke furniture combinations at preferential rates."}
+                </p>
+                <div style={{ display: "inline-block", background: "var(--color-primary, #FF4035)", color: "#FFFFFF", padding: "8px 22px", borderRadius: "50px", fontSize: "0.85rem", fontWeight: 700 }}>
+                  {bundleOfferButtonText || "View All"} &rarr;
+                </div>
+              </div>
+
+              {bundleOfferImage && (
+                <div style={{ maxHeight: "200px", maxWidth: "260px", zIndex: 1, marginLeft: "20px" }}>
+                  <img
+                    src={bundleOfferImage}
+                    alt="Preview"
+                    style={{
+                      maxHeight: "190px",
+                      maxWidth: "250px",
+                      borderRadius: "14px",
+                      border: "2px solid rgba(255,255,255,0.25)",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="abid-btn abid-btn-primary"
+              style={{ padding: "10px 24px", fontSize: "0.9rem" }}
+            >
+              <Save size={18} />
+              <span>{isPending ? "Saving..." : "Save Bundle Products Offer Banner"}</span>
             </button>
           </div>
         </form>

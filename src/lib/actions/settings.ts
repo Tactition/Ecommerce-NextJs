@@ -236,6 +236,44 @@ export async function updateWeeklyDealsSettingsAction(formData: FormData) {
   }
 }
 
+export async function updateBundleOfferSettingsAction(formData: FormData) {
+  await requirePermission("settings", "edit");
+
+  const enabled = formData.get("bundle_offer_enabled") === "1" ? 1 : 0;
+  const title = ((formData.get("bundle_offer_title") as string) || "").trim();
+  const subtitle = ((formData.get("bundle_offer_subtitle") as string) || "").trim();
+  const badge = ((formData.get("bundle_offer_badge") as string) || "").trim();
+  const buttonText = ((formData.get("bundle_offer_button_text") as string) || "View All").trim();
+  const buttonLink = ((formData.get("bundle_offer_button_link") as string) || "/shop").trim();
+  const image = ((formData.get("bundle_offer_image") as string) || "").trim();
+  const bgImage = ((formData.get("bundle_offer_bg_image") as string) || "").trim();
+
+  try {
+    await pool.execute<ResultSetHeader>(
+      `UPDATE homepage_settings
+       SET bundle_offer_enabled = ?,
+           bundle_offer_title = ?,
+           bundle_offer_subtitle = ?,
+           bundle_offer_badge = ?,
+           bundle_offer_button_text = ?,
+           bundle_offer_button_link = ?,
+           bundle_offer_image = ?,
+           bundle_offer_bg_image = ?
+       WHERE id = 1`,
+      [enabled, title, subtitle, badge, buttonText, buttonLink, image, bgImage]
+    );
+
+    revalidateTag("homepage-settings");
+    revalidatePath("/");
+    revalidatePath("/dashboard/settings");
+
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Database error";
+    return { success: false, error: message };
+  }
+}
+
 export async function updateSiteSettingsAction(formData: FormData) {
   await requirePermission("settings", "edit");
 

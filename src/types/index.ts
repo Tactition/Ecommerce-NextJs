@@ -183,11 +183,14 @@ export interface HomepageSettings {
   weekly_deal_end_date?: string | Date;
   weekly_deal_timezone?: string;
   weekly_deal_product_ids?: string;
+  bundle_offer_enabled?: number | boolean;
   bundle_offer_title?: string;
   bundle_offer_subtitle?: string;
   bundle_offer_button_text?: string;
   bundle_offer_button_link?: string;
   bundle_offer_badge?: string;
+  bundle_offer_image?: string;
+  bundle_offer_bg_image?: string;
   updated_at?: string;
 }
 
