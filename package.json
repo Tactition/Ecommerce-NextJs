@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed:categories": "npx tsx scripts/seed-categories.ts",
+    "seed:categories:force": "npx tsx scripts/seed-categories.ts --force"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

@@ -83,14 +83,8 @@ const fetchAllAttributesWithValuesUncached = async (): Promise<ProductAttribute[
   }
 };
 
-const fetchAllAttributesWithValuesCached = unstable_cache(
-  fetchAllAttributesWithValuesUncached,
-  ["all-attributes-with-values"],
-  { tags: ["attributes"], revalidate: 3600 }
-);
-
 export async function getAllAttributesWithValues(): Promise<ProductAttribute[]> {
-  return fetchAllAttributesWithValuesCached();
+  return fetchAllAttributesWithValuesUncached();
 }
 
 const fetchProductVariationsUncached = async (
@@ -169,15 +163,7 @@ export async function getProductVariations(
   productId: number,
   includeInactive: boolean = false
 ): Promise<ProductVariation[]> {
-  if (includeInactive) {
-    return fetchProductVariationsUncached(productId, true);
-  }
-  const cachedFn = unstable_cache(
-    () => fetchProductVariationsUncached(productId, false),
-    [`product-variations-${productId}`],
-    { tags: ["products", "variations"], revalidate: 3600 }
-  );
-  return cachedFn();
+  return fetchProductVariationsUncached(productId, includeInactive);
 }
 
 /**

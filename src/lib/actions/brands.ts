@@ -22,14 +22,8 @@ const fetchActiveBrandsUncached = async (): Promise<PartnerBrand[]> => {
   }
 };
 
-const fetchActiveBrandsCached = unstable_cache(
-  fetchActiveBrandsUncached,
-  ["active-brands-cache"],
-  { tags: ["brands"], revalidate: 3600 }
-);
-
 export async function getActiveBrands(): Promise<PartnerBrand[]> {
-  return fetchActiveBrandsCached();
+  return fetchActiveBrandsUncached();
 }
 
 export async function getAllBrands(): Promise<PartnerBrand[]> {

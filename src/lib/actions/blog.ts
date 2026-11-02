@@ -23,14 +23,8 @@ const fetchPublishedBlogPostsUncached = async (): Promise<BlogPost[]> => {
   }
 };
 
-const fetchPublishedBlogPostsCached = unstable_cache(
-  fetchPublishedBlogPostsUncached,
-  ["published-blog-posts-cache"],
-  { tags: ["blogs"], revalidate: 3600 }
-);
-
 export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
-  return fetchPublishedBlogPostsCached();
+  return fetchPublishedBlogPostsUncached();
 }
 
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
@@ -65,12 +59,7 @@ const fetchBlogPostBySlugUncached = async (slug: string): Promise<BlogPost | nul
 };
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-  const cachedFn = unstable_cache(
-    fetchBlogPostBySlugUncached,
-    [`blog-post-${slug}`],
-    { tags: ["blogs", `blog-${slug}`], revalidate: 3600 }
-  );
-  return cachedFn(slug);
+  return fetchBlogPostBySlugUncached(slug);
 }
 
 export async function getBlogPostById(id: number): Promise<BlogPost | null> {

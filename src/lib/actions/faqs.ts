@@ -22,14 +22,8 @@ const fetchPublishedFAQsUncached = async (): Promise<FAQ[]> => {
   }
 };
 
-const fetchPublishedFAQsCached = unstable_cache(
-  fetchPublishedFAQsUncached,
-  ["published-faqs-cache"],
-  { tags: ["faqs"], revalidate: 3600 }
-);
-
 export async function getPublishedFAQs(): Promise<FAQ[]> {
-  return fetchPublishedFAQsCached();
+  return fetchPublishedFAQsUncached();
 }
 
 export async function getAllFAQs(): Promise<FAQ[]> {

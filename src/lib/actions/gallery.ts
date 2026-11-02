@@ -22,14 +22,8 @@ const fetchPublishedGalleryUncached = async (): Promise<WorkGallery[]> => {
   }
 };
 
-const fetchPublishedGalleryCached = unstable_cache(
-  fetchPublishedGalleryUncached,
-  ["published-gallery-cache"],
-  { tags: ["gallery"], revalidate: 3600 }
-);
-
 export async function getPublishedGallery(): Promise<WorkGallery[]> {
-  return fetchPublishedGalleryCached();
+  return fetchPublishedGalleryUncached();
 }
 
 export async function getAllGallery(): Promise<WorkGallery[]> {

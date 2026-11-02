@@ -50,14 +50,8 @@ const fetchHomepageSettingsUncached = async (): Promise<HomepageSettings> => {
   }
 };
 
-export const getHomepageSettingsCached = unstable_cache(
-  fetchHomepageSettingsUncached,
-  ["homepage-settings-cache"],
-  { tags: ["homepage-settings"], revalidate: 3600 }
-);
-
 export const getHomepageSettings = cache(async (): Promise<HomepageSettings> => {
-  return getHomepageSettingsCached();
+  return fetchHomepageSettingsUncached();
 });
 
 const fetchSiteSettingsUncached = async (): Promise<SiteSettings> => {
@@ -112,14 +106,8 @@ const fetchSiteSettingsUncached = async (): Promise<SiteSettings> => {
   }
 };
 
-export const getSiteSettingsCached = unstable_cache(
-  fetchSiteSettingsUncached,
-  ["site-settings-cache"],
-  { tags: ["site-settings"], revalidate: 3600 }
-);
-
 const getSiteSettingsDeduplicated = cache(async (): Promise<SiteSettings> => {
-  return getSiteSettingsCached();
+  return fetchSiteSettingsUncached();
 });
 
 export async function getSiteSettings(): Promise<SiteSettings> {

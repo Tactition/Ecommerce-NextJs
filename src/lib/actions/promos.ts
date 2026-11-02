@@ -41,14 +41,8 @@ const fetchHomepagePromosUncached = async (): Promise<HomepagePromo[]> => {
   }
 };
 
-const fetchHomepagePromosCached = unstable_cache(
-  fetchHomepagePromosUncached,
-  ["homepage-promos-cache"],
-  { tags: ["promos"], revalidate: 3600 }
-);
-
 export async function getHomepagePromos(): Promise<HomepagePromo[]> {
-  return fetchHomepagePromosCached();
+  return fetchHomepagePromosUncached();
 }
 
 export async function getAllHomepagePromosAdmin(): Promise<HomepagePromo[]> {

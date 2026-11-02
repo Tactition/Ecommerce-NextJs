@@ -23,14 +23,8 @@ const fetchPublishedTestimonialsUncached = async (): Promise<Testimonial[]> => {
   }
 };
 
-const fetchPublishedTestimonialsCached = unstable_cache(
-  fetchPublishedTestimonialsUncached,
-  ["published-testimonials-cache"],
-  { tags: ["testimonials"], revalidate: 3600 }
-);
-
 export async function getPublishedTestimonials(): Promise<Testimonial[]> {
-  return fetchPublishedTestimonialsCached();
+  return fetchPublishedTestimonialsUncached();
 }
 
 export async function getAllTestimonials(): Promise<Testimonial[]> {

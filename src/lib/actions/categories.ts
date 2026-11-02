@@ -130,14 +130,8 @@ const fetchActiveCategoriesUncached = async (): Promise<CategoryAdmin[]> => {
   }
 };
 
-const fetchActiveCategoriesCached = unstable_cache(
-  fetchActiveCategoriesUncached,
-  ["active-categories-cache"],
-  { tags: ["categories"], revalidate: 3600 }
-);
-
 export async function getActiveCategories(): Promise<CategoryAdmin[]> {
-  return fetchActiveCategoriesCached();
+  return fetchActiveCategoriesUncached();
 }
 
 export async function saveCategoryAction(formData: FormData) {

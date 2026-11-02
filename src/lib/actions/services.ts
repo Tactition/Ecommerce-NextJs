@@ -22,14 +22,8 @@ const fetchPublishedServicesUncached = async (): Promise<Service[]> => {
   }
 };
 
-const fetchPublishedServicesCached = unstable_cache(
-  fetchPublishedServicesUncached,
-  ["published-services"],
-  { tags: ["services"], revalidate: 3600 }
-);
-
 export async function getPublishedServices(): Promise<Service[]> {
-  return fetchPublishedServicesCached();
+  return fetchPublishedServicesUncached();
 }
 
 export async function getAllServices(): Promise<Service[]> {
@@ -64,12 +58,7 @@ const fetchServiceBySlugUncached = async (slug: string): Promise<Service | null>
 };
 
 export async function getServiceBySlug(slug: string): Promise<Service | null> {
-  const cachedFn = unstable_cache(
-    fetchServiceBySlugUncached,
-    [`service-slug-${slug}`],
-    { tags: ["services", `service-${slug}`], revalidate: 3600 }
-  );
-  return cachedFn(slug);
+  return fetchServiceBySlugUncached(slug);
 }
 
 export async function saveServiceAction(formData: FormData) {

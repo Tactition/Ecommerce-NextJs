@@ -112,14 +112,8 @@ const fetchBestSellerProductsUncached = async (): Promise<Product[]> => {
   }
 };
 
-const fetchBestSellerProductsCached = unstable_cache(
-  fetchBestSellerProductsUncached,
-  ["best-seller-products"],
-  { tags: ["products"], revalidate: 3600 }
-);
-
 export async function getBestSellerProducts(): Promise<Product[]> {
-  return fetchBestSellerProductsCached();
+  return fetchBestSellerProductsUncached();
 }
 
 const fetchFeaturedProductsUncached = async (): Promise<Product[]> => {
@@ -165,17 +159,11 @@ const fetchFeaturedProductsUncached = async (): Promise<Product[]> => {
   }
 };
 
-const getCachedFeaturedProducts = unstable_cache(
-  fetchFeaturedProductsUncached,
-  ["featured-products"],
-  { tags: ["products"], revalidate: 3600 }
-);
-
 export async function getFeaturedProducts(categorySlug?: string): Promise<Product[]> {
+  const all = await fetchFeaturedProductsUncached();
   if (!categorySlug || categorySlug === "all") {
-    return getCachedFeaturedProducts();
+    return all;
   }
-  const all = await getCachedFeaturedProducts();
   return all.filter((p) => p.category_slug === categorySlug);
 }
 
@@ -221,14 +209,8 @@ const fetchPopularProductsUncached = async (): Promise<Product[]> => {
   }
 };
 
-const fetchPopularProductsCached = unstable_cache(
-  fetchPopularProductsUncached,
-  ["popular-products"],
-  { tags: ["products"], revalidate: 3600 }
-);
-
 export async function getPopularProducts(): Promise<Product[]> {
-  return fetchPopularProductsCached();
+  return fetchPopularProductsUncached();
 }
 
 const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
@@ -273,14 +255,8 @@ const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
   }
 };
 
-const fetchOnSaleProductsCached = unstable_cache(
-  fetchOnSaleProductsUncached,
-  ["on-sale-products"],
-  { tags: ["products"], revalidate: 3600 }
-);
-
 export async function getOnSaleProducts(): Promise<Product[]> {
-  return fetchOnSaleProductsCached();
+  return fetchOnSaleProductsUncached();
 }
 
 const fetchProductCategoriesUncached = async (): Promise<ProductCategory[]> => {
@@ -347,14 +323,8 @@ const fetchProductCategoriesUncached = async (): Promise<ProductCategory[]> => {
   }
 };
 
-const fetchProductCategoriesCached = unstable_cache(
-  fetchProductCategoriesUncached,
-  ["product-categories-cache"],
-  { tags: ["categories", "menus"], revalidate: 3600 }
-);
-
 export async function getProductCategories(): Promise<ProductCategory[]> {
-  return fetchProductCategoriesCached();
+  return fetchProductCategoriesUncached();
 }
 
 const fetchProductBySlugUncached = async (slug: string): Promise<Product | null> => {
@@ -402,15 +372,7 @@ const fetchProductBySlugUncached = async (slug: string): Promise<Product | null>
 };
 
 export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
-  if (process.env.NODE_ENV === "development") {
-    return fetchProductBySlugUncached(slug);
-  }
-  const cachedFn = unstable_cache(
-    fetchProductBySlugUncached,
-    [`product-slug-${slug}`],
-    { tags: ["products", `product-${slug}`], revalidate: 3600 }
-  );
-  return cachedFn(slug);
+  return fetchProductBySlugUncached(slug);
 });
 
 const fetchProductsByIdsUncached = async (ids: number[]): Promise<Product[]> => {
@@ -460,13 +422,7 @@ const fetchProductsByIdsUncached = async (ids: number[]): Promise<Product[]> => 
 
 export async function getProductsByIds(ids: number[]): Promise<Product[]> {
   if (!ids || ids.length === 0) return [];
-  const sortedIdsKey = [...ids].sort().join("-");
-  const cachedFn = unstable_cache(
-    () => fetchProductsByIdsUncached(ids),
-    [`products-by-ids-${sortedIdsKey}`],
-    { tags: ["products"], revalidate: 3600 }
-  );
-  return cachedFn();
+  return fetchProductsByIdsUncached(ids);
 }
 
 const fetchAllProductsUncached = async (): Promise<Product[]> => {
@@ -514,12 +470,6 @@ const fetchAllProductsUncached = async (): Promise<Product[]> => {
   }
 };
 
-const getCachedAllProducts = unstable_cache(
-  fetchAllProductsUncached,
-  ["all-products-catalog"],
-  { tags: ["products"], revalidate: 3600 }
-);
-
 export async function getAllProducts(filters?: {
   categorySlug?: string;
   search?: string;
@@ -540,7 +490,7 @@ export async function getAllProducts(filters?: {
       !filters.inStockOnly &&
       !filters.onSaleOnly)
   ) {
-    return getCachedAllProducts();
+    return fetchAllProductsUncached();
   }
 
   try {
@@ -657,12 +607,7 @@ const fetchRelatedProductsUncached = async (categorySlug: string, currentProduct
 };
 
 export async function getRelatedProducts(categorySlug: string, currentProductId: number, limit = 4): Promise<Product[]> {
-  const cachedFn = unstable_cache(
-    () => fetchRelatedProductsUncached(categorySlug, currentProductId, limit),
-    [`related-products-${categorySlug}-${currentProductId}-${limit}`],
-    { tags: ["products"], revalidate: 3600 }
-  );
-  return cachedFn();
+  return fetchRelatedProductsUncached(categorySlug, currentProductId, limit);
 }
 
 // ---------------- Admin Actions ----------------

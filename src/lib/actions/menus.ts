@@ -40,28 +40,8 @@ const fetchNavMenuItemsUncached = async (location: "header" | "categories" | "fo
   }
 };
 
-const getCachedNavMenuHeader = unstable_cache(
-  () => fetchNavMenuItemsUncached("header"),
-  ["nav-menu-items-header"],
-  { tags: ["menus"], revalidate: 3600 }
-);
-
-const getCachedNavMenuCategories = unstable_cache(
-  () => fetchNavMenuItemsUncached("categories"),
-  ["nav-menu-items-categories"],
-  { tags: ["menus"], revalidate: 3600 }
-);
-
-const getCachedNavMenuFooter = unstable_cache(
-  () => fetchNavMenuItemsUncached("footer"),
-  ["nav-menu-items-footer"],
-  { tags: ["menus"], revalidate: 3600 }
-);
-
 export async function getNavMenuItems(location: "header" | "categories" | "footer" = "header"): Promise<NavMenuItem[]> {
-  if (location === "categories") return getCachedNavMenuCategories();
-  if (location === "footer") return getCachedNavMenuFooter();
-  return getCachedNavMenuHeader();
+  return fetchNavMenuItemsUncached(location);
 }
 
 

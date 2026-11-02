@@ -52,14 +52,8 @@ const fetchPublishedCareersUncached = async (): Promise<Career[]> => {
   }
 };
 
-const fetchPublishedCareersCached = unstable_cache(
-  fetchPublishedCareersUncached,
-  ["published-careers"],
-  { tags: ["careers"], revalidate: 3600 }
-);
-
 export async function getPublishedCareers(): Promise<Career[]> {
-  return fetchPublishedCareersCached();
+  return fetchPublishedCareersUncached();
 }
 
 /**
