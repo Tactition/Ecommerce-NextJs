@@ -80,15 +80,18 @@ export default function ProductDetailsClient({
 
   // Active gallery image
   const [activeImage, setActiveImage] = useState<string>(product.image || "");
+  const [userSelectedGalleryImage, setUserSelectedGalleryImage] = useState<boolean>(false);
 
-  // When variation changes, update image if variation has custom image
+  // When variation changes, update image ONLY if variation has a custom image distinctly different from product.image
   React.useEffect(() => {
-    if (currentVariation?.image && currentVariation.image.trim() !== "") {
-      setActiveImage(currentVariation.image);
-    } else if (product.image && product.image.trim() !== "") {
+    const varImg = currentVariation?.image?.trim();
+    if (varImg && varImg !== product.image && !varImg.startsWith("/images/products/")) {
+      setActiveImage(varImg);
+      setUserSelectedGalleryImage(false);
+    } else if (!userSelectedGalleryImage && product.image && product.image.trim() !== "") {
       setActiveImage(product.image);
     }
-  }, [currentVariation, product.image]);
+  }, [currentVariation, product.image, userSelectedGalleryImage]);
 
   const currentImage = (activeImage && activeImage.trim() !== "")
     ? activeImage
@@ -111,12 +114,16 @@ export default function ProductDetailsClient({
         })()
       : [];
 
+    const customVarImages = (variations || [])
+      .map((v) => v.image?.trim())
+      .filter((img): img is string => Boolean(img && img !== product.image && !img.startsWith("/images/products/")));
+
     return Array.from(
       new Set(
         [
           product.image,
           ...extraGallery,
-          ...(variations || []).map((v) => v.image),
+          ...customVarImages,
         ].filter((img): img is string => Boolean(img && typeof img === "string" && img.trim() !== ""))
       )
     );
@@ -124,6 +131,7 @@ export default function ProductDetailsClient({
 
   const handleGallerySelectImage = (img: string) => {
     setActiveImage(img);
+    setUserSelectedGalleryImage(true);
     // Auto-select matched variation if this image is specific to one
     const matchedVar = (variations || []).find((v) => v.image === img && v.values && v.values.length > 0);
     if (matchedVar && matchedVar.values) {

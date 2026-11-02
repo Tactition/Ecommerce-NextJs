@@ -48,12 +48,14 @@ export default function ProductImageGallery({
   // Current selected image
   const [selectedImage, setSelectedImage] = useState<string>(activeImage || cleanImages[0] || "");
 
-  // Sync when activeImage prop changes externally (e.g., from variation selection)
+  // Sync when activeImage prop changes externally (e.g., from variation selection or prop update)
   useEffect(() => {
     if (activeImage && activeImage.trim() !== "" && activeImage !== selectedImage) {
       setSelectedImage(activeImage);
+    } else if (!selectedImage && cleanImages.length > 0) {
+      setSelectedImage(cleanImages[0]);
     }
-  }, [activeImage]);
+  }, [activeImage, cleanImages, selectedImage]);
 
   const currentIndex = Math.max(0, cleanImages.indexOf(selectedImage));
 

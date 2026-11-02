@@ -257,7 +257,7 @@ export async function saveProductVariationsAction(
           v.price || 0,
           v.original_price || null,
           v.stock || 0,
-          v.image || null,
+          (v.image && v.image.trim() !== "" && !v.image.startsWith("/images/products/")) ? v.image.trim() : null,
           v.is_active ? 1 : 0,
         ]
       );
@@ -373,7 +373,7 @@ export async function saveDynamicProductVariationsAction(
           price: Number(prod?.price || 0),
           original_price: prod?.original_price ? Number(prod.original_price) : null,
           stock: Number(prod?.stock || 10),
-          image: prod?.image || null,
+          image: null,
           is_active: 1,
           combination: combo,
         };
@@ -522,7 +522,7 @@ export async function saveDynamicProductVariationsAction(
           v.price || 0,
           v.original_price || null,
           v.stock || 0,
-          v.image || null,
+          (v.image && v.image.trim() !== "" && !v.image.startsWith("/images/products/")) ? v.image.trim() : null,
           v.is_active ? 1 : 0,
         ]
       );

@@ -72,7 +72,7 @@ function parseGalleryImages(val: unknown): string[] {
 const fetchBestSellerProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, gallery_images, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
        FROM products
        WHERE is_best_seller = 1 AND status = 'active'
        ORDER BY id DESC
@@ -94,7 +94,7 @@ const fetchBestSellerProductsUncached = async (): Promise<Product[]> => {
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
-      gallery_images: [],
+      gallery_images: parseGalleryImages(r.gallery_images),
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
@@ -119,7 +119,7 @@ export async function getBestSellerProducts(): Promise<Product[]> {
 const fetchFeaturedProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, gallery_images, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
        FROM products
        WHERE is_featured = 1 AND status = 'active'
        ORDER BY id DESC
@@ -141,7 +141,7 @@ const fetchFeaturedProductsUncached = async (): Promise<Product[]> => {
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
-      gallery_images: [],
+      gallery_images: parseGalleryImages(r.gallery_images),
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
@@ -170,7 +170,7 @@ export async function getFeaturedProducts(categorySlug?: string): Promise<Produc
 const fetchPopularProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, gallery_images, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
        FROM products
        WHERE is_popular = 1 AND status = 'active'
        ORDER BY id DESC
@@ -192,6 +192,7 @@ const fetchPopularProductsUncached = async (): Promise<Product[]> => {
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
+      gallery_images: parseGalleryImages(r.gallery_images),
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
@@ -216,7 +217,7 @@ export async function getPopularProducts(): Promise<Product[]> {
 const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, gallery_images, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
        FROM products
        WHERE (is_on_sale = 1 OR discount_percent > 0) AND status = 'active'
        ORDER BY id DESC
@@ -238,6 +239,7 @@ const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
+      gallery_images: parseGalleryImages(r.gallery_images),
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
@@ -428,7 +430,7 @@ export async function getProductsByIds(ids: number[]): Promise<Product[]> {
 const fetchAllProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing, custom_size_rate, custom_size_unit, custom_size_min_price, custom_size_linear_mode
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, gallery_images, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing, custom_size_rate, custom_size_unit, custom_size_min_price, custom_size_linear_mode
        FROM products
        WHERE status = 'active'
        ORDER BY id ASC`
@@ -449,6 +451,7 @@ const fetchAllProductsUncached = async (): Promise<Product[]> => {
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
+      gallery_images: parseGalleryImages(r.gallery_images),
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
@@ -656,7 +659,7 @@ export async function getAllProductsAdmin(): Promise<Product[]> {
   await requirePermission("products", "view");
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, has_variations, allow_custom_sizing, custom_size_rate, custom_size_unit, custom_size_min_price, custom_size_linear_mode, stock, status, created_at
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, gallery_images, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, has_variations, allow_custom_sizing, custom_size_rate, custom_size_unit, custom_size_min_price, custom_size_linear_mode, stock, status, created_at
        FROM products
        ORDER BY id DESC`
     );
@@ -676,7 +679,7 @@ export async function getAllProductsAdmin(): Promise<Product[]> {
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
-      gallery_images: [],
+      gallery_images: parseGalleryImages(r.gallery_images),
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),

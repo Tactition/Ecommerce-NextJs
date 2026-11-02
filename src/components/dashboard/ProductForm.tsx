@@ -256,7 +256,7 @@ export default function ProductForm({
           price: String(v.price),
           original_price: v.original_price ? String(v.original_price) : "",
           stock: String(v.stock),
-          image: v.image || "",
+          image: v.image && v.image !== initialProduct?.image && !v.image.startsWith("/images/products/") ? v.image : "",
           is_active: Boolean(v.is_active),
           combination: combo,
         };
@@ -582,16 +582,20 @@ export default function ProductForm({
         const targetId = res.success ? (res.id || initialProduct?.id) : undefined;
         if (res.success && targetId) {
           if (hasVariations) {
-            const varPayload = finalVariations.map((v) => ({
-              id: v.id,
-              sku: (v.sku || "").trim() || `${(slug || name || "PROD").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
-              price: parseFloat(v.price) || parseFloat(price) || 0,
-              original_price: v.original_price ? parseFloat(v.original_price) : null,
-              stock: parseInt(v.stock, 10) || 0,
-              image: (v.image || "").trim() || image || null,
-              is_active: v.is_active ? 1 : 0,
-              combination: v.combination || {},
-            }));
+            const varPayload = finalVariations.map((v) => {
+              const cleanVarImg = (v.image || "").trim();
+              const finalImg = (cleanVarImg && cleanVarImg !== image && !cleanVarImg.startsWith("/images/products/")) ? cleanVarImg : null;
+              return {
+                id: v.id,
+                sku: (v.sku || "").trim() || `${(slug || name || "PROD").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+                price: parseFloat(v.price) || parseFloat(price) || 0,
+                original_price: v.original_price ? parseFloat(v.original_price) : null,
+                stock: parseInt(v.stock, 10) || 0,
+                image: finalImg,
+                is_active: v.is_active ? 1 : 0,
+                combination: v.combination || {},
+              };
+            });
             const attrPayload = activeAttrs.map((a) => ({
               name: a.name.trim(),
               values: a.values,

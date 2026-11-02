@@ -1542,15 +1542,15 @@ export async function seedProducts() {
         const [varRes] = await conn.query<ResultSetHeader>(
           `INSERT INTO product_variations (product_id, sku, price, original_price, stock, image, is_active)
            VALUES (?, ?, ?, ?, ?, ?, 1)`,
-          [productId, varSku, varPrice, varOriginalPrice, v.stock, imagePath]
+          [productId, varSku, varPrice, varOriginalPrice, v.stock, null]
         );
         variationId = varRes.insertId;
         createdVariations++;
       } else {
         variationId = existingVar[0].id;
         await conn.query(
-          `UPDATE product_variations SET price = ?, original_price = ?, stock = ?, image = ?, is_active = 1 WHERE id = ?`,
-          [varPrice, varOriginalPrice, v.stock, imagePath, variationId]
+          `UPDATE product_variations SET price = ?, original_price = ?, stock = ?, image = NULL, is_active = 1 WHERE id = ?`,
+          [varPrice, varOriginalPrice, v.stock, variationId]
         );
       }
 
