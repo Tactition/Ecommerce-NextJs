@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(255) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NOT NULL,
   `role` VARCHAR(50) DEFAULT 'admin',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_users_role (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `services` (
@@ -149,4 +150,58 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   `status` VARCHAR(50) DEFAULT 'pending',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`service_id`) REFERENCES `services`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `order_number` VARCHAR(50) NOT NULL UNIQUE,
+  `user_id` INT NULL,
+  `first_name` VARCHAR(100) NOT NULL,
+  `last_name` VARCHAR(100) NOT NULL,
+  `company_name` VARCHAR(150),
+  `gstin` VARCHAR(50),
+  `email` VARCHAR(150) NOT NULL,
+  `phone` VARCHAR(30) NOT NULL,
+  `address_line1` VARCHAR(255) NOT NULL,
+  `address_line2` VARCHAR(255),
+  `city` VARCHAR(100) NOT NULL,
+  `state` VARCHAR(100) NOT NULL,
+  `postal_code` VARCHAR(20) NOT NULL,
+  `country` VARCHAR(100) DEFAULT 'India',
+  `ship_to_different` TINYINT(1) DEFAULT 0,
+  `order_notes` TEXT,
+  `subtotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `discount_amount` DECIMAL(10,2) DEFAULT 0.00,
+  `coupon_code` VARCHAR(50),
+  `shipping_fee` DECIMAL(10,2) DEFAULT 0.00,
+  `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `payment_method` VARCHAR(50) DEFAULT 'cod',
+  `payment_status` VARCHAR(50) DEFAULT 'pending',
+  `order_status` VARCHAR(50) DEFAULT 'pending',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_orders_user_created (`user_id`, `created_at`),
+  INDEX idx_orders_status_created (`order_status`, `created_at`),
+  INDEX idx_orders_created (`created_at`),
+  INDEX idx_orders_email (`email`),
+  INDEX idx_orders_phone (`phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `order_items` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `order_id` INT NOT NULL,
+  `product_id` INT NOT NULL,
+  `variation_id` INT NULL,
+  `product_name` VARCHAR(255) NOT NULL,
+  `product_slug` VARCHAR(255) NOT NULL,
+  `product_image` VARCHAR(255),
+  `sku` VARCHAR(100),
+  `price` DECIMAL(10,2) NOT NULL,
+  `quantity` INT NOT NULL DEFAULT 1,
+  `total_price` DECIMAL(10,2) NOT NULL,
+  `attributes_json` TEXT,
+  `custom_details_json` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_order_items_order (`order_id`),
+  INDEX idx_order_items_product (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

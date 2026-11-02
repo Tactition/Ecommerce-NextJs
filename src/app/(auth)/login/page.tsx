@@ -17,18 +17,32 @@ import {
   ShoppingBag,
   Heart,
   CreditCard,
-  UserPlus,
+  User,
+  KeyRound,
+  Sparkles,
 } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const rawRedirect = searchParams.get("redirectTo") || "/";
   const reason = searchParams.get("reason");
-  const wasUnauthorized = searchParams.get("unauthorized") === "1" || searchParams.get("error") === "admin_required";
+  const wasUnauthorized =
+    searchParams.get("unauthorized") === "1" ||
+    searchParams.get("error") === "admin_required" ||
+    searchParams.get("reason") === "admin_login_required";
+  const tabParam = searchParams.get("tab");
 
-  // If user came via /dashboard redirect, default email to admin, otherwise blank for customer
-  const isDashboardIntent = redirectTo.startsWith("/dashboard") || wasUnauthorized;
+  // Determine initial mode based on URL hints
+  const initialIsAdmin =
+    tabParam === "admin" ||
+    searchParams.get("role") === "admin" ||
+    rawRedirect.startsWith("/dashboard") ||
+    wasUnauthorized;
+
+  const [activeTab, setActiveTab] = useState<"customer" | "admin">(
+    initialIsAdmin ? "admin" : "customer"
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,13 +50,23 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Determine effective destination based on mode
+  const effectiveRedirect =
+    activeTab === "admin"
+      ? rawRedirect.startsWith("/dashboard")
+        ? rawRedirect
+        : "/dashboard"
+      : rawRedirect.startsWith("/dashboard")
+      ? "/profile"
+      : rawRedirect;
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    formData.set("redirectTo", redirectTo);
+    formData.set("redirectTo", effectiveRedirect);
 
     try {
       const res = await loginAction(null, formData);
@@ -61,16 +85,16 @@ function LoginForm() {
   };
 
   const getReasonBanner = () => {
-    if (wasUnauthorized) {
+    if (wasUnauthorized && activeTab === "admin") {
       return {
         icon: <ShieldAlert size={18} color="#DC2626" />,
-        text: "Staff authorization required. Please sign in with an administrator account to access the dashboard.",
+        text: "Staff authorization required: Please sign in with an administrator account to access the dashboard.",
         bg: "#FEF2F2",
         color: "#DC2626",
         border: "#FECACA",
       };
     }
-    if (reason === "cart") {
+    if (reason === "cart" && activeTab === "customer") {
       return {
         icon: <ShoppingBag size={18} color="#FF4035" />,
         text: "Please sign in to add products to your cart and customize your selections.",
@@ -79,7 +103,7 @@ function LoginForm() {
         border: "#FECACA",
       };
     }
-    if (reason === "wishlist") {
+    if (reason === "wishlist" && activeTab === "customer") {
       return {
         icon: <Heart size={18} color="#FF4035" />,
         text: "Please sign in to save products to your personal wishlist.",
@@ -88,7 +112,7 @@ function LoginForm() {
         border: "#FECACA",
       };
     }
-    if (reason === "checkout" || reason === "checkout_login_required") {
+    if ((reason === "checkout" || reason === "checkout_login_required") && activeTab === "customer") {
       return {
         icon: <CreditCard size={18} color="#FF4035" />,
         text: "Please sign in or create an account to proceed to secure checkout.",
@@ -109,43 +133,124 @@ function LoginForm() {
         maxWidth: "480px",
         background: "#FFFFFF",
         borderRadius: "24px",
-        padding: "44px 38px",
+        padding: "36px 36px 40px",
         boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.45)",
         border: "1px solid rgba(255, 255, 255, 0.15)",
       }}
     >
-      <div style={{ textAlign: "center", marginBottom: "26px" }}>
+      {/* Interactive Mode Switcher: Customer vs Admin */}
+      <div
+        style={{
+          display: "flex",
+          backgroundColor: "#F1F5F9",
+          padding: "4px",
+          borderRadius: "14px",
+          marginBottom: "24px",
+          border: "1px solid #E2E8F0",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("customer");
+            setError(null);
+          }}
+          style={{
+            flex: 1,
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "none",
+            fontSize: "0.88rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            transition: "all 0.2s ease",
+            backgroundColor: activeTab === "customer" ? "#FFFFFF" : "transparent",
+            color: activeTab === "customer" ? "#0F172A" : "#64748B",
+            boxShadow: activeTab === "customer" ? "0 2px 8px rgba(15, 23, 42, 0.08)" : "none",
+          }}
+        >
+          <User size={16} />
+          <span>Customer Login</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("admin");
+            setError(null);
+          }}
+          style={{
+            flex: 1,
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "none",
+            fontSize: "0.88rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            transition: "all 0.2s ease",
+            backgroundColor: activeTab === "admin" ? "#0F172A" : "transparent",
+            color: activeTab === "admin" ? "#FFFFFF" : "#64748B",
+            boxShadow: activeTab === "admin" ? "0 4px 12px rgba(15, 23, 42, 0.25)" : "none",
+          }}
+        >
+          <ShieldCheck size={16} color={activeTab === "admin" ? "#FF4035" : "#64748B"} />
+          <span>Admin Panel</span>
+        </button>
+      </div>
+
+      {/* Header Icon & Title */}
+      <div style={{ textAlign: "center", marginBottom: "24px" }}>
         <div
           style={{
-            width: "58px",
-            height: "58px",
-            borderRadius: "18px",
-            background: "linear-gradient(135deg, #FF4035 0%, #B91C1C 100%)",
+            width: "56px",
+            height: "56px",
+            borderRadius: "16px",
+            background:
+              activeTab === "admin"
+                ? "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)"
+                : "linear-gradient(135deg, #FF4035 0%, #B91C1C 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: "#FFFFFF",
             margin: "0 auto 14px auto",
-            boxShadow: "0 10px 25px rgba(255, 64, 53, 0.35)",
+            boxShadow:
+              activeTab === "admin"
+                ? "0 10px 25px rgba(15, 23, 42, 0.3)"
+                : "0 10px 25px rgba(255, 64, 53, 0.35)",
+            transition: "all 0.3s ease",
           }}
         >
-          <ShieldCheck size={30} />
+          {activeTab === "admin" ? (
+            <KeyRound size={26} color="#FF4035" />
+          ) : (
+            <User size={26} />
+          )}
         </div>
+
         <h1
           style={{
-            fontSize: "1.75rem",
+            fontSize: "1.65rem",
             color: "#0F172A",
             fontWeight: 800,
             marginBottom: "6px",
             letterSpacing: "-0.02em",
           }}
         >
-          {isDashboardIntent ? "Staff & Admin Portal" : "Welcome Back"}
+          {activeTab === "admin" ? "Staff & Admin Portal" : "Welcome Back"}
         </h1>
-        <p style={{ color: "#64748B", fontSize: "0.9rem", margin: 0 }}>
-          {isDashboardIntent
-            ? "Wall Street Interiors &bull; Secure Console Access"
-            : "Sign in to your Wall Street Interiors account"}
+        <p style={{ color: "#64748B", fontSize: "0.88rem", margin: 0 }}>
+          {activeTab === "admin"
+            ? "Wall Street Interiors \u2022 Secure Console Access"
+            : "Sign in to track orders, manage your wishlist, and checkout"}
         </p>
       </div>
 
@@ -193,7 +298,7 @@ function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit}>
-        <input type="hidden" name="redirectTo" value={redirectTo} />
+        <input type="hidden" name="redirectTo" value={effectiveRedirect} />
 
         <div className="form-group" style={{ marginBottom: "18px" }}>
           <label
@@ -206,7 +311,7 @@ function LoginForm() {
               marginBottom: "6px",
             }}
           >
-            Email Address
+            {activeTab === "admin" ? "Admin Email Address" : "Email Address"}
           </label>
           <div style={{ position: "relative" }}>
             <input
@@ -228,7 +333,7 @@ function LoginForm() {
                 outline: "none",
                 backgroundColor: "#F8FAFC",
               }}
-              placeholder="Enter your email"
+              placeholder={activeTab === "admin" ? "Enter your administrator email" : "Enter your email"}
             />
             <Mail
               size={18}
@@ -325,9 +430,9 @@ function LoginForm() {
           style={{
             width: "100%",
             height: "48px",
-            backgroundColor: "#FF4035",
+            backgroundColor: activeTab === "admin" ? "#0F172A" : "#FF4035",
             color: "#FFFFFF",
-            fontSize: "1rem",
+            fontSize: "0.96rem",
             fontWeight: 700,
             borderRadius: "12px",
             border: "none",
@@ -337,44 +442,62 @@ function LoginForm() {
             justifyContent: "center",
             gap: "8px",
             transition: "all 0.2s",
-            boxShadow: "0 8px 20px rgba(255, 64, 53, 0.25)",
+            boxShadow:
+              activeTab === "admin"
+                ? "0 8px 20px rgba(15, 23, 42, 0.25)"
+                : "0 8px 20px rgba(255, 64, 53, 0.25)",
           }}
         >
           {isLoading ? (
             <>
               <Loader2 size={18} className="animate-spin" />
-              <span>Signing in...</span>
+              <span>{activeTab === "admin" ? "Authenticating Admin..." : "Signing in..."}</span>
             </>
           ) : (
             <>
-              <span>Sign In</span>
+              <span>{activeTab === "admin" ? "Access Admin Console" : "Sign In to Store"}</span>
               <ArrowRight size={18} />
             </>
           )}
         </button>
       </form>
 
-      {/* Register Link for Customers */}
-      <div
-        style={{
-          marginTop: "20px",
-          textAlign: "center",
-          fontSize: "0.9rem",
-          color: "#64748B",
-        }}
-      >
-        Don't have an account yet?{" "}
-        <Link
-          href={`/register?redirectTo=${encodeURIComponent(redirectTo)}${reason ? `&reason=${reason}` : ""}`}
+      {/* Footer Links based on Mode */}
+      {activeTab === "customer" ? (
+        <div
           style={{
-            color: "#FF4035",
-            fontWeight: 700,
-            textDecoration: "none",
+            marginTop: "20px",
+            textAlign: "center",
+            fontSize: "0.9rem",
+            color: "#64748B",
           }}
         >
-          Create an Account
-        </Link>
-      </div>
+          Don&apos;t have an account yet?{" "}
+          <Link
+            href={`/register?redirectTo=${encodeURIComponent(effectiveRedirect)}${reason ? `&reason=${reason}` : ""}`}
+            style={{
+              color: "#FF4035",
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            Create an Account
+          </Link>
+        </div>
+      ) : (
+        <div
+          style={{
+            marginTop: "20px",
+            textAlign: "center",
+            fontSize: "0.78rem",
+            color: "#64748B",
+            lineHeight: 1.4,
+          }}
+        >
+          <Lock size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: "4px" }} />
+          Restricted Area &bull; Administrative console access is monitored and strictly reserved for authorized staff.
+        </div>
+      )}
     </div>
   );
 }

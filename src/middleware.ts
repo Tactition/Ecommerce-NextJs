@@ -41,10 +41,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // 1.5. Convenience Admin Gateway Route
+  if (pathname === "/admin" || pathname === "/admin/") {
+    if (session) {
+      const isStaff =
+        session.role === "admin" ||
+        session.role === "editor" ||
+        session.role === "manager";
+      if (isStaff) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    }
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("tab", "admin");
+    loginUrl.searchParams.set("redirectTo", "/dashboard");
+    return NextResponse.redirect(loginUrl);
+  }
+
   // 2. Protected Admin Dashboard Routes - STRICT AUTHORIZATION (NO PUBLIC / CUSTOMER ACCESS)
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
       const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("tab", "admin");
       loginUrl.searchParams.set("redirectTo", pathname + search);
       loginUrl.searchParams.set("reason", "admin_login_required");
       return NextResponse.redirect(loginUrl);
@@ -58,6 +76,7 @@ export async function middleware(request: NextRequest) {
 
     if (!isStaff) {
       const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("tab", "admin");
       loginUrl.searchParams.set("redirectTo", pathname + search);
       loginUrl.searchParams.set("error", "admin_required");
       return NextResponse.redirect(loginUrl);

@@ -48,12 +48,14 @@ export interface ProductVariation {
  */
 const fetchAllAttributesWithValuesUncached = async (): Promise<ProductAttribute[]> => {
   try {
-    const [attrRows] = await pool.query<RowDataPacket[]>(
-      "SELECT id, name, slug FROM product_attributes ORDER BY id ASC"
-    );
-    const [valRows] = await pool.query<RowDataPacket[]>(
-      "SELECT id, attribute_id, value, slug, color_code FROM product_attribute_values ORDER BY id ASC"
-    );
+    const [[attrRows], [valRows]] = await Promise.all([
+      pool.query<RowDataPacket[]>(
+        "SELECT id, name, slug FROM product_attributes ORDER BY id ASC"
+      ),
+      pool.query<RowDataPacket[]>(
+        "SELECT id, attribute_id, value, slug, color_code FROM product_attribute_values ORDER BY id ASC"
+      ),
+    ]);
 
     const valuesByAttr = new Map<number, ProductAttributeValue[]>();
     for (const v of valRows) {

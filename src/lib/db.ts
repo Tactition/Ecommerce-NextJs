@@ -23,8 +23,6 @@ const pool =
     charset: "utf8mb4",
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.mysqlPool = pool;
-}
+globalForDb.mysqlPool = pool;
 
 export default pool;

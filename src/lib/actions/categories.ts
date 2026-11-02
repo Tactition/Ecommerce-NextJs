@@ -181,6 +181,7 @@ export async function saveCategoryAction(formData: FormData) {
     }
 
     revalidatePath("/");
+    revalidatePath("/shop");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/categories");
     revalidateTag("categories");
@@ -197,6 +198,7 @@ export async function deleteCategoryAction(id: number) {
   try {
     await pool.execute<ResultSetHeader>("DELETE FROM product_categories WHERE id = ?", [id]);
     revalidatePath("/");
+    revalidatePath("/shop");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/categories");
     revalidateTag("categories");
@@ -213,6 +215,7 @@ export async function toggleCategoryStatusAction(id: number, currentActive: bool
   try {
     await pool.execute<ResultSetHeader>("UPDATE product_categories SET is_active = ? WHERE id = ?", [nextActive, id]);
     revalidatePath("/");
+    revalidatePath("/shop");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/categories");
     revalidateTag("categories");

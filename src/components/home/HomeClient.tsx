@@ -66,31 +66,8 @@ function renderCategoryIcon(iconType: string) {
 }
 
 const getCategoryCoverImage = (cat: ProductCategory): string => {
-  if (cat.image && cat.image.trim() !== "") return cat.image;
-  const slug = (cat.slug || "").toLowerCase();
-  const name = (cat.name || "").toLowerCase();
-  if (slug.includes("furniture") || name.includes("furniture") || slug.includes("sofa") || slug.includes("chair")) {
-    return "/assets/images/top-deals-item/topDealsItemThumb1_5.png";
-  }
-  if (slug.includes("wall") || name.includes("wall") || slug.includes("panel")) {
-    return "/assets/images/top-deals-item/topDealsItemThumb1_2.png";
-  }
-  if (slug.includes("light") || name.includes("light") || slug.includes("lamp") || slug.includes("chandelier")) {
-    return "/assets/images/top-deals-item/topDealsItemThumb1_3.png";
-  }
-  if (slug.includes("kitchen") || name.includes("kitchen") || slug.includes("wardrobe")) {
-    return "/assets/images/best-seller/bestSellerProductThumb1_5.png";
-  }
-  if (slug.includes("curtain") || name.includes("curtain") || slug.includes("drape") || slug.includes("blind")) {
-    return "/uploads/1793381276807_curtians_d8c04e9ccaa1ee15.webp";
-  }
-  if (slug.includes("decor") || name.includes("decor") || slug.includes("rug") || slug.includes("furnishing")) {
-    return "/assets/images/best-seller/bestSellerProductThumb1_7.png";
-  }
-  if (slug.includes("hardware") || name.includes("hardware") || slug.includes("fitting") || slug.includes("hinge")) {
-    return "/assets/images/top-deals-item/topDealsItemThumb1_8.png";
-  }
-  return "/assets/images/top-deals-item/topDealsItemThumb1_1.png";
+  if (cat.image && cat.image.trim() !== "") return cat.image.trim();
+  return "";
 };
 
 interface HomeClientProps {
@@ -267,28 +244,7 @@ export default function HomeClient({
     } else if (featuredProducts.length > 0) {
       setQuickViewProduct(featuredProducts[0]);
     } else {
-      setQuickViewProduct({
-        id: 999,
-        name: "High-Neck puff jacket",
-        slug: "high-neck-puff-jacket",
-        category_slug: "gadget",
-        category_name: "Gadgets",
-        short_description: "Aliquam hendrerit a augue insuscipit. Etiam aliquam massa quis des mauris commodo venenatis ligula commodo leez sed blandit convallis dignissim onec vel pellentesque neque.",
-        description: "Aliquam hendrerit a augue insuscipit. Etiam aliquam massa quis des mauris commodo venenatis ligula commodo leez sed blandit convallis dignissim onec vel pellentesque neque.",
-        price: 99.0,
-        original_price: 135.0,
-        discount_percent: 25,
-        rating: 5,
-        reviews_count: 2,
-        image: "/assets/images/shop-details/shop-details-thumb.png?v=2",
-        badge: "New",
-        brand: "EcomArts",
-        is_best_seller: true,
-        is_featured: true,
-        is_popular: true,
-        is_on_sale: true,
-        stock: 50,
-      });
+      return;
     }
     setModalQty(1);
   };
@@ -506,6 +462,9 @@ export default function HomeClient({
                               <img
                                 src={heroSlideImages[heroSlide]}
                                 alt="thumb"
+                                fetchPriority="high"
+                                loading="eager"
+                                decoding="async"
                                 style={{ borderRadius: "24px", maxWidth: "100%", objectFit: "cover" }}
                               />
                             </div>
@@ -756,20 +715,40 @@ export default function HomeClient({
                             }
                           }}
                         >
-                          {/* Full-bleed Category Image */}
-                          <img
-                            src={coverImage}
-                            alt={cat.name}
-                            className="wsi-cat-bg"
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-                            }}
-                          />
+                          {/* Full-bleed Category Image or Luxury Icon Pattern */}
+                          {coverImage ? (
+                            <img
+                              src={coverImage}
+                              alt={cat.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="wsi-cat-bg"
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                width: "100%",
+                                height: "100%",
+                                background: "radial-gradient(circle at 50% 35%, rgba(212, 175, 55, 0.15) 0%, rgba(15, 23, 42, 1) 75%)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingBottom: "50px",
+                              }}
+                            >
+                              {renderCategoryIcon(cat.icon_type)}
+                            </div>
+                          )}
 
                           {/* Gradient Vignette Overlay for Crisp Legibility */}
                           <div
@@ -889,82 +868,91 @@ export default function HomeClient({
       {/* ================================================================
           4. BEST SELLER SECTION (lines 1150-1920 of index.html)
       ================================================================ */}
-      <section className="best-seller-section section-padding fix bg-1 gsap-scroll-section">
-        <div className="container">
-          <div className="wsi-section-header-split">
-            <div className="wsi-section-title-wrap">
-              <div className="wsi-section-subtitle">
-                <i className="fa-solid fa-sparkles"></i>
-                <span>Best Deals</span>
+      {activeBestSellerList && activeBestSellerList.length > 0 && (
+        <section className="best-seller-section section-padding fix bg-1 gsap-scroll-section">
+          <div className="container">
+            <div className="wsi-section-header-split">
+              <div className="wsi-section-title-wrap">
+                <div className="wsi-section-subtitle">
+                  <i className="fa-solid fa-sparkles"></i>
+                  <span>Best Deals</span>
+                </div>
+                <TextType
+                  as="h2"
+                  className="wsi-section-title"
+                  text={["Best Sellers", "Top Selling Products", "Most Loved Furniture"]}
+                  typingSpeed={60}
+                  pauseDuration={2400}
+                  deletingSpeed={35}
+                  deleteMode="backspace"
+                  typeEffect="fade"
+                  cursorStyle="bar"
+                  cursorColor="var(--color-primary, #FF4035)"
+                  cursorGlide
+                  showCursor
+                />
               </div>
-              <TextType
-                as="h2"
-                className="wsi-section-title"
-                text={["Best Sellers", "Top Selling Products", "Most Loved Furniture"]}
-                typingSpeed={60}
-                pauseDuration={2400}
-                deletingSpeed={35}
-                deleteMode="backspace"
-                typeEffect="fade"
-                cursorStyle="bar"
-                cursorColor="var(--color-primary, #FF4035)"
-                cursorGlide
-                showCursor
-              />
-            </div>
-            <div className="wsi-section-header-right d-flex flex-wrap align-items-center gap-3">
-              <div className="d-flex align-items-center gap-2 wsi-scrollable-tabs">
-                <button
-                  className={`wsi-nav-pill-btn ${bestSellerTab === "latest" ? "active" : ""}`}
-                  type="button"
-                  onClick={() => setBestSellerTab("latest")}
-                >
-                  Latest
-                </button>
-                <button
-                  className={`wsi-nav-pill-btn ${bestSellerTab === "popular" ? "active" : ""}`}
-                  type="button"
-                  onClick={() => setBestSellerTab("popular")}
-                >
-                  Popular
-                </button>
-                <button
-                  className={`wsi-nav-pill-btn ${bestSellerTab === "onsale" ? "active" : ""}`}
-                  type="button"
-                  onClick={() => setBestSellerTab("onsale")}
-                >
-                  On-sale
-                </button>
+              <div className="wsi-section-header-right d-flex flex-wrap align-items-center gap-3">
+                <div className="d-flex align-items-center gap-2 wsi-scrollable-tabs">
+                  <button
+                    className={`wsi-nav-pill-btn ${bestSellerTab === "latest" ? "active" : ""}`}
+                    type="button"
+                    onClick={() => setBestSellerTab("latest")}
+                  >
+                    Latest
+                  </button>
+                  <button
+                    className={`wsi-nav-pill-btn ${bestSellerTab === "popular" ? "active" : ""}`}
+                    type="button"
+                    onClick={() => setBestSellerTab("popular")}
+                  >
+                    Popular
+                  </button>
+                  <button
+                    className={`wsi-nav-pill-btn ${bestSellerTab === "onsale" ? "active" : ""}`}
+                    type="button"
+                    onClick={() => setBestSellerTab("onsale")}
+                  >
+                    On-sale
+                  </button>
+                </div>
+                <Link className="theme-btn style7" href="/shop">
+                  View all
+                </Link>
               </div>
-              <Link className="theme-btn style7" href="/shop">
-                View all
-              </Link>
             </div>
-          </div>
 
-          <div className="row">
-            <div className="col-12">
-              <div className="tab-content" id="pills-tabContent">
-                <div className="tab-pane fade show active">
-                  <div className="best-seller-tab-content-wrapper">
-                    <div className="row g-3 g-md-4">
-                      {activeBestSellerList.slice(0, 8).map((product, idx) => (
-                        <div key={product.id || idx} className="col-xl-3 col-md-6 col-6">
-                          <div className="wsi-best-seller-card">
-                            <div className="wsi-best-seller-card__thumb">
-                              <Link href={`/product/${product.slug}`} className="d-block w-100 h-100">
-                                <img
-                                  src={product.image || `/assets/images/top-deals-item/topDealsItemThumb1_${(idx % 8) + 1}.png?v=2`}
-                                  alt={product.name}
-                                  className="wsi-best-seller-card__img"
-                                />
-                              </Link>
-                              {Boolean(product.discount_percent && product.discount_percent > 0) && (
-                                <span className="wsi-best-seller-card__badge">
-                                  -{product.discount_percent}%
-                                </span>
-                              )}
-                            </div>
+            <div className="row">
+              <div className="col-12">
+                <div className="tab-content" id="pills-tabContent">
+                  <div className="tab-pane fade show active">
+                    <div className="best-seller-tab-content-wrapper">
+                      <div className="row g-3 g-md-4">
+                        {activeBestSellerList.slice(0, 8).map((product, idx) => (
+                          <div key={product.id || idx} className="col-xl-3 col-md-6 col-6">
+                            <div className="wsi-best-seller-card">
+                              <div className="wsi-best-seller-card__thumb">
+                                <Link href={`/product/${product.slug}`} className="d-block w-100 h-100">
+                                  {product.image ? (
+                                    <img
+                                      src={product.image}
+                                      alt={product.name}
+                                      loading="lazy"
+                                      decoding="async"
+                                      className="wsi-best-seller-card__img"
+                                    />
+                                  ) : (
+                                    <div style={{ width: "100%", height: "100%", minHeight: "180px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                                      <i className="fa-solid fa-couch" style={{ fontSize: "2rem" }}></i>
+                                    </div>
+                                  )}
+                                </Link>
+                                {Boolean(product.discount_percent && product.discount_percent > 0) && (
+                                  <span className="wsi-best-seller-card__badge">
+                                    -{product.discount_percent}%
+                                  </span>
+                                )}
+                              </div>
                             <div className="wsi-best-seller-card__content">
                               {product.category_name && (
                                 <span className="wsi-best-seller-card__cat">{product.category_name}</span>
@@ -1076,17 +1064,25 @@ export default function HomeClient({
               </div>
               <div className="col-lg-6">
                 <div className="video-thumb text-center">
-                  <img src="/assets/images/video/drone.png?v=2" alt="Thumb" style={{ maxWidth: "100%", maxHeight: "320px", objectFit: "contain" }} />
+                  <img
+                    src="/assets/images/video/drone.png?v=2"
+                    alt="Thumb"
+                    loading="lazy"
+                    decoding="async"
+                    style={{ maxWidth: "100%", maxHeight: "320px", objectFit: "contain" }}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+      )}
 
       {/* ================================================================
           5. FEATURED PRODUCTS SECTION (lines 1923-3448 of index.html)
       ================================================================ */}
+      {featuredProducts && featuredProducts.length > 0 && (
       <section className="featured-product-section section-padding fix gsap-scroll-section" id="featured-products">
         <div className="container">
           <div className="featured-product-wrapper style1">
@@ -1164,11 +1160,19 @@ export default function HomeClient({
                         <div className="wsi-featured-card">
                           <div className="wsi-featured-card__thumb-wrapper">
                             <Link href={`/product/${product.slug}`} className="d-block w-100 h-100">
-                              <img
-                                src={product.image || `/assets/images/best-seller/bestSellerProductThumb1_${(idx % 8) + 1}.png?v=2`}
-                                alt={product.name}
-                                className="wsi-featured-card__img"
-                              />
+                              {product.image ? (
+                                <img
+                                  src={product.image}
+                                  alt={product.name}
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="wsi-featured-card__img"
+                                />
+                              ) : (
+                                <div style={{ width: "100%", height: "100%", minHeight: "180px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                                  <i className="fa-solid fa-shapes" style={{ fontSize: "2rem" }}></i>
+                                </div>
+                              )}
                             </Link>
                             {Boolean(product.discount_percent && product.discount_percent > 0) && (
                               <span className="wsi-featured-card__badge">
@@ -1250,133 +1254,96 @@ export default function HomeClient({
           </div>
         </div>
       </section>
+      )}
 
       {/* ================================================================
-          6. PROMO SECTION (lines 3450-3492 of index.html)
+          6. PROMO SECTION (Database Driven from homepage_promos)
       ================================================================ */}
-      {(() => {
-        const promo1 = promos[0] || {
-          badge: "GET 30% OFF",
-          title: "New Power Double",
-          image: "/assets/images/offer/promo1.png?v=2",
-          link_url: "/shop",
-          link_label: "View All",
-        };
-        const promo2 = promos[1] || {
-          badge: "LIMITED OFFER",
-          title: "Don't Miss 25% Off On All Item",
-          image: "/assets/images/offer/promo2.png?v=2",
-          link_url: "/shop",
-          link_label: "View All",
-        };
-
-        return (
-          <section className="promo-section section-padding fix pt-0 gsap-scroll-section">
-            <div className="container">
-              <div className="promo-wrapper style1">
-                <div className="row g-4">
-                  <div className="col-lg-5">
-                    <div className="promo-card promo-card_1">
-                      <div className="thumb">
-                        <img
-                          src={promo1.image || "/assets/images/offer/promo1.png?v=2"}
-                          alt={promo1.title}
-                          style={{ maxWidth: "100%", height: "240px", objectFit: "contain" }}
-                        />
-                      </div>
-                      <div className="promo-content">
-                        <div className="promo-info">
-                          {promo1.badge && <p className="offer-text">{promo1.badge}</p>}
-                          <h3 className="promo-title">{promo1.title}</h3>
-                        </div>
-                        <div className="promo-btn-wrapper">
-                          <Link className="theme-btn style5" href={promo1.button_link || "/shop"}>
-                            {promo1.button_text || "View All"}
-                          </Link>
+      {promos && promos.length > 0 && (
+        <section className="promo-section section-padding fix pt-0 gsap-scroll-section">
+          <div className="container">
+            <div className="promo-wrapper style1">
+              <div className="row g-4">
+                {promos.slice(0, 2).map((promo, pIdx) => {
+                  const colClass = pIdx === 0 && promos.length > 1 ? "col-lg-5" : promos.length === 1 ? "col-lg-12" : "col-lg-7";
+                  const cardClass = pIdx === 0 ? "promo-card promo-card_1" : "promo-card promo-card_2";
+                  return (
+                    <div key={promo.id || pIdx} className={colClass}>
+                      <div className={cardClass}>
+                        {promo.image && (
+                          <div className="thumb">
+                            <img
+                              src={promo.image}
+                              alt={promo.title}
+                              loading="lazy"
+                              decoding="async"
+                              style={{ maxWidth: "100%", height: "240px", objectFit: "contain" }}
+                            />
+                          </div>
+                        )}
+                        <div className="promo-content">
+                          <div className="promo-info">
+                            {promo.badge && <p className="offer-text">{promo.badge}</p>}
+                            <h3 className="promo-title">{promo.title}</h3>
+                            {promo.description && <p style={{ color: "#64748B", fontSize: "0.95rem", margin: "6px 0 0" }}>{promo.description}</p>}
+                          </div>
+                          <div className="promo-btn-wrapper">
+                            <Link className="theme-btn style5" href={promo.button_link || "/shop"}>
+                              {promo.button_text || "View All"}
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="col-lg-7">
-                    <div className="promo-card promo-card_2">
-                      <div className="thumb">
-                        <img
-                          src={promo2.image || "/assets/images/offer/promo2.png?v=2"}
-                          alt={promo2.title}
-                          style={{ maxWidth: "100%", height: "240px", objectFit: "contain" }}
-                        />
-                      </div>
-                      <div className="promo-content">
-                        <div className="promo-info">
-                          {promo2.badge && <p className="offer-text">{promo2.badge}</p>}
-                          <h3 className="promo-title">{promo2.title}</h3>
-                        </div>
-                        <div className="promo-btn-wrapper">
-                          <Link className="theme-btn style5" href={promo2.button_link || "/shop"}>
-                            {promo2.button_text || "View All"}
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
-          </section>
-        );
-      })()}
+          </div>
+        </section>
+      )}
 
       {/* ================================================================
-          7. CTA BUNDLE SECTION (lines 3494-3526 of index.html)
+          7. CTA BUNDLE SECTION (Controlled by Homepage Settings)
       ================================================================ */}
-      <section className="cta-section fix bg-color2 gsap-scroll-section">
-        <div className="container">
-          <div className="row">
-            <div className="col-12">
-              <div
-                className="cta-wrapper style1"
-                style={{ backgroundImage: "url(/assets/images/cta/ctaBg1_1.jpg)" }}
-              >
-                <div className="cta-main-content">
-                  <h2>get Bundle products offer</h2>
-                  <p>
-                    Ullamcorper velit sed ullamcorper morbi. Risus commodo viverra maecenas <br />
-                    accumsan lacus vel facilisis volutpat.
-                  </p>
-                  <div className="promo-btn-wrapper">
-                    <Link className="theme-btn style5" href={homepageSettings?.bundle_offer_button_link || "/shop"}>
-                      {homepageSettings?.bundle_offer_button_text || "View All"}
-                    </Link>
+      {Boolean(homepageSettings?.bundle_offer_title) && (
+        <section className="cta-section fix bg-color2 gsap-scroll-section">
+          <div className="container">
+            <div className="row">
+              <div className="col-12">
+                <div
+                  className="cta-wrapper style1"
+                  style={{ backgroundImage: "url(/assets/images/cta/ctaBg1_1.jpg)" }}
+                >
+                  <div className="cta-main-content">
+                    <h2>{homepageSettings?.bundle_offer_title}</h2>
+                    <p>
+                      {homepageSettings?.bundle_offer_subtitle || "Curated package selections and bespoke furniture combinations at preferential rates."}
+                    </p>
+                    <div className="promo-btn-wrapper">
+                      <Link className="theme-btn style5" href={homepageSettings?.bundle_offer_button_link || "/shop"}>
+                        {homepageSettings?.bundle_offer_button_text || "View All"}
+                      </Link>
+                    </div>
                   </div>
-                </div>
-                <div className="shape-1">
-                  <div className="thumb">
-                    <img
-                      src="/assets/images/cta/cta-shape1_1.jpg?v=2"
-                      alt="Shape"
-                      style={{ width: "205px", height: "205px", objectFit: "cover", borderRadius: "12px" }}
-                    />
-                    <div className="badge">25% OFF</div>
-                  </div>
-                </div>
-                <div className="shape-2">
-                  <div className="thumb">
-                    <img
-                      src="/assets/images/cta/ctaThumb1_1.png?v=2"
-                      alt="thumb"
-                      style={{ maxWidth: "300px", maxHeight: "210px", objectFit: "contain" }}
-                    />
-                  </div>
+                  {Boolean(homepageSettings?.bundle_offer_badge) && (
+                    <div className="shape-1">
+                      <div className="thumb" style={{ background: "rgba(255,255,255,0.1)", borderRadius: "12px", padding: "20px" }}>
+                        <div className="badge">{homepageSettings?.bundle_offer_badge}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ================================================================
           8. POPULAR PRODUCT SECTION (PRODUCTS OF THE WEEK) (lines 3528-3767 of index.html)
       ================================================================ */}
+      {(weeklyDealProducts.length > 0 || (featuredProducts && featuredProducts.length > 0)) && (
       <div className="popular-product-section section-padding bg-color2 fix" id="hot-sell-section">
         <div className="container">
           <div className="wsi-section-header-split">
@@ -1457,10 +1424,18 @@ export default function HomeClient({
                     </div>
                     <div className="wsi-hot-deal-banner__thumb">
                       <Link href={`/product/${prod1.slug}`} className="d-block w-100 h-100">
-                        <img
-                          src={prod1.image || "/assets/images/popular-products/popularProductsThumb1_1.png?v=2"}
-                          alt={prod1.name}
-                        />
+                        {prod1.image ? (
+                          <img
+                            src={prod1.image}
+                            alt={prod1.name}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", minHeight: "180px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                            <i className="fa-solid fa-fire" style={{ fontSize: "2rem" }}></i>
+                          </div>
+                        )}
                       </Link>
                     </div>
                   </div>
@@ -1513,10 +1488,18 @@ export default function HomeClient({
                     </div>
                     <div className="wsi-hot-deal-banner__thumb">
                       <Link href={`/product/${prod2.slug}`} className="d-block w-100 h-100">
-                        <img
-                          src={prod2.image || "/assets/images/popular-products/popularProductsThumb1_2.png?v=2"}
-                          alt={prod2.name}
-                        />
+                        {prod2.image ? (
+                          <img
+                            src={prod2.image}
+                            alt={prod2.name}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", minHeight: "180px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                            <i className="fa-solid fa-fire" style={{ fontSize: "2rem" }}></i>
+                          </div>
+                        )}
                       </Link>
                     </div>
                   </div>
@@ -1537,11 +1520,19 @@ export default function HomeClient({
                   <div key={vProd.id || vIdx} className="wsi-hot-deal-card">
                     <div className="wsi-hot-deal-card__thumb-wrap">
                       <Link href={`/product/${vProd.slug}`} className="d-block w-100 h-100">
-                        <img
-                          src={vProd.image || `/assets/images/popular-products/popularProductsThumb1_${vIdx + 3}.png?v=2`}
-                          alt={vProd.name}
-                          className="wsi-hot-deal-card__img"
-                        />
+                        {vProd.image ? (
+                          <img
+                            src={vProd.image}
+                            alt={vProd.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="wsi-hot-deal-card__img"
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", minHeight: "140px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                            <i className="fa-solid fa-fire" style={{ fontSize: "1.5rem" }}></i>
+                          </div>
+                        )}
                       </Link>
                       {Boolean(vProd.discount_percent && vProd.discount_percent > 0) && (
                         <span className="wsi-hot-deal-card__badge">
@@ -1662,10 +1653,12 @@ export default function HomeClient({
           </div>
         </div>
       </div>
+      )}
 
       {/* ================================================================
           9. TESTIMONIAL SECTION (lines 3770-3919 of index.html)
       ================================================================ */}
+      {testimonials && testimonials.length > 0 && (
       <section className="testimonial-section fix section-padding margin-bottom-40 gsap-scroll-section" id="testimonials">
         <div className="container">
           <div className="wsi-section-header text-center">
@@ -1691,48 +1684,53 @@ export default function HomeClient({
             </div>
           </div>
           <div className="row g-4">
-            {testimonials && testimonials.length > 0 ? (
-              testimonials.map((t, idx) => (
-                <div key={t.id || idx} className="col-lg-4 col-md-6">
-                  <div className="testimonial-card-items-one">
-                    <p>{t.content}</p>
-                    <div className="client-info-wrapper d-flex align-items-center justify-content-between">
-                      <div className="client-info">
-                        <div
-                          className="client-img bg-cover"
-                          style={{
-                            backgroundImage: `url('${t.avatar || `/assets/images/testimonial/testimonialProfileThumb1_${(idx % 3) + 1}.jpg?v=2`}')`,
-                          }}
-                        >
+            {testimonials.map((t, idx) => (
+              <div key={t.id || idx} className="col-lg-4 col-md-6">
+                <div className="testimonial-card-items-one">
+                  <p>{t.content}</p>
+                  <div className="client-info-wrapper d-flex align-items-center justify-content-between">
+                    <div className="client-info">
+                      <div
+                        className="client-img bg-cover"
+                        style={{
+                          backgroundImage: t.avatar ? `url('${t.avatar}')` : undefined,
+                          backgroundColor: t.avatar ? undefined : "#0F172A",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {!t.avatar ? (
+                          <span style={{ color: "#D4AF37", fontWeight: 700, fontSize: "1.2rem" }}>
+                            {t.customer_name?.charAt(0) || "C"}
+                          </span>
+                        ) : (
                           <div className="icon">
                             <img className="shape" src="/assets/images/shape/shape.svg" alt="img" />
                           </div>
-                        </div>
-                        <div className="content">
-                          <h3>{t.customer_name}</h3>
-                          <span>{t.customer_role || "Verified Customer"}</span>
-                          <div className="star">
-                            {[...Array(5)].map((_, i) => (
-                              <i
-                                key={i}
-                                className={i < (t.rating || 5) ? "fa-solid fa-star" : "fa-regular fa-star"}
-                              ></i>
-                            ))}
-                          </div>
+                        )}
+                      </div>
+                      <div className="content">
+                        <h3>{t.customer_name}</h3>
+                        <span>{t.customer_role || "Verified Customer"}</span>
+                        <div className="star">
+                          {[...Array(5)].map((_, i) => (
+                            <i
+                              key={i}
+                              className={i < (t.rating || 5) ? "fa-solid fa-star" : "fa-regular fa-star"}
+                            ></i>
+                          ))}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="col-12 text-center text-muted py-4">
-                No customer testimonials published yet.
               </div>
-            )}
+            ))}
           </div>
         </div>
       </section>
+      )}
 
       {/* ================================================================
           9.5. FEATURED GALLERY & SHOWCASE (FlexCarousel WebGL Liquid Lens)
@@ -1777,6 +1775,8 @@ export default function HomeClient({
                           <img
                             src="/assets/images/modal/common-modal.jpg?v=2"
                             alt="img"
+                            loading="lazy"
+                            decoding="async"
                             style={{ borderRadius: "12px", maxWidth: "100%", objectFit: "cover" }}
                           />
                         </div>
@@ -1792,7 +1792,7 @@ export default function HomeClient({
                           <form
                             onSubmit={(e) => {
                               e.preventDefault();
-                              alert("Thank you for subscribing! Your 20% discount code is: ECOMARTS20");
+                              alert("Thank you for subscribing! Your 20% discount code is: WALLSTREET20");
                               dismissNewsletter(true);
                             }}
                           >

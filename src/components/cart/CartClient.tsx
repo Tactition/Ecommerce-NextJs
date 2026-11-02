@@ -239,6 +239,8 @@ export default function CartClient() {
                                 <img
                                   src={item.image}
                                   alt={item.name}
+                                  loading="lazy"
+                                  decoding="async"
                                   style={{ width: "70px", height: "70px", objectFit: "cover", borderRadius: "8px" }}
                                 />
                               ) : (

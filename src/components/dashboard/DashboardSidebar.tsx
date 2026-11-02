@@ -18,6 +18,7 @@ import {
   FolderTree,
   Compass,
   Shield,
+  ShieldCheck,
   Users,
   KeyRound,
   LogOut,
@@ -70,6 +71,7 @@ export default function DashboardSidebar({
     { label: "Users & Team", href: "/dashboard/users", icon: Users, module: "users", adminOnly: true },
     { label: "Roles & Access", href: "/dashboard/roles", icon: KeyRound, module: "roles", adminOnly: true },
     { label: "Website Settings", href: "/dashboard/settings", icon: Settings, module: "settings", adminOnly: true },
+    { label: "Profile & Security", href: "/dashboard/account", icon: ShieldCheck },
   ];
 
   // Dynamically filter links based on user module:view permissions

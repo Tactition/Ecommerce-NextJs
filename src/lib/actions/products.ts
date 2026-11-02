@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { requirePermission } from "@/lib/rbac";
 import { productSchema } from "@/lib/validations";
 import { revalidatePath, unstable_cache, revalidateTag } from "next/cache";
+import { cache } from "react";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export interface Product {
@@ -71,7 +72,11 @@ function parseGalleryImages(val: unknown): string[] {
 const fetchBestSellerProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM products WHERE is_best_seller = 1 AND status = 'active' ORDER BY id DESC`
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+       FROM products
+       WHERE is_best_seller = 1 AND status = 'active'
+       ORDER BY id DESC
+       LIMIT 24`
     );
     return rows.map((r: RowDataPacket) => ({
       id: r.id,
@@ -79,21 +84,25 @@ const fetchBestSellerProductsUncached = async (): Promise<Product[]> => {
       slug: r.slug,
       category_slug: r.category_slug,
       category_name: r.category_name,
+      subcategory_slug: r.subcategory_slug || null,
+      subcategory_name: r.subcategory_name || null,
       short_description: r.short_description,
-      description: r.description,
+      description: null,
       price: Number(r.price),
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
-      gallery_images: parseGalleryImages(r.gallery_images),
+      gallery_images: [],
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
       is_featured: Boolean(r.is_featured),
       is_popular: Boolean(r.is_popular),
       is_on_sale: Boolean(r.is_on_sale),
+      has_variations: Boolean(r.has_variations),
+      allow_custom_sizing: Boolean(r.allow_custom_sizing),
       stock: Number(r.stock || 0),
       status: r.status,
     }));
@@ -116,7 +125,11 @@ export async function getBestSellerProducts(): Promise<Product[]> {
 const fetchFeaturedProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM products WHERE is_featured = 1 AND status = 'active' ORDER BY id DESC`
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+       FROM products
+       WHERE is_featured = 1 AND status = 'active'
+       ORDER BY id DESC
+       LIMIT 24`
     );
     return rows.map((r: RowDataPacket) => ({
       id: r.id,
@@ -124,21 +137,25 @@ const fetchFeaturedProductsUncached = async (): Promise<Product[]> => {
       slug: r.slug,
       category_slug: r.category_slug,
       category_name: r.category_name,
+      subcategory_slug: r.subcategory_slug || null,
+      subcategory_name: r.subcategory_name || null,
       short_description: r.short_description,
-      description: r.description,
+      description: null,
       price: Number(r.price),
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
-      gallery_images: parseGalleryImages(r.gallery_images),
+      gallery_images: [],
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
       is_featured: Boolean(r.is_featured),
       is_popular: Boolean(r.is_popular),
       is_on_sale: Boolean(r.is_on_sale),
+      has_variations: Boolean(r.has_variations),
+      allow_custom_sizing: Boolean(r.allow_custom_sizing),
       stock: Number(r.stock || 0),
       status: r.status,
     }));
@@ -165,7 +182,11 @@ export async function getFeaturedProducts(categorySlug?: string): Promise<Produc
 const fetchPopularProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM products WHERE is_popular = 1 AND status = 'active' ORDER BY id DESC`
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+       FROM products
+       WHERE is_popular = 1 AND status = 'active'
+       ORDER BY id DESC
+       LIMIT 24`
     );
     return rows.map((r: RowDataPacket) => ({
       id: r.id,
@@ -176,7 +197,7 @@ const fetchPopularProductsUncached = async (): Promise<Product[]> => {
       subcategory_slug: r.subcategory_slug || null,
       subcategory_name: r.subcategory_name || null,
       short_description: r.short_description,
-      description: r.description,
+      description: null,
       price: Number(r.price),
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
@@ -189,6 +210,8 @@ const fetchPopularProductsUncached = async (): Promise<Product[]> => {
       is_featured: Boolean(r.is_featured),
       is_popular: Boolean(r.is_popular),
       is_on_sale: Boolean(r.is_on_sale),
+      has_variations: Boolean(r.has_variations),
+      allow_custom_sizing: Boolean(r.allow_custom_sizing),
       stock: Number(r.stock || 0),
       status: r.status,
     }));
@@ -211,7 +234,11 @@ export async function getPopularProducts(): Promise<Product[]> {
 const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM products WHERE (is_on_sale = 1 OR discount_percent > 0) AND status = 'active' ORDER BY id DESC`
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing
+       FROM products
+       WHERE (is_on_sale = 1 OR discount_percent > 0) AND status = 'active'
+       ORDER BY id DESC
+       LIMIT 24`
     );
     return rows.map((r: RowDataPacket) => ({
       id: r.id,
@@ -222,7 +249,7 @@ const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
       subcategory_slug: r.subcategory_slug || null,
       subcategory_name: r.subcategory_name || null,
       short_description: r.short_description,
-      description: r.description,
+      description: null,
       price: Number(r.price),
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
@@ -235,6 +262,8 @@ const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
       is_featured: Boolean(r.is_featured),
       is_popular: Boolean(r.is_popular),
       is_on_sale: Boolean(r.is_on_sale),
+      has_variations: Boolean(r.has_variations),
+      allow_custom_sizing: Boolean(r.allow_custom_sizing),
       stock: Number(r.stock || 0),
       status: r.status,
     }));
@@ -372,7 +401,7 @@ const fetchProductBySlugUncached = async (slug: string): Promise<Product | null>
   }
 };
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
   if (process.env.NODE_ENV === "development") {
     return fetchProductBySlugUncached(slug);
   }
@@ -382,7 +411,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     { tags: ["products", `product-${slug}`], revalidate: 3600 }
   );
   return cachedFn(slug);
-}
+});
 
 const fetchProductsByIdsUncached = async (ids: number[]): Promise<Product[]> => {
   if (!ids || ids.length === 0) return [];
@@ -443,7 +472,10 @@ export async function getProductsByIds(ids: number[]): Promise<Product[]> {
 const fetchAllProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM products WHERE status = 'active' ORDER BY id ASC`
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, stock, status, has_variations, allow_custom_sizing, custom_size_rate, custom_size_unit, custom_size_min_price, custom_size_linear_mode
+       FROM products
+       WHERE status = 'active'
+       ORDER BY id ASC`
     );
     return rows.map((r: RowDataPacket) => ({
       id: r.id,
@@ -451,8 +483,10 @@ const fetchAllProductsUncached = async (): Promise<Product[]> => {
       slug: r.slug,
       category_slug: r.category_slug,
       category_name: r.category_name,
+      subcategory_slug: r.subcategory_slug || null,
+      subcategory_name: r.subcategory_name || null,
       short_description: r.short_description,
-      description: r.description,
+      description: null,
       price: Number(r.price),
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
@@ -467,6 +501,12 @@ const fetchAllProductsUncached = async (): Promise<Product[]> => {
       is_on_sale: Boolean(r.is_on_sale),
       stock: Number(r.stock || 0),
       status: r.status,
+      has_variations: Boolean(r.has_variations),
+      allow_custom_sizing: Boolean(r.allow_custom_sizing),
+      custom_size_rate: Number(r.custom_size_rate || 0),
+      custom_size_unit: r.custom_size_unit || "sq_ft",
+      custom_size_min_price: Number(r.custom_size_min_price || 0),
+      custom_size_linear_mode: r.custom_size_linear_mode || "length_plus_width",
     }));
   } catch (error) {
     console.error("Error fetching all products:", error);
@@ -671,7 +711,9 @@ export async function getAllProductsAdmin(): Promise<Product[]> {
   await requirePermission("products", "view");
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM products ORDER BY id DESC`
+      `SELECT id, name, slug, category_slug, category_name, subcategory_slug, subcategory_name, short_description, price, original_price, discount_percent, rating, reviews_count, image, badge, brand, is_best_seller, is_featured, is_popular, is_on_sale, has_variations, allow_custom_sizing, custom_size_rate, custom_size_unit, custom_size_min_price, custom_size_linear_mode, stock, status, created_at
+       FROM products
+       ORDER BY id DESC`
     );
     return rows.map((r: RowDataPacket) => ({
       id: r.id,
@@ -682,14 +724,14 @@ export async function getAllProductsAdmin(): Promise<Product[]> {
       subcategory_slug: r.subcategory_slug || null,
       subcategory_name: r.subcategory_name || null,
       short_description: r.short_description,
-      description: r.description,
+      description: null,
       price: Number(r.price),
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
       reviews_count: Number(r.reviews_count || 0),
       image: r.image,
-      gallery_images: parseGalleryImages(r.gallery_images),
+      gallery_images: [],
       badge: r.badge,
       brand: r.brand,
       is_best_seller: Boolean(r.is_best_seller),
@@ -874,6 +916,7 @@ export async function saveProductAction(formData: FormData) {
       savedId = insertRes.insertId;
     }
 
+    revalidateTag("products");
     revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/cart");
@@ -893,7 +936,9 @@ export async function deleteProductAction(id: number) {
   await requirePermission("products", "delete");
   try {
     await pool.execute<ResultSetHeader>("DELETE FROM products WHERE id = ?", [id]);
+    revalidateTag("products");
     revalidatePath("/");
+    revalidatePath("/shop");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/products");
     return { success: true };
@@ -908,7 +953,9 @@ export async function toggleProductStatusAction(id: number, currentStatus: strin
   const nextStatus = currentStatus === "active" ? "inactive" : "active";
   try {
     await pool.execute<ResultSetHeader>("UPDATE products SET status = ? WHERE id = ?", [nextStatus, id]);
+    revalidateTag("products");
     revalidatePath("/");
+    revalidatePath("/shop");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/products");
     return { success: true, status: nextStatus };

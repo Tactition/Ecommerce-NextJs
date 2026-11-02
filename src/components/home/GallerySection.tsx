@@ -9,6 +9,10 @@ interface GallerySectionProps {
 }
 
 export default function GallerySection({ gallery }: GallerySectionProps) {
+  if (!gallery || gallery.length === 0) {
+    return null;
+  }
+
   return (
     <section className="abid-section" style={{ backgroundColor: "#FFFFFF" }}>
       <Container>

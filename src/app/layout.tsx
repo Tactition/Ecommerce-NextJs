@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans, Outfit, Onest } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -6,6 +7,27 @@ import LayoutShell from "@/components/layout/LayoutShell";
 import { getSiteSettings } from "@/lib/actions/settings";
 import { getSession } from "@/lib/auth";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-primary",
+  display: "swap",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-heading",
+  display: "swap",
+});
+
+const onest = Onest({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-onest",
+  display: "swap",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -28,6 +50,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const favicon = settings.site_favicon || "/assets/images/favicon.png";
 
   return {
+    metadataBase: new URL(process.env.AUTH_URL || "http://localhost:3000"),
     title: {
       default: metaTitle,
       template: `%s | ${siteName}`,
@@ -66,18 +89,31 @@ export default async function RootLayout({
   const favicon = settings.site_favicon || "/assets/images/favicon.png";
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${plusJakarta.variable} ${outfit.variable} ${onest.variable}`}
+    >
       <head>
         <link rel="shortcut icon" href={favicon} />
+        {/* Preload critical icon font to prevent layout shift & delayed icons */}
+        <link
+          rel="preload"
+          href="/assets/webfonts/fa-solid-900.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/assets/webfonts/fa-regular-400.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        {/* Core Layout & Theme Stylesheets (unused legacy sheets purged) */}
         <link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
         <link rel="stylesheet" href="/assets/css/all.min.css" />
-        <link rel="stylesheet" href="/assets/css/icomoon-one.css" />
-        <link rel="stylesheet" href="/assets/css/animate.css" />
-        <link rel="stylesheet" href="/assets/css/splitting.css" />
-        <link rel="stylesheet" href="/assets/css/magnific-popup.css" />
-        <link rel="stylesheet" href="/assets/css/meanmenu.css" />
-        <link rel="stylesheet" href="/assets/css/swiper-bundle.min.css" />
-        <link rel="stylesheet" href="/assets/css/nice-select.css" />
         <link rel="stylesheet" href="/assets/css/main.css" />
       </head>
       <body suppressHydrationWarning>

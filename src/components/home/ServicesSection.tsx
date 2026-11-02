@@ -9,6 +9,10 @@ interface ServicesSectionProps {
 }
 
 export default function ServicesSection({ services }: ServicesSectionProps) {
+  if (!services || services.length === 0) {
+    return null;
+  }
+
   return (
     <section className="abid-section" style={{ backgroundColor: "#F8FAFC" }}>
       <Container>

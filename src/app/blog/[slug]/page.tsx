@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: BlogSlugProps): Promise<Metad
   };
 }
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function BlogPostPage({ params }: BlogSlugProps) {
   const { slug } = await params;
@@ -79,25 +79,29 @@ export default async function BlogPostPage({ params }: BlogSlugProps) {
                       <span style={{ color: "inherit" }}>{post.title}</span>
                     </h3>
 
-                    <div className="single-blog-post__thumb" style={{ borderRadius: "14px", overflow: "hidden", marginBottom: "30px" }}>
-                      <img
-                        src={post.featured_image || "/assets/images/blog/blog-details-thumb1_1.jpg"}
-                        alt={post.title}
-                        style={{ width: "100%", maxHeight: "500px", objectFit: "cover" }}
-                      />
-                      <div className="single-blog-post__thumb--post-date">
-                        <ul>
-                          <li>
-                            <i className="fa-regular fa-user"></i>
-                            By {post.author || "Admin"}
-                          </li>
-                          <li>
-                            <i className="fa-solid fa-calendar-days"></i>
-                            {formattedDate}
-                          </li>
-                        </ul>
+                    {post.featured_image && (
+                      <div className="single-blog-post__thumb" style={{ borderRadius: "14px", overflow: "hidden", marginBottom: "30px" }}>
+                        <img
+                          src={post.featured_image}
+                          alt={post.title}
+                          fetchPriority="high"
+                          decoding="async"
+                          style={{ width: "100%", maxHeight: "500px", objectFit: "cover" }}
+                        />
+                        <div className="single-blog-post__thumb--post-date">
+                          <ul>
+                            <li>
+                              <i className="fa-regular fa-user"></i>
+                              By {post.author || "Admin"}
+                            </li>
+                            <li>
+                              <i className="fa-solid fa-calendar-days"></i>
+                              {formattedDate}
+                            </li>
+                          </ul>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="single-blog-post__blog-details-content">
                       {/* Excerpt / Lead paragraph */}
@@ -113,28 +117,6 @@ export default async function BlogPostPage({ params }: BlogSlugProps) {
                         style={{ fontSize: "1.02rem", lineHeight: 1.85, color: "var(--text)", marginBottom: "30px" }}
                         dangerouslySetInnerHTML={{ __html: post.content }}
                       />
-
-                      {/* Supporting Detail Images */}
-                      <div className="row g-4 mb-30">
-                        <div className="col-lg-6">
-                          <div className="single-blog-post__blog-details-content--details-image" style={{ borderRadius: "12px", overflow: "hidden" }}>
-                            <img
-                              src="/assets/images/blog/blog-details-thumb1_2.jpg"
-                              alt="Diagnostic Lab"
-                              style={{ width: "100%", height: "260px", objectFit: "cover" }}
-                            />
-                          </div>
-                        </div>
-                        <div className="col-lg-6">
-                          <div className="single-blog-post__blog-details-content--details-image" style={{ borderRadius: "12px", overflow: "hidden" }}>
-                            <img
-                              src="/assets/images/blog/blog-details-thumb1_3.jpg"
-                              alt="Circuit Diagnostics"
-                              style={{ width: "100%", height: "260px", objectFit: "cover" }}
-                            />
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Highlight Quote Box */}
                       <div className="single-blog-post__blog-details-content--hilight-text">
@@ -178,62 +160,6 @@ export default async function BlogPostPage({ params }: BlogSlugProps) {
                     </div>
                   </div>
 
-                  {/* Comments Area */}
-                  <div className="blog-post-details__comments-area">
-                    <div className="blog-post-details__comments-area__comments-heading">
-                      <h3 className="blog-post-details__comments-area__comments-heading--title">
-                        02 Customer Comments
-                      </h3>
-                    </div>
-                    <div className="blog-post-details__comments-area__blog-single-comment">
-                      <div className="blog-post-details__comments-area__blog-single-comment--thumb">
-                        <img src="/assets/images/blog/blog-details-autho1.jpg" alt="Tariq Manzoor" />
-                      </div>
-                      <div className="blog-post-details__comments-area__blog-single-comment--content">
-                        <div className="head">
-                          <div className="con">
-                            <h5>Tariq Manzoor</h5>
-                            <span>June 18, 2024 at 11:20 am</span>
-                          </div>
-                          <div className="star">
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                          </div>
-                        </div>
-                        <p>
-                          Outstanding analysis. The acoustic slat wood panel installation guide gave our hotel lobby project in Srinagar the exact sound dampening and luxury warmth we envisioned. Highly appreciate the detailed material specifications!
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="blog-post-details__comments-area__blog-single-comment">
-                      <div className="blog-post-details__comments-area__blog-single-comment--thumb">
-                        <img src="/assets/images/blog/blog-details-autho2.jpg" alt="Sarah Jenkins" />
-                      </div>
-                      <div className="blog-post-details__comments-area__blog-single-comment--content">
-                        <div className="head">
-                          <div className="con">
-                            <h5>Sarah Jenkins</h5>
-                            <span>July 04, 2024 at 3:45 pm</span>
-                          </div>
-                          <div className="star">
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                            <i className="fa-solid fa-star"></i>
-                          </div>
-                        </div>
-                        <p>
-                          Wall Street Interiors is by far the most knowledgeable team in modern architectural finishes. Booked an on-site design consultation right after reading this article.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Interactive Comment Form with Instant Client Feedback */}
                   <BlogCommentForm />
                 </div>
@@ -255,37 +181,47 @@ export default async function BlogPostPage({ params }: BlogSlugProps) {
                   </div>
 
                   {/* Dynamic Recent Posts from Database */}
-                  <div className="single-sidebar-widget">
-                    <div className="single-sidebar-widget__wid-title">
-                      <h3 className="single-sidebar-widget__wid-title--title">Recent Articles</h3>
-                    </div>
-                    <div className="single-sidebar-widget__recent-post-area">
-                      {recentPosts.map((rPost) => (
-                        <div key={rPost.id} className="single-sidebar-widget__recent-post-area__recent-items">
-                          <div className="single-sidebar-widget__recent-post-area__recent-items--recent-thumb" style={{ width: "70px", height: "70px", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
-                            <Link href={`/blog/${rPost.slug}`}>
-                              <img
-                                src={rPost.featured_image || "/assets/images/blog/blog-recent-thumb1_1.jpg"}
-                                alt={rPost.title}
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                              />
-                            </Link>
+                  {recentPosts.length > 0 && (
+                    <div className="single-sidebar-widget">
+                      <div className="single-sidebar-widget__wid-title">
+                        <h3 className="single-sidebar-widget__wid-title--title">Recent Articles</h3>
+                      </div>
+                      <div className="single-sidebar-widget__recent-post-area">
+                        {recentPosts.map((rPost) => (
+                          <div key={rPost.id} className="single-sidebar-widget__recent-post-area__recent-items">
+                            <div className="single-sidebar-widget__recent-post-area__recent-items--recent-thumb" style={{ width: "70px", height: "70px", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
+                              <Link href={`/blog/${rPost.slug}`} style={{ display: "block", width: "100%", height: "100%" }}>
+                                {rPost.featured_image ? (
+                                  <img
+                                    src={rPost.featured_image}
+                                    alt={rPost.title}
+                                    loading="lazy"
+                                    decoding="async"
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  />
+                                ) : (
+                                  <div style={{ width: "100%", height: "100%", backgroundColor: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", color: "#D4AF37" }}>
+                                    <i className="fa-solid fa-newspaper" style={{ fontSize: "1.2rem" }}></i>
+                                  </div>
+                                )}
+                              </Link>
+                            </div>
+                            <div className="single-sidebar-widget__recent-post-area__recent-items--recent-content">
+                              <ul>
+                                <li>
+                                  <i className="fa-solid fa-calendar-days"></i>
+                                  {rPost.published_at ? new Date(rPost.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent"}
+                                </li>
+                              </ul>
+                              <h6>
+                                <Link href={`/blog/${rPost.slug}`}>{rPost.title}</Link>
+                              </h6>
+                            </div>
                           </div>
-                          <div className="single-sidebar-widget__recent-post-area__recent-items--recent-content">
-                            <ul>
-                              <li>
-                                <i className="fa-solid fa-calendar-days"></i>
-                                {rPost.published_at ? new Date(rPost.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent"}
-                              </li>
-                            </ul>
-                            <h6>
-                              <Link href={`/blog/${rPost.slug}`}>{rPost.title}</Link>
-                            </h6>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Recommended Topics */}
                   <div className="single-sidebar-widget">
@@ -298,21 +234,8 @@ export default async function BlogPostPage({ params }: BlogSlugProps) {
                         <Link href="/blog">Acoustic Paneling</Link>
                         <Link href="/blog">Modular Kitchens</Link>
                         <Link href="/blog">Architectural Lighting</Link>
-                        <Link href="/blog">Hardware & Finishes</Link>
+                        <Link href="/blog">Hardware &amp; Finishes</Link>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Sidebar Banner */}
-                  <div className="single-sidebar-widget">
-                    <div className="single-sidebar-widget__blog-thumb" style={{ borderRadius: "12px", overflow: "hidden" }}>
-                      <Link href="/contact">
-                        <img
-                          src="/assets/images/blog/blog-sidebar-thumb.jpg"
-                          alt="Book Diagnostic Inspection"
-                          style={{ width: "100%", objectFit: "cover" }}
-                        />
-                      </Link>
                     </div>
                   </div>
                 </div>

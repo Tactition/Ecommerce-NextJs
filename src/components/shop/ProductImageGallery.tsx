@@ -240,6 +240,8 @@ export default function ProductImageGallery({
           <img
             src={selectedImage}
             alt={`${productName} - Detail View ${currentIndex + 1}`}
+            fetchPriority="high"
+            decoding="async"
             className="wsi-gallery-stage__img"
             style={{
               filter: isHovering ? "blur(4px) brightness(0.88)" : "none",
@@ -352,6 +354,8 @@ export default function ProductImageGallery({
                   <img
                     src={imgSrc}
                     alt={`${productName} thumbnail ${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     className="wsi-thumb-img"
                   />
                   {isActive && <span className="wsi-thumb-active-indicator"></span>}

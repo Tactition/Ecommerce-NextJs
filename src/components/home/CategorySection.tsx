@@ -6,37 +6,18 @@ interface CategorySectionProps {
   categories: ProductCategory[];
 }
 
-const getCategoryFallbackImage = (slug?: string) => {
-  switch (slug) {
-    case "luxury-furniture":
-      return "/assets/images/top-deals-item/topDealsItemThumb1_5.png";
-    case "wall-treatments":
-      return "/assets/images/top-deals-item/topDealsItemThumb1_2.png";
-    case "lighting-fixtures":
-      return "/assets/images/top-deals-item/topDealsItemThumb1_3.png";
-    case "modular-kitchen":
-      return "/assets/images/best-seller/bestSellerProductThumb1_5.png";
-    case "decor-furnishings":
-      return "/assets/images/best-seller/bestSellerProductThumb1_7.png";
-    case "wholesale-hardware":
-      return "/assets/images/top-deals-item/topDealsItemThumb1_8.png";
-    case "curtains":
-      return "/uploads/1793381276807_curtians_d8c04e9ccaa1ee15.webp";
-    default:
-      return "/assets/images/top-deals-item/topDealsItemThumb1_1.png";
-  }
-};
-
 export default function CategorySection({ categories }: CategorySectionProps) {
-  const displayCategories = categories && categories.length > 0 ? categories : [];
+  if (!categories || categories.length === 0) {
+    return null;
+  }
 
   return (
     <section className="product-section section-padding fix" style={{ padding: "60px 0" }}>
       <div className="product-contianer-wrapper style1">
         <div className="container">
           <div className="row g-4 justify-content-center">
-            {displayCategories.map((cat) => {
-              const coverImage = cat.image || getCategoryFallbackImage(cat.slug);
+            {categories.map((cat) => {
+              const coverImage = cat.image?.trim() || "";
               return (
                 <div key={cat.id} className="col-xl-3 col-lg-4 col-md-6 col-sm-6">
                   <Link href={`/shop?category=${cat.slug}`} className="text-decoration-none d-block">
@@ -78,19 +59,37 @@ export default function CategorySection({ categories }: CategorySectionProps) {
                         }
                       }}
                     >
-                      {/* Full-bleed Category Image */}
-                      <img
-                        src={coverImage}
-                        alt={cat.name}
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-                        }}
-                      />
+                      {/* Full-bleed Category Image or Luxury Icon Pattern */}
+                      {coverImage ? (
+                        <img
+                          src={coverImage}
+                          alt={cat.name}
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            background: "radial-gradient(circle at 50% 35%, rgba(212, 175, 55, 0.15) 0%, rgba(15, 23, 42, 1) 75%)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            paddingBottom: "50px",
+                          }}
+                        >
+                          <i className="fa-solid fa-shapes" style={{ fontSize: "36px", color: "#D4AF37" }}></i>
+                        </div>
+                      )}
 
                       {/* Vignette Overlay */}
                       <div

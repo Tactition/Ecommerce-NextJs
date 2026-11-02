@@ -410,16 +410,16 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
           }}
         >
           <div className="shape1">
-            <img src="/assets/images/shape/breadcumb-shape1_1.png" alt="shape" />
+            <img src="/assets/images/shape/breadcumb-shape1_1.png" alt="shape" loading="lazy" decoding="async" />
           </div>
           <div className="shape2">
-            <img src="/assets/images/shape/breadcumb-shape1_2.png" alt="shape" />
+            <img src="/assets/images/shape/breadcumb-shape1_2.png" alt="shape" loading="lazy" decoding="async" />
           </div>
           <div className="shape3">
-            <img src="/assets/images/shape/breadcumb-shape1_3.png" alt="shape" />
+            <img src="/assets/images/shape/breadcumb-shape1_3.png" alt="shape" loading="lazy" decoding="async" />
           </div>
           <div className="shape4">
-            <img src="/assets/images/shape/breadcumb-shape1_4.png" alt="shape" />
+            <img src="/assets/images/shape/breadcumb-shape1_4.png" alt="shape" loading="lazy" decoding="async" />
           </div>
           <div className="container">
             <ul className="breadcumb-wrapper">
@@ -1301,6 +1301,7 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
                                   alt={p.name}
                                   className="wsi-shop-card__img"
                                   loading="lazy"
+                                  decoding="async"
                                 />
                               ) : (
                                 <div style={{ width: "100%", height: "220px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
@@ -1443,6 +1444,7 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
                                 alt={p.name}
                                 className="wsi-shop-list-card__img"
                                 loading="lazy"
+                                decoding="async"
                               />
                             ) : (
                               <div style={{ width: "180px", height: "180px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { Product } from "@/lib/actions/products";
 
@@ -15,18 +15,24 @@ export default function FeaturedProducts({
   onQuickView,
   onAddToCart,
 }: FeaturedProductsProps) {
+  if (!products || products.length === 0) {
+    return null;
+  }
+
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
   const [addedItem, setAddedItem] = useState<string | null>(null);
 
-  const categories = [
-    { label: "All", value: "all" },
-    { label: "Oven", value: "oven" },
-    { label: "Computer", value: "computer" },
-    { label: "Watch", value: "watch" },
-    { label: "Camera", value: "camera" },
-    { label: "Drone", value: "drone" },
-  ];
+  const categories = useMemo(() => {
+    const map = new Map<string, string>();
+    map.set("all", "All");
+    products.forEach((p) => {
+      if (p.category_slug && p.category_name) {
+        map.set(p.category_slug, p.category_name);
+      }
+    });
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [products]);
 
   const filteredProducts = products.filter((p) => {
     const matchCategory =

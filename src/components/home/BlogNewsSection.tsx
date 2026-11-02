@@ -41,111 +41,38 @@ function deriveCategory(title: string, excerpt?: string, index = 0): string {
   return defaults[index % defaults.length];
 }
 
-const fallbackBlogs: FormattedPost[] = [
-  {
-    id: 1,
-    title: "Top Interior Design Trends Defining Luxury Homes in 2026",
-    slug: "luxury-interior-design-trends-2026",
-    category: "Interior Trends",
-    image: "/assets/images/blog/blogThumb2_1.jpg",
-    publishedDate: "March 16, 2025",
-    readTime: "5 min read",
-    author: {
-      name: "Wall Street Editorial",
-      avatar: "/assets/images/team/team-thumb1_1.jpg",
-    },
-  },
-  {
-    id: 2,
-    title: "Acoustic Slat Wood Panels: Blending Sound Dampening with High Aesthetics",
-    slug: "acoustic-slat-wood-panels-guide",
-    category: "Wall Treatments",
-    image: "/assets/images/blog/blogThumb2_2.jpg",
-    publishedDate: "March 16, 2025",
-    readTime: "5 min read",
-    author: {
-      name: "Wall Street Editorial",
-      avatar: "/assets/images/team/team-thumb1_2.jpg",
-    },
-  },
-  {
-    id: 3,
-    title: "Veneer vs. Acrylic vs. PU Finish: Choosing the Perfect Modular Kitchen Surface",
-    slug: "veneer-acrylic-pu-modular-kitchen-guide",
-    category: "Modular Living",
-    image: "/assets/images/blog/blogThumb2_3.jpg",
-    publishedDate: "March 16, 2025",
-    readTime: "5 min read",
-    author: {
-      name: "Wall Street Editorial",
-      avatar: "/assets/images/team/team-thumb1_3.jpg",
-    },
-  },
-  {
-    id: 4,
-    title: "Bespoke Hardwood Furniture: Craftsmanship & Timeless Living Spaces",
-    slug: "bespoke-hardwood-furniture-craftsmanship-guide",
-    category: "Bespoke Furniture",
-    image: "/assets/images/blog/blogThumb2_4.jpg",
-    publishedDate: "March 16, 2025",
-    readTime: "5 min read",
-    author: {
-      name: "Wall Street Editorial",
-      avatar: "/assets/images/team/team-thumb1_4.jpg",
-    },
-  },
-];
-
 export default function BlogNewsSection({ posts }: BlogNewsSectionProps) {
-  const authorAvatars = [
-    "/assets/images/team/team-thumb1_1.jpg",
-    "/assets/images/team/team-thumb1_2.jpg",
-    "/assets/images/team/team-thumb1_3.jpg",
-    "/assets/images/team/team-thumb1_4.jpg",
-  ];
+  if (!posts || posts.length === 0) {
+    return null;
+  }
 
-  const fallbackImages = [
-    "/assets/images/blog/blogThumb2_1.jpg",
-    "/assets/images/blog/blogThumb2_2.jpg",
-    "/assets/images/blog/blogThumb2_3.jpg",
-    "/assets/images/blog/blogThumb2_4.jpg",
-  ];
+  const formattedPosts: FormattedPost[] = posts.slice(0, 4).map((post, idx) => {
+    const postDate = post.published_at || post.created_at;
+    const formattedDate = postDate
+      ? new Date(postDate).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+      : "";
 
-  let formattedPosts: FormattedPost[] = [];
+    return {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      category: post.category?.trim() || deriveCategory(post.title, post.excerpt, idx),
+      image: post.featured_image?.trim() || "",
+      publishedDate: formattedDate,
+      readTime: calculateReadTime(post.content, post.excerpt),
+      author: {
+        name: post.author?.trim() || "Wall Street Editorial",
+        avatar: post.author_avatar?.trim() || "",
+      },
+    };
+  });
 
-  if (posts && posts.length > 0) {
-    formattedPosts = posts.slice(0, 4).map((post, idx) => {
-      const postDate = post.published_at || post.created_at;
-      const formattedDate = postDate
-        ? new Date(postDate).toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })
-        : "March 16, 2025";
-
-      return {
-        id: post.id,
-        title: post.title,
-        slug: post.slug,
-        category: post.category?.trim() || deriveCategory(post.title, post.excerpt, idx),
-        image: post.featured_image || fallbackImages[idx % fallbackImages.length],
-        publishedDate: formattedDate,
-        readTime: calculateReadTime(post.content, post.excerpt),
-        author: {
-          name: post.author?.trim() || "Wall Street Editorial",
-          avatar: post.author_avatar?.trim() || authorAvatars[idx % authorAvatars.length],
-        },
-      };
-    });
-
-    // If there are fewer than 4 posts from DB, fill remaining slots from fallbackBlogs
-    if (formattedPosts.length < 4) {
-      const needed = 4 - formattedPosts.length;
-      formattedPosts = [...formattedPosts, ...fallbackBlogs.slice(4 - needed)];
-    }
-  } else {
-    formattedPosts = fallbackBlogs;
+  if (formattedPosts.length === 0) {
+    return null;
   }
 
   const featuredPost = formattedPosts[0];
@@ -190,11 +117,17 @@ export default function BlogNewsSection({ posts }: BlogNewsSectionProps) {
           <div className="v4-featured-left">
             <div className="v4-author-box">
               <div className="v4-author-avatar-wrap">
-                <img
-                  alt={featuredPost.author.name}
-                  className="v4-author-avatar-img"
-                  src={featuredPost.author.avatar}
-                />
+                {featuredPost.author.avatar ? (
+                  <img
+                    alt={featuredPost.author.name}
+                    className="v4-author-avatar-img"
+                    src={featuredPost.author.avatar}
+                  />
+                ) : (
+                  <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "#FF4035", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", background: "#F1F5F9" }}>
+                    {featuredPost.author.name?.charAt(0) || "W"}
+                  </span>
+                )}
               </div>
 
               <div className="v4-author-text">
@@ -238,10 +171,18 @@ export default function BlogNewsSection({ posts }: BlogNewsSectionProps) {
 
           <div className="v4-featured-image-container">
             <Link href={`/blog/${featuredPost.slug}`} style={{ display: "block", width: "100%", height: "100%" }}>
-              <img
-                alt={featuredPost.title}
-                src={featuredPost.image}
-              />
+              {featuredPost.image ? (
+                <img
+                  alt={featuredPost.title}
+                  src={featuredPost.image}
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div style={{ width: "100%", height: "100%", minHeight: "300px", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                  <i className="fa-solid fa-newspaper" style={{ fontSize: "3rem" }}></i>
+                </div>
+              )}
             </Link>
 
             <span className="v4-corner-tag font-onest">
@@ -283,81 +224,55 @@ export default function BlogNewsSection({ posts }: BlogNewsSectionProps) {
         </article>
 
         {/* Secondary 3-Column Posts Grid */}
-        <div className="v4-posts-grid">
-          {secondaryPosts.map((post) => (
-            <article
-              className="v4-grid-article"
-              key={post.title}
-            >
-              <div className="v4-thumb-wrapper">
-                <div className="v4-thumb-aspect">
-                  <Link href={`/blog/${post.slug}`} style={{ display: "block", width: "100%", height: "100%" }}>
-                    <img
-                      alt={post.title}
-                      src={post.image}
-                    />
-                  </Link>
+        {secondaryPosts.length > 0 && (
+          <div className="v4-posts-grid">
+            {secondaryPosts.map((post) => (
+              <article
+                className="v4-grid-article"
+                key={post.title}
+              >
+                <div className="v4-thumb-wrapper">
+                  <div className="v4-thumb-aspect">
+                    <Link href={`/blog/${post.slug}`} style={{ display: "block", width: "100%", height: "100%" }}>
+                      {post.image ? (
+                        <img
+                          alt={post.title}
+                          src={post.image}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                          <i className="fa-solid fa-newspaper" style={{ fontSize: "2rem" }}></i>
+                        </div>
+                      )}
+                    </Link>
+                  </div>
                 </div>
 
-                <span className="v4-corner-tag font-onest">
-                  {post.readTime}
-                  <div className="v4-cutout-top-left">
-                    <svg
-                      fill="none"
-                      height="8"
-                      viewBox="0 0 8 8"
-                      width="8"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        clipRule="evenodd"
-                        d="M8 0H0C4.41828 0 8 3.58172 8 8V0Z"
-                        fill="white"
-                        fillRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="v4-cutout-bottom-right">
-                    <svg
-                      fill="none"
-                      height="8"
-                      viewBox="0 0 8 8"
-                      width="8"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        clipRule="evenodd"
-                        d="M8 0H0C4.41828 0 8 3.58172 8 8V0Z"
-                        fill="white"
-                        fillRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                </span>
-              </div>
-
-              <div className="v4-grid-body">
-                <Link
-                  className="v4-grid-category font-onest"
-                  href={`/blog/${post.slug}`}
-                >
-                  <span style={{ position: "absolute", inset: 0, zIndex: 1 }} />
-                  {post.category}
-                </Link>
-
-                <h3 className="v4-grid-heading font-onest">
-                  <Link href={`/blog/${post.slug}`}>
-                    {post.title}
+                <div className="v4-grid-body">
+                  <Link
+                    className="v4-grid-category font-onest"
+                    href={`/blog/${post.slug}`}
+                  >
+                    <span style={{ position: "absolute", inset: 0, zIndex: 1 }} />
+                    {post.category}
                   </Link>
-                </h3>
 
-                <p className="v4-grid-published font-onest">
-                  Published on {post.publishedDate}
-                </p>
-              </div>
-            </article>
-          ))}
-        </div>
+                  <h3 className="v4-grid-heading font-onest">
+                    <Link href={`/blog/${post.slug}`}>
+                      {post.title}
+                    </Link>
+                  </h3>
+
+                  <p className="v4-grid-published font-onest">
+                    Published on {post.publishedDate}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
 
       </div>
     </section>

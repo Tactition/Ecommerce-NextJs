@@ -291,14 +291,18 @@ export default function EcommerceHeader({
   };
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      if (window.scrollY > 120) {
-        setIsSticky(true);
-      } else {
-        setIsSticky(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shouldBeSticky = window.scrollY > 120;
+          setIsSticky((prev) => (prev !== shouldBeSticky ? shouldBeSticky : prev));
+          ticking = false;
+        });
+        ticking = true;
       }
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -434,15 +438,21 @@ export default function EcommerceHeader({
             ) : (
               <div className="wsi-cat-sidebar__empty">
                 <i className="fa-regular fa-folder-open"></i>
-                <p>No categories match &ldquo;{categorySearchQuery}&rdquo;</p>
-                <button
-                  type="button"
-                  onClick={() => setCategorySearchQuery("")}
-                  className="theme-btn btn-sm"
-                  style={{ padding: "6px 14px", fontSize: "0.82rem" }}
-                >
-                  Clear Search
-                </button>
+                <p>
+                  {categorySearchQuery
+                    ? `No categories match "${categorySearchQuery}"`
+                    : "No categories published yet."}
+                </p>
+                {categorySearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCategorySearchQuery("")}
+                    className="theme-btn btn-sm"
+                    style={{ padding: "6px 14px", fontSize: "0.82rem" }}
+                  >
+                    Clear Search
+                  </button>
+                )}
               </div>
             )}
           </div>

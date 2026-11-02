@@ -9,6 +9,10 @@ interface BrandsSectionProps {
 }
 
 export default function BrandsSection({ brands }: BrandsSectionProps) {
+  if (!brands || brands.length === 0) {
+    return null;
+  }
+
   return (
     <section className="abid-section" style={{ backgroundColor: "#FFFFFF" }}>
       <Container>

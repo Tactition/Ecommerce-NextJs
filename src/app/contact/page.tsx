@@ -138,10 +138,10 @@ export default async function ContactPage() {
 
                   <div className="contact-info__icon">
                     <div className="icon-1">
-                      <img src="/assets/images/contact/shape-1.png" alt="icon" />
+                      <img src="/assets/images/contact/shape-1.png" alt="icon" loading="lazy" decoding="async" />
                     </div>
                     <div className="icon-2">
-                      <img src="/assets/images/contact/shape-2.png" alt="icon" />
+                      <img src="/assets/images/contact/shape-2.png" alt="icon" loading="lazy" decoding="async" />
                     </div>
                   </div>
                 </div>

@@ -11,6 +11,10 @@ interface BestSellersProps {
 }
 
 export default function BestSellers({ products, onQuickView, onAddToCart }: BestSellersProps) {
+  if (!products || products.length === 0) {
+    return null;
+  }
+
   const [activeTab, setActiveTab] = useState<"latest" | "popular" | "onsale">("latest");
   const [addedItem, setAddedItem] = useState<string | null>(null);
 

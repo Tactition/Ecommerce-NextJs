@@ -103,6 +103,7 @@ export async function saveTestimonialAction(formData: FormData) {
     }
 
     revalidatePath("/");
+    revalidatePath("/about");
     revalidatePath("/dashboard/testimonials");
     revalidateTag("testimonials");
 
@@ -119,6 +120,7 @@ export async function deleteTestimonialAction(id: number) {
   try {
     await pool.execute<ResultSetHeader>("DELETE FROM testimonials WHERE id = ?", [id]);
     revalidatePath("/");
+    revalidatePath("/about");
     revalidatePath("/dashboard/testimonials");
     revalidateTag("testimonials");
     return { success: true };

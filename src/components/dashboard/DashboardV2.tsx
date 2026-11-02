@@ -279,6 +279,7 @@ export default function DashboardV2({ stats, recentSubmissions, recentProducts }
         {/* KPI 0: Customer Orders */}
         <Link
           href="/dashboard/orders"
+          prefetch={true}
           style={{ textDecoration: "none", color: "inherit" }}
         >
           <div
@@ -334,6 +335,7 @@ export default function DashboardV2({ stats, recentSubmissions, recentProducts }
         {/* KPI 1: Products */}
         <Link
           href="/dashboard/products"
+          prefetch={true}
           style={{ textDecoration: "none", color: "inherit" }}
         >
           <div
@@ -389,6 +391,7 @@ export default function DashboardV2({ stats, recentSubmissions, recentProducts }
         {/* KPI 2: Categories */}
         <Link
           href="/dashboard/categories"
+          prefetch={true}
           style={{ textDecoration: "none", color: "inherit" }}
         >
           <div
@@ -444,6 +447,7 @@ export default function DashboardV2({ stats, recentSubmissions, recentProducts }
         {/* KPI 3: Menus */}
         <Link
           href="/dashboard/menus"
+          prefetch={true}
           style={{ textDecoration: "none", color: "inherit" }}
         >
           <div
@@ -499,6 +503,7 @@ export default function DashboardV2({ stats, recentSubmissions, recentProducts }
         {/* KPI 4: Inquiries & Submissions */}
         <Link
           href="/dashboard/submissions"
+          prefetch={true}
           style={{ textDecoration: "none", color: "inherit" }}
         >
           <div

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     "Explore luxury interior design guides, acoustic paneling trends, modular kitchen innovations, and architectural surface treatments by Wall Street Interiors Srinagar.",
 };
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function BlogPage() {
   const posts = await getPublishedBlogPosts();
@@ -52,44 +52,65 @@ export default async function BlogPage() {
           </div>
 
           <div className="row g-4">
-            {posts.map((post) => {
-              const formattedDate = post.published_at
-                ? new Date(post.published_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
-                : "Recent";
+            {posts.length === 0 ? (
+              <div className="col-12 text-center py-5">
+                <div style={{ maxWidth: "480px", margin: "0 auto", padding: "40px 20px" }}>
+                  <i className="fa-regular fa-newspaper" style={{ fontSize: "3rem", color: "#94A3B8", marginBottom: "16px", display: "block" }}></i>
+                  <h3 style={{ fontSize: "1.4rem", fontWeight: 700, color: "#0F172A", marginBottom: "8px" }}>
+                    No Articles Published Yet
+                  </h3>
+                  <p style={{ color: "#64748B", fontSize: "0.95rem" }}>
+                    Our architectural journal and interior design guides will be published here soon. Check back shortly.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              posts.map((post) => {
+                const formattedDate = post.published_at
+                  ? new Date(post.published_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "Recent";
 
-              return (
-                <div key={post.id} className="col-xl-4 col-lg-6 col-md-6">
-                  <div
-                    className="single-blog-post"
-                    style={{
-                      border: "1px solid #E2E8F0",
-                      borderRadius: "16px",
-                      overflow: "hidden",
-                      backgroundColor: "#FFFFFF",
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <div style={{ height: "230px", overflow: "hidden", position: "relative" }}>
-                      <Link href={`/blog/${post.slug}`}>
-                        <img
-                          src={post.featured_image || "/assets/images/blog/blog-details-thumb1_1.jpg"}
-                          alt={post.title}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            transition: "transform 0.4s ease",
-                          }}
-                        />
-                      </Link>
-                    </div>
+                return (
+                  <div key={post.id} className="col-xl-4 col-lg-6 col-md-6">
+                    <div
+                      className="single-blog-post"
+                      style={{
+                        border: "1px solid #E2E8F0",
+                        borderRadius: "16px",
+                        overflow: "hidden",
+                        backgroundColor: "#FFFFFF",
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <div style={{ height: "230px", overflow: "hidden", position: "relative" }}>
+                        <Link href={`/blog/${post.slug}`}>
+                          {post.featured_image ? (
+                            <img
+                              src={post.featured_image}
+                              alt={post.title}
+                              loading="lazy"
+                              decoding="async"
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                transition: "transform 0.4s ease",
+                              }}
+                            />
+                          ) : (
+                            <div style={{ width: "100%", height: "100%", backgroundColor: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", color: "#D4AF37" }}>
+                              <i className="fa-solid fa-newspaper" style={{ fontSize: "2.5rem" }}></i>
+                            </div>
+                          )}
+                        </Link>
+                      </div>
 
                     <div style={{ padding: "24px", display: "flex", flexDirection: "column", flex: 1 }}>
                       <div
@@ -142,7 +163,8 @@ export default async function BlogPage() {
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
           </div>
         </div>
       </section>

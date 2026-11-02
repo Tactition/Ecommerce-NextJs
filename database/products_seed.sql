@@ -33,7 +33,10 @@ CREATE TABLE IF NOT EXISTS products (
     is_on_sale TINYINT(1) DEFAULT 0,
     stock INT DEFAULT 50,
     status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_products_name (`name`(50)),
+    INDEX idx_products_brand (`brand`(50)),
+    INDEX idx_products_status_price (`status`, `price`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert Category Data

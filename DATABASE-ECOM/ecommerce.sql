@@ -1092,14 +1092,18 @@ ALTER TABLE `orders`
   ADD UNIQUE KEY `order_number` (`order_number`),
   ADD KEY `idx_order_number` (`order_number`),
   ADD KEY `idx_email` (`email`),
-  ADD KEY `idx_phone` (`phone`);
+  ADD KEY `idx_phone` (`phone`),
+  ADD KEY `idx_orders_user_created` (`user_id`, `created_at`),
+  ADD KEY `idx_orders_status_created` (`order_status`, `created_at`),
+  ADD KEY `idx_orders_created` (`created_at`);
 
 --
 -- Indexes for table `order_items`
 --
 ALTER TABLE `order_items`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `order_id` (`order_id`);
+  ADD KEY `order_id` (`order_id`),
+  ADD KEY `idx_order_items_product` (`product_id`);
 
 --
 -- Indexes for table `partner_brands`
@@ -1121,7 +1125,10 @@ ALTER TABLE `products`
   ADD KEY `idx_products_status_onsale` (`status`,`is_on_sale`),
   ADD KEY `idx_products_cat_slug` (`category_slug`),
   ADD KEY `idx_products_id_desc` (`id`),
-  ADD KEY `idx_products_status_id` (`status`,`id`);
+  ADD KEY `idx_products_status_id` (`status`,`id`),
+  ADD KEY `idx_products_name` (`name`(50)),
+  ADD KEY `idx_products_brand` (`brand`(50)),
+  ADD KEY `idx_products_status_price` (`status`,`price`);
 
 --
 -- Indexes for table `product_attributes`
@@ -1208,7 +1215,8 @@ ALTER TABLE `testimonials`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_users_role` (`role`);
 
 --
 -- Indexes for table `work_gallery`

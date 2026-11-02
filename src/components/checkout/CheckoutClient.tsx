@@ -577,6 +577,8 @@ export default function CheckoutClient() {
                                   <img
                                     src={item.product_image}
                                     alt={item.product_name}
+                                    loading="lazy"
+                                    decoding="async"
                                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                                   />
                                 ) : (
@@ -1160,6 +1162,8 @@ export default function CheckoutClient() {
                           <img
                             src={item.image}
                             alt={item.name}
+                            loading="lazy"
+                            decoding="async"
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
                         ) : (

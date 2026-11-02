@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     "Learn about Wall Street Interiors: premier studio for bespoke interior architecture, handcrafted luxury furniture, acoustic wall paneling, and B2B wholesale trade supplies.",
 };
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
   const [homepageSettings, testimonials] = await Promise.all([
@@ -34,6 +34,8 @@ export default async function AboutPage() {
                 <img
                   src={homepageSettings.about_image || "/assets/images/about-us/aboutThumb1_1.jpg"}
                   alt="About Wall Street Interiors"
+                  fetchPriority="high"
+                  decoding="async"
                   style={{ width: "100%", height: "460px", objectFit: "cover" }}
                 />
               </div>
@@ -101,6 +103,8 @@ export default async function AboutPage() {
                 <img
                   src="/assets/images/about-us/aboutThumb1_2.jpg"
                   alt="Innovation Lab"
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: "100%", height: "380px", objectFit: "cover" }}
                 />
               </div>
@@ -116,7 +120,7 @@ export default async function AboutPage() {
             <div className="col-xl-3 col-md-6">
               <div className="feature-box-item-two">
                 <div className="feature-box-item-two__icon">
-                  <img src="/assets/images/icon/featureIcon2_1.svg" alt="High Quality" />
+                  <img src="/assets/images/icon/featureIcon2_1.svg" alt="High Quality" loading="lazy" decoding="async" />
                 </div>
                 <div className="feature-box-item-two__content">
                   <h6>High Quality</h6>
@@ -127,7 +131,7 @@ export default async function AboutPage() {
             <div className="col-xl-3 col-md-6">
               <div className="feature-box-item-two">
                 <div className="feature-box-item-two__icon">
-                  <img src="/assets/images/icon/featureIcon2_2.svg" alt="Warranty Protection" />
+                  <img src="/assets/images/icon/featureIcon2_2.svg" alt="Warranty Protection" loading="lazy" decoding="async" />
                 </div>
                 <div className="feature-box-item-two__content">
                   <h6>Warranty Protection</h6>
@@ -138,7 +142,7 @@ export default async function AboutPage() {
             <div className="col-xl-3 col-md-6">
               <div className="feature-box-item-two">
                 <div className="feature-box-item-two__icon">
-                  <img src="/assets/images/icon/featureIcon2_3.svg" alt="Free Shipping" />
+                  <img src="/assets/images/icon/featureIcon2_3.svg" alt="Free Shipping" loading="lazy" decoding="async" />
                 </div>
                 <div className="feature-box-item-two__content">
                   <h6>Free Shipping</h6>
@@ -149,7 +153,7 @@ export default async function AboutPage() {
             <div className="col-xl-3 col-md-6">
               <div className="feature-box-item-two">
                 <div className="feature-box-item-two__icon">
-                  <img src="/assets/images/icon/featureIcon2_4.svg" alt="24/7 Support" />
+                  <img src="/assets/images/icon/featureIcon2_4.svg" alt="24/7 Support" loading="lazy" decoding="async" />
                 </div>
                 <div className="feature-box-item-two__content">
                   <h6>24 / 7 Support</h6>
@@ -169,7 +173,7 @@ export default async function AboutPage() {
               <div className="col-xl-6">
                 <div className="offer-card-items-fashon-two1-info1">
                   <div className="offer-card-items-fashon-two1-info1__thumb">
-                    <img src="/assets/images/offer/offerCardThumb2_1.png" alt="offer thumb" />
+                    <img src="/assets/images/offer/offerCardThumb2_1.png" alt="offer thumb" loading="lazy" decoding="async" />
                   </div>
                   <div className="offer-card-items-fashon-two1-info1__content">
                     <p className="offer-card-items-fashon-two1-info1__content--subtitle">Sale Up to 50% Off</p>
@@ -186,7 +190,7 @@ export default async function AboutPage() {
                 </div>
                 <div className="offer-card-items-fashon-two1-info1 mt-4 style2">
                   <div className="offer-card-items-fashon-two1-info1__thumb">
-                    <img src="/assets/images/offer/offerCardThumb2_2.png" alt="offer thumb" />
+                    <img src="/assets/images/offer/offerCardThumb2_2.png" alt="offer thumb" loading="lazy" decoding="async" />
                   </div>
                   <div className="offer-card-items-fashon-two1-info1__content">
                     <p className="offer-card-items-fashon-two1-info1__content--subtitle">Sale Up to 40% Off</p>
@@ -205,7 +209,7 @@ export default async function AboutPage() {
               <div className="col-xl-6">
                 <div className="offer-card-items-fashon-two2">
                   <div className="offer-card-items-fashon-two2__thumb">
-                    <img src="/assets/images/offer/offerCardThumb2_3.jpg" alt="offer thumb" />
+                    <img src="/assets/images/offer/offerCardThumb2_3.jpg" alt="offer thumb" loading="lazy" decoding="async" />
                   </div>
                   <div className="offer-card-items-fashon-two2__content">
                     <span className="offer-card-items-fashon-two2__content--subtitle">Certified Quality</span>
@@ -257,6 +261,8 @@ export default async function AboutPage() {
                     className="team-section-1-card__thumb-img"
                     src="/assets/images/team/team-thumb1_1.jpg"
                     alt="Zahid Nazir"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="team-section-1-card__thumb-social">
                     <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-youtube"></i></a>
@@ -278,6 +284,8 @@ export default async function AboutPage() {
                     className="team-section-1-card__thumb-img"
                     src="/assets/images/team/team-thumb1_2.jpg"
                     alt="Tariq Shah"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="team-section-1-card__thumb-social">
                     <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-youtube"></i></a>
@@ -299,6 +307,8 @@ export default async function AboutPage() {
                     className="team-section-1-card__thumb-img"
                     src="/assets/images/team/team-thumb1_3.jpg"
                     alt="Fatema Khatun"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="team-section-1-card__thumb-social">
                     <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-youtube"></i></a>
@@ -320,6 +330,8 @@ export default async function AboutPage() {
                     className="team-section-1-card__thumb-img"
                     src="/assets/images/team/team-thumb1_4.jpg"
                     alt="Sameer Ahmad"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="team-section-1-card__thumb-social">
                     <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-youtube"></i></a>
@@ -408,6 +420,8 @@ export default async function AboutPage() {
                           <img
                             src={item.avatar}
                             alt={item.customer_name}
+                            loading="lazy"
+                            decoding="async"
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
                         ) : (

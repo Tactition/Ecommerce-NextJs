@@ -81,8 +81,22 @@ export default function DashboardHeader({
           <span className="d-none-mobile">View Store</span>
         </Link>
 
-        {/* User Profile Card */}
-        <div className="dashboard-user-card" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* User Profile Card (Clickable to manage admin account) */}
+        <Link
+          href="/dashboard/account"
+          className="dashboard-user-card"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            textDecoration: "none",
+            padding: "4px 8px",
+            borderRadius: "10px",
+            transition: "all 0.2s ease",
+            cursor: "pointer",
+          }}
+          title="Manage Admin Profile & Password"
+        >
           <div
             className="dashboard-user-avatar"
             style={{
@@ -94,7 +108,7 @@ export default function DashboardHeader({
             {user?.name ? user.name[0].toUpperCase() : "A"}
           </div>
           <div className="d-none-mobile" style={{ lineHeight: 1.25 }}>
-            <div className="dashboard-user-name" style={{ fontWeight: 700 }}>
+            <div className="dashboard-user-name" style={{ fontWeight: 700, color: "#0F172A" }}>
               {user?.name || "Administrator"}
             </div>
             <div
@@ -108,7 +122,7 @@ export default function DashboardHeader({
               {user?.role === "admin" ? "Super Admin" : "Content Editor"}
             </div>
           </div>
-        </div>
+        </Link>
       </div>
     </header>
   );

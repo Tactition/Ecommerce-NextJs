@@ -14,7 +14,7 @@ import { getPublishedBlogPosts } from "@/lib/actions/blog";
 import { getHomepageSettings } from "@/lib/actions/settings";
 import { getHomepagePromos } from "@/lib/actions/promos";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [

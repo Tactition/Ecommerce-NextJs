@@ -2,6 +2,9 @@
 
 import pool from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
+import { requireAuth } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { COOKIE_NAME, signSessionToken, SessionPayload } from "@/lib/token";
 import { userCreateSchema, userUpdateSchema } from "@/lib/validations";
 import { User } from "@/types";
 import { revalidatePath } from "next/cache";
@@ -250,6 +253,146 @@ export async function deleteUserAction(targetUserId: number) {
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to delete user.";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Allows the currently authenticated administrator to update their own
+ * display name, admin email address, and optionally their console access password.
+ */
+export async function updateAdminCredentialsAction(formData: FormData) {
+  const session = await requireAuth();
+
+  const isStaff =
+    session.role === "admin" ||
+    session.role === "editor" ||
+    session.role === "manager";
+
+  if (!isStaff) {
+    return {
+      success: false,
+      error: "Only staff or administrative accounts can update admin console credentials.",
+    };
+  }
+
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const currentPassword = String(formData.get("currentPassword") || "");
+  const newPassword = String(formData.get("newPassword") || "");
+  const confirmPassword = String(formData.get("confirmPassword") || "");
+
+  if (!name || name.length < 2) {
+    return { success: false, error: "Full name must be at least 2 characters long." };
+  }
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { success: false, error: "Please enter a valid email address." };
+  }
+
+  try {
+    // 1. Check if email is already taken by another account
+    const [existing] = await pool.execute<RowDataPacket[]>(
+      "SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1",
+      [email, session.userId]
+    );
+
+    if (existing && existing.length > 0) {
+      return {
+        success: false,
+        error: "This email address is already in use by another user account.",
+      };
+    }
+
+    // 2. If password change is requested
+    if (newPassword || currentPassword) {
+      if (!currentPassword) {
+        return {
+          success: false,
+          error: "Current password is required to authorize a password change.",
+        };
+      }
+
+      if (newPassword.length < 6) {
+        return {
+          success: false,
+          error: "New password must be at least 6 characters long.",
+        };
+      }
+
+      if (newPassword !== confirmPassword) {
+        return {
+          success: false,
+          error: "New password and password confirmation do not match.",
+        };
+      }
+
+      // Verify current password against database
+      const [userRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT password_hash FROM users WHERE id = ? LIMIT 1",
+        [session.userId]
+      );
+
+      if (!userRows || userRows.length === 0) {
+        return { success: false, error: "User account not found." };
+      }
+
+      const isCurrentValid = await bcrypt.compare(
+        currentPassword,
+        userRows[0].password_hash
+      );
+
+      if (!isCurrentValid) {
+        return {
+          success: false,
+          error: "The current password you entered is incorrect.",
+        };
+      }
+
+      const newHash = await bcrypt.hash(newPassword, 10);
+      await pool.execute<ResultSetHeader>(
+        "UPDATE users SET name = ?, email = ?, password_hash = ? WHERE id = ?",
+        [name, email, newHash, session.userId]
+      );
+    } else {
+      // Just update name and email
+      await pool.execute<ResultSetHeader>(
+        "UPDATE users SET name = ?, email = ? WHERE id = ?",
+        [name, email, session.userId]
+      );
+    }
+
+    // 3. Refresh session cookie with updated name/email
+    try {
+      const cookieStore = await cookies();
+      const freshPayload: SessionPayload = {
+        ...session,
+        name,
+        email,
+      };
+      const freshToken = await signSessionToken(freshPayload);
+      cookieStore.set(COOKIE_NAME, freshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    } catch (cookieErr) {
+      console.warn("Could not rewrite cookie in server action:", cookieErr);
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/account");
+    revalidatePath("/dashboard/users");
+
+    return {
+      success: true,
+      message: "Admin credentials successfully updated! Your session has been refreshed.",
+    };
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to update admin account.";
     return { success: false, error: message };
   }
 }
