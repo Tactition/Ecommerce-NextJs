@@ -180,7 +180,7 @@ export interface HomepageSettings {
   weekly_deal_enabled?: number | boolean;
   weekly_deal_title?: string;
   weekly_deal_subtitle?: string;
-  weekly_deal_end_date?: string;
+  weekly_deal_end_date?: string | Date;
   weekly_deal_timezone?: string;
   weekly_deal_product_ids?: string;
   bundle_offer_title?: string;

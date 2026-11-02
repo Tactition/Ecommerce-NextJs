@@ -43,7 +43,26 @@ const fetchHomepageSettingsUncached = async (): Promise<HomepageSettings> => {
       "SELECT * FROM homepage_settings WHERE id = 1 LIMIT 1"
     );
     if (!rows || rows.length === 0) return fallback;
-    return rows[0] as unknown as HomepageSettings;
+    const r = rows[0];
+    let formattedEndDate: string | undefined = undefined;
+    if (r.weekly_deal_end_date) {
+      if (r.weekly_deal_end_date instanceof Date) {
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const y = r.weekly_deal_end_date.getFullYear();
+        const m = pad(r.weekly_deal_end_date.getMonth() + 1);
+        const d = pad(r.weekly_deal_end_date.getDate());
+        const h = pad(r.weekly_deal_end_date.getHours());
+        const min = pad(r.weekly_deal_end_date.getMinutes());
+        const s = pad(r.weekly_deal_end_date.getSeconds());
+        formattedEndDate = `${y}-${m}-${d} ${h}:${min}:${s}`;
+      } else {
+        formattedEndDate = String(r.weekly_deal_end_date);
+      }
+    }
+    return {
+      ...(r as unknown as HomepageSettings),
+      weekly_deal_end_date: formattedEndDate,
+    };
   } catch (error) {
     console.error("Error fetching homepage settings:", error);
     return fallback;

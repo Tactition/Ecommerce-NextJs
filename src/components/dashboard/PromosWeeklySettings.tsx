@@ -20,6 +20,25 @@ import {
   Package,
 } from "lucide-react";
 
+function parseDateTimeForInput(val: unknown): string {
+  if (!val) return "2026-12-31T23:59:59";
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "2026-12-31T23:59:59";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const y = val.getFullYear();
+    const m = pad(val.getMonth() + 1);
+    const d = pad(val.getDate());
+    const h = pad(val.getHours());
+    const min = pad(val.getMinutes());
+    const s = pad(val.getSeconds());
+    return `${y}-${m}-${d}T${h}:${min}:${s}`;
+  }
+  const str = String(val).trim();
+  if (!str) return "2026-12-31T23:59:59";
+  if (str.includes("T")) return str;
+  return str.replace(" ", "T");
+}
+
 export default function PromosWeeklySettings() {
   const [promos, setPromos] = useState<HomepagePromo[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -65,7 +84,7 @@ export default function PromosWeeklySettings() {
         setWeeklyDealSubtitle(homeSettings.weekly_deal_subtitle || "Hot Sell");
 
         if (homeSettings.weekly_deal_end_date) {
-          const rawDate = homeSettings.weekly_deal_end_date.replace(" ", "T");
+          const rawDate = parseDateTimeForInput(homeSettings.weekly_deal_end_date);
           setWeeklyDealEndDate(rawDate);
         }
         setWeeklyDealTimezone(homeSettings.weekly_deal_timezone || "Asia/Kolkata");
@@ -127,7 +146,10 @@ export default function PromosWeeklySettings() {
     formData.append("weekly_deal_enabled", weeklyDealEnabled ? "1" : "0");
     formData.append("weekly_deal_title", weeklyDealTitle);
     formData.append("weekly_deal_subtitle", weeklyDealSubtitle);
-    formData.append("weekly_deal_end_date", weeklyDealEndDate.replace("T", " "));
+    const formattedEndDate = typeof weeklyDealEndDate === "string"
+      ? weeklyDealEndDate.replace("T", " ")
+      : String(weeklyDealEndDate || "").replace("T", " ");
+    formData.append("weekly_deal_end_date", formattedEndDate);
     formData.append("weekly_deal_timezone", weeklyDealTimezone);
     formData.append("weekly_deal_product_ids", JSON.stringify(selectedProductIds));
 
