@@ -14,13 +14,19 @@ const pool =
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_NAME || "ecommerce",
     waitForConnections: true,
-    connectionLimit: 20,
-    maxIdle: 10,
+    connectionLimit: 10,
+    maxIdle: 5,
     idleTimeout: 60000,
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
     queueLimit: 0,
     charset: "utf8mb4",
+    ssl:
+      process.env.DB_SSL === "true"
+        ? {
+            rejectUnauthorized: false,
+          }
+        : undefined,
   });
 
 globalForDb.mysqlPool = pool;
