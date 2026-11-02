@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed:categories": "npx tsx scripts/seed-categories.ts",
-    "seed:categories:force": "npx tsx scripts/seed-categories.ts --force"
+    "seed:categories:force": "npx tsx scripts/seed-categories.ts --force",
+    "seed:products": "npx tsx scripts/seed-blinds-products.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
