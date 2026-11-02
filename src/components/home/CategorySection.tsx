@@ -64,6 +64,8 @@ export default function CategorySection({ categories }: CategorySectionProps) {
                         <img
                           src={coverImage}
                           alt={cat.name}
+                          loading="lazy"
+                          decoding="async"
                           style={{
                             position: "absolute",
                             inset: 0,

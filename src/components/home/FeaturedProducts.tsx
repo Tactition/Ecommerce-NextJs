@@ -97,13 +97,11 @@ export default function FeaturedProducts({
                 }}
               >
                 <option value="all">All Brands</option>
-                <option value="Apple">Apple</option>
-                <option value="Dell">Dell</option>
-                <option value="LG">LG</option>
-                <option value="ASUS">ASUS</option>
-                <option value="DJI">DJI</option>
-                <option value="Canon">Canon</option>
-                <option value="Sony">Sony</option>
+                {Array.from(new Set(products.map((p) => p.brand).filter(Boolean))).map((b) => (
+                  <option key={String(b)} value={String(b)}>
+                    {String(b)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -138,6 +136,8 @@ export default function FeaturedProducts({
                         <img
                           src={product.image}
                           alt={product.name}
+                          loading="lazy"
+                          decoding="async"
                           style={{ maxHeight: "180px", objectFit: "contain", borderRadius: "10px", transition: "transform 0.3s ease" }}
                         />
                       </Link>

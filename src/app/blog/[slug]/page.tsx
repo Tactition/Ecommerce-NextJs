@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: BlogSlugProps): Promise<Metad
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function BlogPostPage({ params }: BlogSlugProps) {
   const { slug } = await params;
@@ -54,8 +54,37 @@ export default async function BlogPostPage({ params }: BlogSlugProps) {
       })
     : "Recent";
 
+  const blogJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": post.title,
+    "description": post.excerpt || post.meta_description,
+    "image": post.featured_image ? (post.featured_image.startsWith("http") ? post.featured_image : `https://wallstreetinteriors.com${post.featured_image}`) : undefined,
+    "author": {
+      "@type": "Organization",
+      "name": post.author || "Wall Street Interiors",
+      "url": "https://wallstreetinteriors.com"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Wall Street Interiors",
+      "url": "https://wallstreetinteriors.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://wallstreetinteriors.com/assets/images/logo/logo.png"
+      }
+    },
+    "datePublished": post.published_at ? new Date(post.published_at).toISOString() : new Date().toISOString(),
+    "dateModified": post.updated_at ? new Date(post.updated_at).toISOString() : new Date().toISOString(),
+    "mainEntityOfPage": `https://wallstreetinteriors.com/blog/${post.slug}`
+  };
+
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
+      />
       {/* Breadcrumb matching blog-details.html */}
       <Breadcrumb
         title={post.title}
@@ -118,23 +147,53 @@ export default async function BlogPostPage({ params }: BlogSlugProps) {
                         dangerouslySetInnerHTML={{ __html: post.content }}
                       />
 
-                      {/* Highlight Quote Box */}
-                      <div className="single-blog-post__blog-details-content--hilight-text">
-                        <div className="icon">
-                          <svg width="44" height="38" viewBox="0 0 44 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                              d="M21.0461 11.5684C20.88 17.7542 19.6607 23.6642 16.5492 29.1016C14.3984 32.8589 11.1807 35.4877 7.58794 37.7346C7.36019 37.8767 7.06736 38.1405 6.81905 37.9076C6.53992 37.6455 6.78138 37.3082 6.92351 37.0462C8.22326 34.6708 9.60864 32.34 10.7406 29.874C11.9804 27.1715 12.9616 24.3818 13.6055 21.4721C13.7768 20.6998 13.6038 20.6141 12.8743 20.7717C6.90296 22.0664 1.34948 18.3895 0.181585 12.399C-0.926371 6.71842 3.0568 1.04984 8.79865 0.138763C15.2906 -0.8922 20.9947 3.95263 21.0461 10.5409C21.0478 10.8834 21.0461 11.2259 21.0461 11.5684Z"
-                              fill="#FF4035"
-                            />
-                            <path
-                              d="M44 11.6231C43.827 18.0794 42.5256 24.2258 39.0767 29.8002C36.9755 33.1945 33.9411 35.5681 30.6497 37.6746C30.3877 37.8424 30.0401 38.19 29.749 37.8681C29.4853 37.5769 29.7986 37.2276 29.9545 36.9347C31.2388 34.5508 32.6413 32.2303 33.7561 29.7557C34.9668 27.0704 35.9361 24.308 36.568 21.4258C36.7324 20.6757 36.5491 20.6038 35.8659 20.7647C29.8483 22.1776 23.9147 18.1223 23.031 11.8406C22.2639 6.3878 26.2933 0.943569 31.7252 0.14209C38.3883 -0.837494 43.9658 3.95254 44 10.6829C44 10.9963 44 11.3097 44 11.6231Z"
-                              fill="#FF4035"
-                            />
-                          </svg>
+                      {/* WhatsApp Consultation & Showroom CTA Card */}
+                      <div
+                        style={{
+                          margin: "30px 0",
+                          padding: "24px 28px",
+                          borderRadius: "16px",
+                          background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
+                          color: "#FFFFFF",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "20px",
+                          boxShadow: "0 10px 25px rgba(15, 23, 42, 0.2)",
+                        }}
+                      >
+                        <div style={{ maxWidth: "560px" }}>
+                          <span style={{ color: "#D4AF37", fontWeight: 700, fontSize: "0.82rem", textTransform: "uppercase", letterSpacing: "1px" }}>
+                            Srinagar Interior Consultation
+                          </span>
+                          <h4 style={{ color: "#FFFFFF", fontWeight: 700, marginTop: "4px", marginBottom: "8px", fontSize: "1.25rem" }}>
+                            Planning a Renovation or Wedding Makeover in Kashmir?
+                          </h4>
+                          <p style={{ color: "#94A3B8", fontSize: "0.92rem", margin: 0, lineHeight: 1.6 }}>
+                            Send photos or dimensions of your room directly to our Srinagar design desk. Get instant estimates, sample videos, and contractor wholesale pricing.
+                          </p>
                         </div>
-                        <p>
-                          &ldquo;Bespoke architectural woodworking and acoustic timber paneling not only elevate aesthetic luxury but also create tranquil, acoustically balanced sanctuaries designed to endure for generations.&rdquo;
-                        </p>
+                        <a
+                          href="https://wa.me/919018454526?text=Hi%20Wall%20Street%20Interiors,%20I%20just%20read%20your%20article%20and%20would%20like%20guidance%20on%20interior%20materials%20for%20my%20home%20in%20Kashmir."
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="theme-btn"
+                          style={{
+                            backgroundColor: "#25D366",
+                            borderColor: "#25D366",
+                            color: "#FFFFFF",
+                            padding: "12px 24px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            fontWeight: 600,
+                            borderRadius: "50px",
+                          }}
+                        >
+                          <i className="fa-brands fa-whatsapp fs-5" />
+                          <span>Chat on WhatsApp</span>
+                        </a>
                       </div>
                     </div>
                   </div>

@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { requirePermission } from "@/lib/rbac";
 import { categorySchema } from "@/lib/validations";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { cache } from "react";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export interface CategoryAdmin {
@@ -130,9 +131,15 @@ const fetchActiveCategoriesUncached = async (): Promise<CategoryAdmin[]> => {
   }
 };
 
-export async function getActiveCategories(): Promise<CategoryAdmin[]> {
-  return fetchActiveCategoriesUncached();
-}
+const getCachedActiveCategories = unstable_cache(
+  fetchActiveCategoriesUncached,
+  ["active-categories"],
+  { tags: ["categories"], revalidate: 300 }
+);
+
+export const getActiveCategories = cache(async (): Promise<CategoryAdmin[]> => {
+  return getCachedActiveCategories();
+});
 
 export async function saveCategoryAction(formData: FormData) {
   const idVal = formData.get("id");

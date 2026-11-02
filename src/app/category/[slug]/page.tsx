@@ -104,14 +104,27 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     return { title: "Category Not Found | Wall Street Interiors" };
   }
 
-  const description = (category.meta_description || category.short_description) || undefined;
+  const title = category.seo_title || `${category.name} in Srinagar, Kashmir | Wall Street Interiors`;
+  const description =
+    category.meta_description ||
+    category.description ||
+    category.short_description ||
+    `Explore ${category.name} in Srinagar, Kashmir. Importer-direct wholesale and retail pricing with real showroom samples at Wall Street Interiors.`;
 
   return {
-    title: category.seo_title || `${category.name} | Wall Street Interiors`,
+    title,
     description,
-    keywords: category.focus_keywords ? category.focus_keywords.split(", ") : undefined,
+    keywords: category.focus_keywords
+      ? category.focus_keywords.split(", ")
+      : [
+          `${category.name} Srinagar`,
+          `${category.name} Kashmir`,
+          "interior materials Srinagar",
+          "wholesale interior material Kashmir",
+          "Wall Street Interiors Habba Kadal",
+        ],
     openGraph: {
-      title: category.seo_title || category.name,
+      title,
       description,
       images: category.image ? [{ url: category.image, alt: category.image_alt || category.name }] : undefined,
     },
@@ -180,12 +193,12 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
             <div className="col-lg-6">
               <span
                 className="badge mb-3 px-3 py-2 text-uppercase fw-bold"
-                style={{ backgroundColor: "var(--theme, #FF4035)", color: "#fff", letterSpacing: "1px" }}
+                style={{ backgroundColor: "#0F172A", color: "#D4AF37", letterSpacing: "1px" }}
               >
-                Custom Window Treatments
+                Importer-Direct • Srinagar, Kashmir
               </span>
               <h1 className="display-5 fw-bold mb-3" style={{ color: "var(--title, #0F172A)" }}>
-                {category.name}
+                {category.name} in Srinagar
               </h1>
               <p className="lead text-secondary mb-4" style={{ lineHeight: 1.7, fontSize: "1.05rem" }}>
                 {category.description || category.short_description}
@@ -194,7 +207,7 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
               {/* Best For Badges */}
               {category.best_for && category.best_for.length > 0 && (
                 <div className="mb-4">
-                  <span className="fw-bold d-block text-uppercase small text-muted mb-2">Ideal Rooms &amp; Spaces:</span>
+                  <span className="fw-bold d-block text-uppercase small text-muted mb-2">Ideal Kashmir Rooms &amp; Spaces:</span>
                   <div className="d-flex flex-wrap gap-2">
                     {category.best_for.map((room: string) => (
                       <span key={room} className="badge bg-white text-dark border px-3 py-2 shadow-sm rounded-pill">
@@ -206,13 +219,24 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
                 </div>
               )}
 
-              <div className="d-flex gap-3 pt-2">
-                <Link href="/contact" className="theme-btn">
-                  <span>Book Free In-Home Measuring</span>
-                  <i className="fa-solid fa-arrow-right-long ms-2" aria-hidden="true" />
-                </Link>
+              <div className="d-flex gap-3 pt-2 flex-wrap">
+                <a
+                  href={`https://wa.me/919018454526?text=${encodeURIComponent(
+                    `Hi Wall Street Interiors, I am interested in ${category.name} options and wholesale/retail pricing for my home in Kashmir.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="theme-btn"
+                  style={{ backgroundColor: "#25D366", borderColor: "#25D366", color: "#FFFFFF" }}
+                >
+                  <i className="fa-brands fa-whatsapp me-2" />
+                  <span>Get WhatsApp Quote</span>
+                </a>
                 <Link href="#products-grid" className="btn btn-outline-dark rounded-pill px-4 py-3 fw-semibold">
-                  Browse Catalog
+                  Browse {category.name} Catalog
+                </Link>
+                <Link href="/contact" className="btn btn-light rounded-pill px-4 py-3 fw-semibold border">
+                  Visit Showroom
                 </Link>
               </div>
             </div>
@@ -309,15 +333,28 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
             </div>
           ) : (
             <div className="text-center py-5 bg-white rounded-3 shadow-sm p-5">
-              <i className="fa-light fa-box-open fa-3x text-muted mb-3" aria-hidden="true" />
-              <h4 className="fw-bold">Bespoke Fabrication On Order</h4>
-              <p className="text-muted mb-4" style={{ maxWidth: "520px", margin: "0 auto" }}>
-                All {category.name} units are custom manufactured to your exact window dimensions.
-                Contact our Srinagar showroom for genuine physical fabric swatch books and motorized motor configurations.
+              <i className="fa-solid fa-store fa-3x text-muted mb-3" aria-hidden="true" />
+              <h4 className="fw-bold">Importer-Direct Stock Available at Showroom</h4>
+              <p className="text-muted mb-4" style={{ maxWidth: "560px", margin: "0 auto" }}>
+                We stock hundreds of imported {category.name} options live at our Srinagar showroom near New Habba Kadal Bridge and central godown at Fateh Kadal. Contact our trade desk for physical swatch books, sample boards, or WhatsApp delivery.
               </p>
-              <Link href="/contact" className="theme-btn">
-                <span>Request Custom Sizing &amp; Quote</span>
-              </Link>
+              <div className="d-flex justify-content-center gap-3 flex-wrap">
+                <a
+                  href={`https://wa.me/919018454526?text=${encodeURIComponent(
+                    `Hi Wall Street Interiors, please send available catalog options and pricing for ${category.name}.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="theme-btn"
+                  style={{ backgroundColor: "#25D366", borderColor: "#25D366", color: "#FFFFFF" }}
+                >
+                  <i className="fa-brands fa-whatsapp me-2" />
+                  <span>Request WhatsApp Catalog</span>
+                </a>
+                <Link href="/contact" className="btn btn-outline-dark rounded-pill px-4 py-3 fw-semibold">
+                  Visit Srinagar Showroom
+                </Link>
+              </div>
             </div>
           )}
         </div>

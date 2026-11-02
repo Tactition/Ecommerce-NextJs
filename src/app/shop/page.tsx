@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Browse bespoke handcrafted furniture, acoustic wood panels, modular kitchens, luxury lighting, and architectural hardware.",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ShopPage() {
   const [products, categories] = await Promise.all([

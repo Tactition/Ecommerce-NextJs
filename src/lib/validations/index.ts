@@ -112,6 +112,8 @@ export const homepageSettingsSchema = z.object({
   about_heading: z.string().min(5, "About heading is required."),
   about_text: z.string().min(20, "About text is required."),
   about_image: z.string().min(1, "About image is required."),
+  features_enabled: z.coerce.number().default(1),
+  features_json: z.string().optional().default("[]"),
 });
 
 export const productSchema = z.object({

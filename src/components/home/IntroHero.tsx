@@ -162,6 +162,9 @@ export default function IntroHero({ onQuickView }: IntroHeroProps) {
                         <img
                           src={current.image}
                           alt={current.title}
+                          loading="eager"
+                          fetchPriority="high"
+                          decoding="async"
                           style={{
                             maxWidth: "100%",
                             maxHeight: "420px",

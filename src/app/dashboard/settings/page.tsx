@@ -6,9 +6,14 @@ import {
   SiteSettings,
   ContactNumberItem,
   ContactEmailItem,
+  FeatureItem,
 } from "@/types";
+import dynamic from "next/dynamic";
 import ImageUploader from "@/components/dashboard/ImageUploader";
-import PromosWeeklySettings from "@/components/dashboard/PromosWeeklySettings";
+
+const PromosWeeklySettings = dynamic(() => import("@/components/dashboard/PromosWeeklySettings"), {
+  loading: () => <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>Loading promotional & deals manager...</div>,
+});
 import {
   getHomepageSettings,
   getSiteSettings,
@@ -38,8 +43,61 @@ import {
   IndianRupee,
   Tag,
   ExternalLink,
+  Sparkles,
   Eye,
 } from "lucide-react";
+
+const POPULAR_FA_ICONS = [
+  { class: "fa-solid fa-warehouse", label: "Importer Direct / Godown" },
+  { class: "fa-solid fa-snowflake", label: "Built for Kashmir Winter" },
+  { class: "fa-solid fa-store", label: "Showroom & Stock" },
+  { class: "fa-brands fa-whatsapp", label: "WhatsApp Desk" },
+  { class: "fa-solid fa-award", label: "Award / Premium Quality" },
+  { class: "fa-solid fa-shield-halved", label: "Warranty / Protection" },
+  { class: "fa-solid fa-truck-fast", label: "Express Shipping" },
+  { class: "fa-solid fa-headset", label: "24/7 Dedicated Support" },
+  { class: "fa-solid fa-gem", label: "Luxury / Premium Finish" },
+  { class: "fa-solid fa-certificate", label: "Certified Authentic" },
+  { class: "fa-solid fa-couch", label: "Furniture & Living" },
+  { class: "fa-solid fa-arrows-rotate", label: "Hassle-Free Returns" },
+  { class: "fa-solid fa-lock", label: "100% Secure Checkout" },
+  { class: "fa-solid fa-hand-holding-heart", label: "Handcrafted Care" },
+  { class: "fa-solid fa-clock", label: "Timely Delivery" },
+  { class: "fa-solid fa-star", label: "Top 5-Star Rated" },
+];
+
+function renderAdminFeatureIcon(iconVal?: string) {
+  if (!iconVal) {
+    return <Sparkles size={20} color="#D4AF37" />;
+  }
+  const trimmed = iconVal.trim();
+  if (
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.endsWith(".svg") ||
+    trimmed.endsWith(".png") ||
+    trimmed.endsWith(".webp")
+  ) {
+    return <img src={trimmed} alt="icon" style={{ width: "22px", height: "22px", objectFit: "contain" }} />;
+  }
+
+  let fullClass = trimmed;
+  if (
+    !fullClass.includes("fa-solid") &&
+    !fullClass.includes("fa-regular") &&
+    !fullClass.includes("fa-brands") &&
+    !fullClass.includes("fa-light")
+  ) {
+    if (fullClass.startsWith("fa-")) {
+      fullClass = `fa-solid ${fullClass}`;
+    } else {
+      fullClass = `fa-solid fa-${fullClass}`;
+    }
+  }
+
+  return <i className={fullClass} style={{ fontSize: "20px", color: "#D4AF37", lineHeight: 1 }} />;
+}
 
 export default function SettingsDashboardPage() {
   const [activeTab, setActiveTab] = useState<"brand_seo" | "contact_channels" | "homepage" | "promos_weekly">("brand_seo");
@@ -57,6 +115,10 @@ export default function SettingsDashboardPage() {
   const [heroImage3, setHeroImage3] = useState("");
   const [heroVideoThumb, setHeroVideoThumb] = useState("");
   const [aboutImage, setAboutImage] = useState("");
+
+  // Value Proposition Features state
+  const [featuresEnabled, setFeaturesEnabled] = useState(true);
+  const [featureList, setFeatureList] = useState<FeatureItem[]>([]);
 
   // Dynamic Contact Lists
   const [phoneList, setPhoneList] = useState<ContactNumberItem[]>([]);
@@ -80,6 +142,28 @@ export default function SettingsDashboardPage() {
       setHeroImage3(h.hero_image_3 || "/assets/images/intro/introThumb1_3.png");
       setHeroVideoThumb(h.hero_video_thumb || "/assets/images/video/drone.png?v=2");
       setAboutImage(h.about_image || "");
+
+      setFeaturesEnabled(h.features_enabled !== undefined ? Boolean(h.features_enabled) : true);
+      try {
+        const parsed = typeof h.features_json === "string" ? JSON.parse(h.features_json) : h.features_json;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setFeatureList(parsed);
+        } else {
+          setFeatureList([
+            { id: "f1", icon: "fa-solid fa-award", title: "High Quality", description: "Crafted from top materials" },
+            { id: "f2", icon: "fa-solid fa-shield-halved", title: "Warranty Protection", description: "Over 2 years guaranteed" },
+            { id: "f3", icon: "fa-solid fa-truck-fast", title: "Free Shipping", description: "On qualifying orders" },
+            { id: "f4", icon: "fa-solid fa-headset", title: "24 / 7 Support", description: "Dedicated concierge desk" },
+          ]);
+        }
+      } catch {
+        setFeatureList([
+          { id: "f1", icon: "fa-solid fa-award", title: "High Quality", description: "Crafted from top materials" },
+          { id: "f2", icon: "fa-solid fa-shield-halved", title: "Warranty Protection", description: "Over 2 years guaranteed" },
+          { id: "f3", icon: "fa-solid fa-truck-fast", title: "Free Shipping", description: "On qualifying orders" },
+          { id: "f4", icon: "fa-solid fa-headset", title: "24 / 7 Support", description: "Dedicated concierge desk" },
+        ]);
+      }
 
       setPhoneList(parsePhoneNumbers(s));
       setEmailList(parseEmailAddresses(s));
@@ -157,6 +241,32 @@ export default function SettingsDashboardPage() {
     setEmailList(filtered);
   };
 
+  // Feature Items Handlers
+  const handleUpdateFeature = (id: string, field: keyof FeatureItem, value: string) => {
+    setFeatureList((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleAddFeature = () => {
+    const preset = POPULAR_FA_ICONS[featureList.length % POPULAR_FA_ICONS.length];
+    const newItem: FeatureItem = {
+      id: `feature-${Date.now()}`,
+      icon: preset.class,
+      title: "New Feature",
+      description: "Description of this value proposition",
+    };
+    setFeatureList([...featureList, newItem]);
+  };
+
+  const handleRemoveFeature = (id: string) => {
+    if (featureList.length <= 1) {
+      alert("At least one feature card should be maintained.");
+      return;
+    }
+    setFeatureList((prev) => prev.filter((item) => item.id !== id));
+  };
+
   // Save Site & Brand Settings
   const handleSaveBrandAndContact = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -192,6 +302,8 @@ export default function SettingsDashboardPage() {
     formData.set("hero_image_3", heroImage3);
     formData.set("hero_video_thumb", heroVideoThumb);
     formData.set("about_image", aboutImage);
+    formData.set("features_enabled", featuresEnabled ? "1" : "0");
+    formData.set("features_json", JSON.stringify(featureList));
 
     const res = await updateHomepageSettingsAction(formData);
     setIsSaving(false);
@@ -1227,6 +1339,250 @@ export default function SettingsDashboardPage() {
               label="About Us Photograph"
               name="about_image"
             />
+
+            {/* VALUE PROPOSITION FEATURES SECTION (BELOW CATEGORIES) */}
+            <div style={{ margin: "40px 0 20px 0", borderTop: "1px solid #E2E8F0", paddingTop: "28px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "14px", marginBottom: "20px" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.25rem", margin: 0, color: "#0F172A", fontWeight: 700, display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Sparkles size={22} color="#D4AF37" />
+                    Value Proposition Features Bar (Below Categories Carousel)
+                  </h3>
+                  <p style={{ margin: "4px 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>
+                    Manage the 4-column trust badges that display directly below the categories carousel on your homepage.
+                  </p>
+                </div>
+
+                {/* Section Toggle */}
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", background: featuresEnabled ? "#ECFDF5" : "#F1F5F9", padding: "8px 16px", borderRadius: "24px", border: featuresEnabled ? "1.5px solid #10B981" : "1.5px solid #CBD5E1", transition: "all 0.2s ease" }}>
+                  <input
+                    type="checkbox"
+                    checked={featuresEnabled}
+                    onChange={(e) => setFeaturesEnabled(e.target.checked)}
+                    style={{ accentColor: "#10B981", width: "16px", height: "16px", cursor: "pointer" }}
+                  />
+                  <span style={{ fontSize: "0.88rem", fontWeight: 700, color: featuresEnabled ? "#047857" : "#64748B" }}>
+                    {featuresEnabled ? "Section Active on Homepage" : "Section Hidden on Homepage"}
+                  </span>
+                </label>
+              </div>
+
+              {/* LIVE PREVIEW OF THE FEATURE CARDS */}
+              <div
+                style={{
+                  marginBottom: "28px",
+                  padding: "24px",
+                  borderRadius: "16px",
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                }}
+              >
+                <div style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "#64748B", letterSpacing: "0.05em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Eye size={15} />
+                  Live Visual Preview
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "16px" }}>
+                  {featureList.map((f) => (
+                    <div
+                      key={f.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "14px",
+                        padding: "16px 18px",
+                        borderRadius: "14px",
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E2E8F0",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          minWidth: "48px",
+                          borderRadius: "12px",
+                          background: "linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(255, 64, 53, 0.06) 100%)",
+                          border: "1.5px solid rgba(212, 175, 55, 0.25)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {renderAdminFeatureIcon(f.icon)}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#0F172A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {f.title || "Feature Title"}
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "#64748B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {f.description || "Feature Description"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CARD EDITORS */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
+                {featureList.map((f, index) => (
+                  <div
+                    key={f.id}
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "14px",
+                      padding: "18px 20px",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                      <span style={{ fontWeight: 700, fontSize: "0.9rem", color: "#1E293B", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#EFF6FF", color: "#2563EB", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.78rem" }}>
+                          {index + 1}
+                        </span>
+                        Feature Card #{index + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFeature(f.id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#EF4444",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <Trash2 size={15} />
+                        Remove
+                      </button>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "14px" }}>
+                      <div>
+                        <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", marginBottom: "6px", display: "block" }}>
+                          Heading Title *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={f.title}
+                          onChange={(e) => handleUpdateFeature(f.id, "title", e.target.value)}
+                          className="form-input"
+                          style={{ background: "#FFFFFF", color: "#0F172A", border: "1px solid #CBD5E1" }}
+                          placeholder="e.g. High Quality"
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", marginBottom: "6px", display: "block" }}>
+                          Subtitle Text *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={f.description}
+                          onChange={(e) => handleUpdateFeature(f.id, "description", e.target.value)}
+                          className="form-input"
+                          style={{ background: "#FFFFFF", color: "#0F172A", border: "1px solid #CBD5E1" }}
+                          placeholder="e.g. Crafted from top materials"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", marginBottom: "6px", display: "block" }}>
+                        Font Awesome Icon Class / Name (or Image URL) *
+                      </label>
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "10px" }}>
+                        {/* Live icon preview badge */}
+                        <div
+                          style={{
+                            width: "42px",
+                            height: "42px",
+                            minWidth: "42px",
+                            borderRadius: "10px",
+                            background: "linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%)",
+                            border: "1.5px solid rgba(212, 175, 55, 0.3)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {renderAdminFeatureIcon(f.icon)}
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={f.icon}
+                          onChange={(e) => handleUpdateFeature(f.id, "icon", e.target.value)}
+                          className="form-input"
+                          style={{ background: "#FFFFFF", color: "#0F172A", border: "1px solid #CBD5E1", flex: 1 }}
+                          placeholder="e.g. fa-solid fa-award or truck-fast"
+                        />
+                      </div>
+
+                      {/* Quick Font Awesome presets */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <div style={{ fontSize: "0.74rem", fontWeight: 600, color: "#64748B" }}>
+                          Quick Select Popular Font Awesome Icons:
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {POPULAR_FA_ICONS.map((preset) => {
+                            const isSelected =
+                              f.icon?.trim() === preset.class ||
+                              f.icon?.trim() === preset.class.replace("fa-solid fa-", "");
+                            return (
+                              <button
+                                key={preset.class}
+                                type="button"
+                                onClick={() => handleUpdateFeature(f.id, "icon", preset.class)}
+                                title={preset.label}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  padding: "6px 10px",
+                                  borderRadius: "8px",
+                                  border: isSelected ? "2px solid #D4AF37" : "1px solid #E2E8F0",
+                                  backgroundColor: isSelected ? "#FEF9C3" : "#F8FAFC",
+                                  color: isSelected ? "#854D0E" : "#334155",
+                                  cursor: "pointer",
+                                  fontSize: "0.78rem",
+                                  fontWeight: isSelected ? 700 : 500,
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                <i className={preset.class} style={{ fontSize: "14px", color: isSelected ? "#B45309" : "#D4AF37" }}></i>
+                                <span>{preset.label.split(" / ")[0]}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleAddFeature}
+                    className="abid-btn abid-btn-secondary"
+                    style={{ fontSize: "0.85rem", padding: "8px 18px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  >
+                    <Plus size={16} />
+                    <span>Add New Feature Card</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "28px" }}>
               <button type="submit" disabled={isSaving} className="abid-btn abid-btn-primary" style={{ padding: "12px 28px" }}>

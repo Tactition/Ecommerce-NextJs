@@ -53,6 +53,8 @@ export default function PromoSection() {
                   <img
                     src="/assets/images/offer/promo1.png"
                     alt="New Power Double Promo"
+                    loading="lazy"
+                    decoding="async"
                     style={{ maxHeight: "180px", objectFit: "contain" }}
                   />
                 </div>
@@ -105,6 +107,8 @@ export default function PromoSection() {
                   <img
                     src="/assets/images/offer/promo2.png"
                     alt="Limited Offer Promo"
+                    loading="lazy"
+                    decoding="async"
                     style={{ maxHeight: "200px", objectFit: "contain" }}
                   />
                 </div>

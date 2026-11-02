@@ -33,6 +33,8 @@ export default function AboutSection({ settings }: AboutSectionProps) {
               <img
                 src={settings.about_image || "/assets/images/about-us/aboutThumb1_2.jpg"}
                 alt="Wall Street Interiors Bespoke Workshop"
+                loading="lazy"
+                decoding="async"
                 style={{ width: "100%", height: "480px", objectFit: "cover" }}
               />
             </div>

@@ -228,11 +228,17 @@ export default function EcommerceHeader({
     return () => clearTimeout(timer);
   }, [searchQuery, isSearchOpen]);
 
-  const topLevelHeaderMenus = (headerMenus || []).filter((item) => !item.parent_id);
+  const topLevelHeaderMenus = useMemo(
+    () => (headerMenus || []).filter((item) => !item.parent_id),
+    [headerMenus]
+  );
   const getHeaderChildren = (parentId: number) =>
     (headerMenus || []).filter((item) => item.parent_id === parentId);
 
-  const topLevelCategoryMenus = (categoryMenus || []).filter((item) => !item.parent_id);
+  const topLevelCategoryMenus = useMemo(
+    () => (categoryMenus || []).filter((item) => !item.parent_id),
+    [categoryMenus]
+  );
   const getCategoryChildren = (parentId: number) =>
     (categoryMenus || []).filter((item) => item.parent_id === parentId);
 
@@ -298,8 +304,15 @@ export default function EcommerceHeader({
     };
   }, []);
 
-  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-  const cartTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const { cartCount, cartTotal } = useMemo(() => {
+    let count = 0;
+    let total = 0;
+    for (const item of cartItems) {
+      count += item.quantity;
+      total += item.price * item.quantity;
+    }
+    return { cartCount: count, cartTotal: total };
+  }, [cartItems]);
   const wishlistCount = wishlistItems.length;
 
   const handleRemoveFromCart = (key: string) => {

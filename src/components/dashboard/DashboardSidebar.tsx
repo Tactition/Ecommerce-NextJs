@@ -67,7 +67,7 @@ export default function DashboardSidebar({
     { label: "Testimonials", href: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials" },
     { label: "FAQs", href: "/dashboard/faqs", icon: HelpCircle, module: "faqs" },
     { label: "Blog Posts", href: "/dashboard/blog", icon: BookOpen, module: "blog" },
-    { label: "Enquiries", href: "/dashboard/submissions", icon: Mail, module: "submissions" },
+    { label: "Enquiries & Subscribers", href: "/dashboard/submissions", icon: Mail, module: "submissions" },
     { label: "Users & Team", href: "/dashboard/users", icon: Users, module: "users", adminOnly: true },
     { label: "Roles & Access", href: "/dashboard/roles", icon: KeyRound, module: "roles", adminOnly: true },
     { label: "Website Settings", href: "/dashboard/settings", icon: Settings, module: "settings", adminOnly: true },

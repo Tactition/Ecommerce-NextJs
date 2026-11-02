@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import { HomepagePromo, getAllHomepagePromosAdmin, saveHomepagePromoAction } from "@/lib/actions/promos";
-import { updateWeeklyDealsSettingsAction, updateBundleOfferSettingsAction, getHomepageSettings } from "@/lib/actions/settings";
+import {
+  updateWeeklyDealsSettingsAction,
+  updateBundleOfferSettingsAction,
+  updateNewsletterModalSettingsAction,
+  getHomepageSettings,
+} from "@/lib/actions/settings";
 import { getAllProductsAdmin, Product } from "@/lib/actions/products";
 import ImageUploader from "@/components/dashboard/ImageUploader";
 import {
@@ -18,6 +23,7 @@ import {
   Calendar,
   Eye,
   Package,
+  Mail,
 } from "lucide-react";
 
 function parseDateTimeForInput(val: unknown): string {
@@ -65,6 +71,13 @@ export default function PromosWeeklySettings() {
   const [bundleOfferButtonLink, setBundleOfferButtonLink] = useState("/shop");
   const [bundleOfferImage, setBundleOfferImage] = useState("/assets/images/cta/ctaThumb1_1.png");
   const [bundleOfferBgImage, setBundleOfferBgImage] = useState("/assets/images/cta/ctaBg1_1.jpg");
+
+  // Newsletter Offer Modal form state
+  const [modalEnabled, setModalEnabled] = useState(true);
+  const [modalTitle, setModalTitle] = useState("Subcribe to Our Newsletter");
+  const [modalSubtitle, setModalSubtitle] = useState("Subscribe to our newsletter and Save your 20% money with discount code today.");
+  const [modalCode, setModalCode] = useState("WALLSTREET20");
+  const [modalImage, setModalImage] = useState("/assets/images/modal/common-modal.jpg");
 
   const [feedback, setFeedback] = useState<{ success?: boolean; message?: string } | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -118,6 +131,12 @@ export default function PromosWeeklySettings() {
         setBundleOfferButtonLink(homeSettings.bundle_offer_button_link || "/shop");
         setBundleOfferImage(homeSettings.bundle_offer_image || "/assets/images/cta/ctaThumb1_1.png");
         setBundleOfferBgImage(homeSettings.bundle_offer_bg_image || "/assets/images/cta/ctaBg1_1.jpg");
+
+        setModalEnabled(homeSettings.newsletter_modal_enabled !== 0 && homeSettings.newsletter_modal_enabled !== false);
+        setModalTitle(homeSettings.newsletter_modal_title || "Subcribe to Our Newsletter");
+        setModalSubtitle(homeSettings.newsletter_modal_subtitle || "Subscribe to our newsletter and Save your 20% money with discount code today.");
+        setModalCode(homeSettings.newsletter_modal_code || "WALLSTREET20");
+        setModalImage(homeSettings.newsletter_modal_image || "/assets/images/modal/common-modal.jpg");
       }
     } catch (err) {
       console.error("Error loading promo settings:", err);
@@ -210,6 +229,28 @@ export default function PromosWeeklySettings() {
         await loadData();
       } else {
         setFeedback({ success: false, message: res.error || "Failed to update bundle offer banner" });
+      }
+    });
+  };
+
+  const handleSaveNewsletterModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+
+    const formData = new FormData();
+    formData.append("newsletter_modal_enabled", modalEnabled ? "1" : "0");
+    formData.append("newsletter_modal_title", modalTitle);
+    formData.append("newsletter_modal_subtitle", modalSubtitle);
+    formData.append("newsletter_modal_code", modalCode);
+    formData.append("newsletter_modal_image", modalImage);
+
+    startTransition(async () => {
+      const res = await updateNewsletterModalSettingsAction(formData);
+      if (res.success) {
+        setFeedback({ success: true, message: "Newsletter Offer Popup Modal settings updated successfully!" });
+        await loadData();
+      } else {
+        setFeedback({ success: false, message: res.error || "Failed to update newsletter offer popup" });
       }
     });
   };
@@ -961,6 +1002,225 @@ export default function PromosWeeklySettings() {
             >
               <Save size={18} />
               <span>{isPending ? "Saving..." : "Save Bundle Products Offer Banner"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* SECTION 4: NEWSLETTER OFFER POPUP MODAL */}
+      <div className="abid-card">
+        <div className="abid-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                backgroundColor: "#EFF6FF",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#2563EB",
+              }}
+            >
+              <Mail size={20} />
+            </div>
+            <div>
+              <h2 className="abid-card-title" style={{ fontSize: "1.2rem", fontWeight: 700 }}>
+                Section 4: Newsletter Offer Popup Modal (Dynamic Image & Text)
+              </h2>
+              <p style={{ fontSize: "0.85rem", color: "#64748B", margin: 0 }}>
+                Configure the visitor offer popup modal, upload custom promotional photography, and customize discount messaging.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveNewsletterModal} style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}>
+          {/* Active status toggle */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "14px 18px",
+              backgroundColor: modalEnabled ? "#F0FDF4" : "#F8FAFC",
+              borderRadius: "10px",
+              border: `1px solid ${modalEnabled ? "#BBF7D0" : "#E2E8F0"}`,
+            }}
+          >
+            <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: 600, fontSize: "0.95rem" }}>
+              <input
+                type="checkbox"
+                checked={modalEnabled}
+                onChange={(e) => setModalEnabled(e.target.checked)}
+                style={{ width: "18px", height: "18px", accentColor: "#16A34A", cursor: "pointer" }}
+              />
+              <span>Enable Newsletter Offer Popup Modal on Homepage</span>
+            </label>
+            <span style={{ fontSize: "0.8rem", color: modalEnabled ? "#166534" : "#991B1B", fontWeight: 600 }}>
+              {modalEnabled ? "Modal Active on Homepage" : "Modal Disabled"}
+            </span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: "24px" }}>
+            {/* Left Column: Form controls */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                  Offer Title / Heading
+                </label>
+                <input
+                  type="text"
+                  value={modalTitle}
+                  onChange={(e) => setModalTitle(e.target.value)}
+                  placeholder="Subcribe to Our Newsletter"
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                  Discount Promo Code
+                </label>
+                <input
+                  type="text"
+                  value={modalCode}
+                  onChange={(e) => setModalCode(e.target.value)}
+                  placeholder="WALLSTREET20"
+                  className="form-input"
+                />
+                <span style={{ fontSize: "0.78rem", color: "#64748B", marginTop: "4px", display: "block" }}>
+                  Displayed to subscribers upon successful signup.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                  Modal Subtitle / Body Copy
+                </label>
+                <textarea
+                  value={modalSubtitle}
+                  onChange={(e) => setModalSubtitle(e.target.value)}
+                  placeholder="Subscribe to our newsletter and Save your 20% money with discount code today."
+                  className="form-input"
+                  rows={3}
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem", marginBottom: "6px", display: "block" }}>
+                  Modal Left Photograph
+                </label>
+                <ImageUploader
+                  label="Upload Modal Image"
+                  value={modalImage}
+                  onChange={(url) => setModalImage(url)}
+                />
+                <span style={{ fontSize: "0.78rem", color: "#64748B", marginTop: "4px", display: "block" }}>
+                  Recommended: Portrait orientation (~500&times;600px or ~600&times;750px)
+                </span>
+              </div>
+            </div>
+
+            {/* Right Column: Live Popup Preview */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+                <Eye size={16} color="#64748B" />
+                <span style={{ fontSize: "0.86rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Live Popup Modal Preview
+                </span>
+              </div>
+
+              <div
+                style={{
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  boxShadow: "0 15px 35px rgba(0, 0, 0, 0.08)",
+                  backgroundColor: "#FFFFFF",
+                  display: "grid",
+                  gridTemplateColumns: "42% 58%",
+                  minHeight: "320px",
+                  position: "relative",
+                }}
+              >
+                <div style={{ position: "relative", backgroundColor: "#F1F5F9" }}>
+                  <img
+                    src={modalImage || "/assets/images/modal/common-modal.jpg"}
+                    alt="Modal Preview"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                      minHeight: "300px",
+                    }}
+                  />
+                </div>
+
+                <div style={{ padding: "28px 22px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <div style={{ position: "absolute", top: "14px", right: "16px", color: "#94A3B8", fontSize: "20px", fontWeight: "bold" }}>
+                    &times;
+                  </div>
+                  <h4 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", margin: "0 0 10px", lineHeight: 1.25 }}>
+                    {modalTitle || "Subcribe to Our Newsletter"}
+                  </h4>
+                  <p style={{ color: "#64748B", fontSize: "0.84rem", margin: "0 0 18px", lineHeight: 1.5 }}>
+                    {modalSubtitle || "Subscribe to our newsletter and Save your 20% money with discount code today."}
+                  </p>
+
+                  <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
+                    <input
+                      type="text"
+                      disabled
+                      placeholder="Enter your email"
+                      style={{
+                        flex: 1,
+                        padding: "8px 14px",
+                        fontSize: "0.8rem",
+                        border: "1px solid #CBD5E1",
+                        borderRadius: "50px",
+                        backgroundColor: "#F8FAFC",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled
+                      style={{
+                        padding: "8px 18px",
+                        backgroundColor: "var(--color-primary, #FF4035)",
+                        color: "#FFFFFF",
+                        border: "none",
+                        borderRadius: "50px",
+                        fontSize: "0.8rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Subscribe
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.76rem", color: "#64748B" }}>
+                    <input type="checkbox" disabled checked={false} />
+                    <span>Do not show this window</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="abid-btn abid-btn-primary"
+              style={{ padding: "10px 24px", fontSize: "0.9rem" }}
+            >
+              <Save size={18} />
+              <span>{isPending ? "Saving..." : "Save Newsletter Offer Popup Modal"}</span>
             </button>
           </div>
         </form>

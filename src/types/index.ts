@@ -155,6 +155,13 @@ export interface SiteSettings {
   [key: string]: string | undefined;
 }
 
+export interface FeatureItem {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+}
+
 export interface HomepageSettings {
   id: number;
   hero_badge: string;
@@ -191,6 +198,13 @@ export interface HomepageSettings {
   bundle_offer_badge?: string;
   bundle_offer_image?: string;
   bundle_offer_bg_image?: string;
+  features_enabled?: number | boolean;
+  features_json?: string;
+  newsletter_modal_enabled?: number | boolean;
+  newsletter_modal_image?: string;
+  newsletter_modal_title?: string;
+  newsletter_modal_subtitle?: string;
+  newsletter_modal_code?: string;
   updated_at?: string;
 }
 
@@ -205,6 +219,14 @@ export interface ContactSubmission {
   subject: string;
   message: string;
   status: 'unread' | 'read' | 'archived';
+  created_at: string;
+}
+
+export interface NewsletterSubscriber {
+  id: number;
+  email: string;
+  source: string;
+  status: 'active' | 'unsubscribed';
   created_at: string;
 }
 

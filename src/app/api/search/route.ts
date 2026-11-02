@@ -27,7 +27,14 @@ export async function GET(request: NextRequest) {
       [term, term]
     );
 
-    return NextResponse.json({ products, categories });
+    return NextResponse.json(
+      { products, categories },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("Search API error:", error);
     return NextResponse.json({ products: [], categories: [] }, { status: 500 });

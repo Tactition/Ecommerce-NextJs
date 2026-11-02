@@ -2,12 +2,14 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Product, ProductCategory } from "@/lib/actions/products";
 import { addToCart } from "@/lib/cart";
 import { addToWishlist, toggleWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
-import ProductImageGallery from "@/components/shop/ProductImageGallery";
+
+const ProductImageGallery = dynamic(() => import("@/components/shop/ProductImageGallery"), { ssr: false });
 import {
   Search,
   SlidersHorizontal,

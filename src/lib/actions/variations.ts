@@ -4,6 +4,7 @@ import pool from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { revalidatePath, unstable_cache, revalidateTag } from "next/cache";
+import { cache } from "react";
 
 export interface ProductAttributeValue {
   id: number;
@@ -83,9 +84,15 @@ const fetchAllAttributesWithValuesUncached = async (): Promise<ProductAttribute[
   }
 };
 
-export async function getAllAttributesWithValues(): Promise<ProductAttribute[]> {
-  return fetchAllAttributesWithValuesUncached();
-}
+const getCachedAllAttributesWithValues = unstable_cache(
+  fetchAllAttributesWithValuesUncached,
+  ["all-attributes-with-values"],
+  { tags: ["attributes"], revalidate: 300 }
+);
+
+export const getAllAttributesWithValues = cache(async (): Promise<ProductAttribute[]> => {
+  return getCachedAllAttributesWithValues();
+});
 
 const fetchProductVariationsUncached = async (
   productId: number,
@@ -159,12 +166,19 @@ const fetchProductVariationsUncached = async (
   }
 };
 
-export async function getProductVariations(
+const getCachedProductVariations = unstable_cache(
+  async (productId: number, includeInactive: boolean) =>
+    fetchProductVariationsUncached(productId, includeInactive),
+  ["product-variations"],
+  { tags: ["variations", "products"], revalidate: 300 }
+);
+
+export const getProductVariations = cache(async (
   productId: number,
   includeInactive: boolean = false
-): Promise<ProductVariation[]> {
-  return fetchProductVariationsUncached(productId, includeInactive);
-}
+): Promise<ProductVariation[]> => {
+  return getCachedProductVariations(productId, includeInactive);
+});
 
 /**
  * Admin action: create a new attribute (e.g. "Wood Species")

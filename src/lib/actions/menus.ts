@@ -4,6 +4,7 @@ import pool from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { menuItemSchema } from "@/lib/validations";
 import { revalidatePath, unstable_cache, revalidateTag } from "next/cache";
+import { cache } from "react";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export interface NavMenuItem {
@@ -40,9 +41,15 @@ const fetchNavMenuItemsUncached = async (location: "header" | "categories" | "fo
   }
 };
 
-export async function getNavMenuItems(location: "header" | "categories" | "footer" = "header"): Promise<NavMenuItem[]> {
-  return fetchNavMenuItemsUncached(location);
-}
+const getCachedNavMenuItems = unstable_cache(
+  async (location: "header" | "categories" | "footer") => fetchNavMenuItemsUncached(location),
+  ["nav-menu-items"],
+  { tags: ["menus"], revalidate: 300 }
+);
+
+export const getNavMenuItems = cache(async (location: "header" | "categories" | "footer" = "header"): Promise<NavMenuItem[]> => {
+  return getCachedNavMenuItems(location);
+});
 
 
 export async function getAllNavMenuItemsAdmin(): Promise<NavMenuItem[]> {

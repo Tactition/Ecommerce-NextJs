@@ -4,6 +4,7 @@ import pool from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { cache } from "react";
 
 export interface HomepagePromo {
   id: number;
@@ -41,9 +42,15 @@ const fetchHomepagePromosUncached = async (): Promise<HomepagePromo[]> => {
   }
 };
 
-export async function getHomepagePromos(): Promise<HomepagePromo[]> {
-  return fetchHomepagePromosUncached();
-}
+const getCachedHomepagePromos = unstable_cache(
+  fetchHomepagePromosUncached,
+  ["homepage-promos"],
+  { tags: ["promos"], revalidate: 300 }
+);
+
+export const getHomepagePromos = cache(async (): Promise<HomepagePromo[]> => {
+  return getCachedHomepagePromos();
+});
 
 export async function getAllHomepagePromosAdmin(): Promise<HomepagePromo[]> {
   await requireAuth();

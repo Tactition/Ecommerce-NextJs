@@ -6,6 +6,7 @@ import { testimonialSchema } from "@/lib/validations";
 import { Testimonial } from "@/types";
 export type { Testimonial };
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { cache } from "react";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 const fetchPublishedTestimonialsUncached = async (): Promise<Testimonial[]> => {
@@ -23,9 +24,15 @@ const fetchPublishedTestimonialsUncached = async (): Promise<Testimonial[]> => {
   }
 };
 
-export async function getPublishedTestimonials(): Promise<Testimonial[]> {
-  return fetchPublishedTestimonialsUncached();
-}
+const getCachedPublishedTestimonials = unstable_cache(
+  fetchPublishedTestimonialsUncached,
+  ["published-testimonials"],
+  { tags: ["testimonials"], revalidate: 300 }
+);
+
+export const getPublishedTestimonials = cache(async (): Promise<Testimonial[]> => {
+  return getCachedPublishedTestimonials();
+});
 
 export async function getAllTestimonials(): Promise<Testimonial[]> {
   try {

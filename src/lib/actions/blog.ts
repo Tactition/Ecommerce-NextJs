@@ -6,6 +6,7 @@ import { blogSchema } from "@/lib/validations";
 import { BlogPost } from "@/types";
 export type { BlogPost };
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { cache } from "react";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 const fetchPublishedBlogPostsUncached = async (): Promise<BlogPost[]> => {
@@ -23,9 +24,15 @@ const fetchPublishedBlogPostsUncached = async (): Promise<BlogPost[]> => {
   }
 };
 
-export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
-  return fetchPublishedBlogPostsUncached();
-}
+const getCachedPublishedBlogPosts = unstable_cache(
+  fetchPublishedBlogPostsUncached,
+  ["published-blog-posts"],
+  { tags: ["blogs"], revalidate: 300 }
+);
+
+export const getPublishedBlogPosts = cache(async (): Promise<BlogPost[]> => {
+  return getCachedPublishedBlogPosts();
+});
 
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
   try {
@@ -58,9 +65,15 @@ const fetchBlogPostBySlugUncached = async (slug: string): Promise<BlogPost | nul
   }
 };
 
-export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-  return fetchBlogPostBySlugUncached(slug);
-}
+const getCachedBlogPostBySlug = unstable_cache(
+  async (slug: string) => fetchBlogPostBySlugUncached(slug),
+  ["blog-post-by-slug"],
+  { tags: ["blogs"], revalidate: 300 }
+);
+
+export const getBlogPostBySlug = cache(async (slug: string): Promise<BlogPost | null> => {
+  return getCachedBlogPostBySlug(slug);
+});
 
 export async function getBlogPostById(id: number): Promise<BlogPost | null> {
   try {

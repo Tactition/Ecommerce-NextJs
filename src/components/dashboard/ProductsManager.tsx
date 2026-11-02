@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Product, ProductCategory, deleteProductAction, toggleProductStatusAction } from "@/lib/actions/products";
@@ -97,17 +97,21 @@ export default function ProductsManager({ initialProducts, categories }: Product
     changePage(1);
   };
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.category_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.subcategory_name && p.subcategory_name.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory =
-      selectedCategory === "all" ||
-      p.category_slug === selectedCategory ||
-      p.subcategory_slug === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return products.filter((p) => {
+      const matchesSearch =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.category_name.toLowerCase().includes(q) ||
+        Boolean(p.subcategory_name && p.subcategory_name.toLowerCase().includes(q));
+      const matchesCategory =
+        selectedCategory === "all" ||
+        p.category_slug === selectedCategory ||
+        p.subcategory_slug === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchQuery, selectedCategory]);
 
   // Pagination Computations
   const totalItems = filteredProducts.length;
@@ -116,7 +120,9 @@ export default function ProductsManager({ initialProducts, categories }: Product
 
   const startIndex = (activePage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, startIndex, endIndex]);
 
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];

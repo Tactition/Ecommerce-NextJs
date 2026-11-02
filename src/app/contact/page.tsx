@@ -73,30 +73,48 @@ export default async function ContactPage() {
                           </li>
                         ))}
 
-                        {/* Physical Address */}
+                        {/* Physical Addresses */}
                         {settings.company_address ? (
                           <li className="mb-3">
-                            <i className="fas fa-map-marker-alt"></i>
+                            <i className="fas fa-store text-danger"></i>
                             <div>
                               <span style={{ fontSize: "0.78rem", color: "#94A3B8", display: "block" }}>
-                                Primary Studio & Workshop
+                                Retail Experience Showroom
                               </span>
-                              <span>{settings.company_address}</span>
+                              <span style={{ fontWeight: 600 }}>{settings.company_address}</span>
                             </div>
                           </li>
                         ) : null}
 
                         {settings.company_address_secondary && (
                           <li className="mb-3">
-                            <i className="fas fa-building"></i>
+                            <i className="fas fa-warehouse text-warning"></i>
                             <div>
                               <span style={{ fontSize: "0.78rem", color: "#94A3B8", display: "block" }}>
-                                Secondary Branch / Lab
+                                Central Godown &amp; Wholesale Trade Depot
                               </span>
-                              <span>{settings.company_address_secondary}</span>
+                              <span style={{ fontWeight: 600 }}>{settings.company_address_secondary}</span>
                             </div>
                           </li>
                         )}
+
+                        {/* WhatsApp Hotline */}
+                        <li className="mb-3">
+                          <i className="fa-brands fa-whatsapp text-success fs-5"></i>
+                          <div>
+                            <span style={{ fontSize: "0.78rem", color: "#94A3B8", display: "block" }}>
+                              Instant WhatsApp Consultation &amp; Room Quotes
+                            </span>
+                            <a
+                              href="https://wa.me/919018454526?text=Hi%20Wall%20Street%20Interiors,%20I%20am%20interested%20in%20visiting%20your%20showroom%20or%20getting%20a%20quote."
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontWeight: 700, color: "#16A34A" }}
+                            >
+                              +91 9018454526 (Click to Chat)
+                            </a>
+                          </div>
+                        </li>
 
                         {settings.working_hours && (
                           <li className="mb-3">
@@ -161,11 +179,11 @@ export default async function ContactPage() {
         <div className="map-items">
           <div className="googpemap">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3151.835434509374!2d144.95373531531885!3d-37.81732767975171!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad65d4e793770d3%3A0x9e44d6ad731ac329!2sEnvato!5e0!3m2!1sen!2s!4v1641984054261!5m2!1sen!2s"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3304.536735509374!2d74.8055!3d34.0768!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x38e18fbf793c1dc9%3A0x6b87beea728a4103!2sHabba%20Kadal%2C%20Srinagar%2C%20Jammu%20and%20Kashmir%20190001!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
               style={{ border: 0, width: "100%", height: "450px" }}
               allowFullScreen={false}
               loading="lazy"
-              title="Central Diagnostics Lab"
+              title="Wall Street Interiors - Habba Kadal Showroom, Srinagar"
             ></iframe>
           </div>
         </div>

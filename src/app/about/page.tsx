@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     "Learn about Wall Street Interiors: premier studio for bespoke interior architecture, handcrafted luxury furniture, acoustic wall paneling, and B2B wholesale trade supplies.",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function AboutPage() {
   const [homepageSettings, testimonials] = await Promise.all([
@@ -85,16 +85,16 @@ export default async function AboutPage() {
             <div className="col-xl-7">
               <div className="about-page-content">
                 <span className="subtitle" style={{ color: "var(--theme)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", fontSize: "0.88rem", display: "inline-block", marginBottom: "8px" }}>
-                  Atelier &amp; Experience Studio
+                  Showroom &amp; Central Godown
                 </span>
-                <h1 style={{ fontSize: "2.4rem", fontWeight: 800, marginBottom: "20px", color: "var(--title)" }}>
-                  Where Architectural Vision Meets Luxury
-                </h1>
+                <h2 style={{ fontSize: "2.4rem", fontWeight: 800, marginBottom: "20px", color: "var(--title)" }}>
+                  See It, Touch It, and Get It Installed
+                </h2>
                 <p className="mb-15" style={{ fontSize: "1rem", lineHeight: 1.7, color: "var(--text)" }}>
-                  We believe in sustainable, heirloom-quality craftsmanship. Using seasoned natural hardwoods, acoustic felt-backed timber slats, precision German hardware, and Italian marble surfaces, our artisans and interior architects turn visions into enduring realities.
+                  Most local interior retailers in Kashmir operate out of small catalogs with long waiting times, while generic online sellers do not understand Kashmir’s unique building structures and sub-zero winter heating needs. Our advantage is simple: we import directly from world-class factories, stock bulk inventory right here in Srinagar, and sell at wholesale-friendly prices.
                 </p>
                 <p style={{ fontSize: "1rem", lineHeight: 1.7, color: "var(--text)" }}>
-                  Serving discerning homeowners, boutique hotels, corporate headquarters, and certified contractor trade partners across Kashmir, Wall Street Interiors bridges bespoke aesthetics with reliable wholesale delivery.
+                  Whether you are renovating a drawing room for a Kashmiri wedding, building a boutique hotel in Gulmarg or Pahalgam, or outfitting a commercial showroom in Srinagar, you can walk into our <strong>Habba Kadal showroom</strong> (Near New Habba Kadal Bridge) or our <strong>Fateh Kadal godown</strong> (Near Syed Ali Akbar Mosque) to touch physical samples, inspect live textures, and discuss contractor discounts in person.
                 </p>
               </div>
             </div>

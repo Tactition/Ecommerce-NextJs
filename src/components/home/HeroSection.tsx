@@ -173,6 +173,9 @@ export default function HeroSection({ settings }: HeroSectionProps) {
               <img
                 src={settings.hero_image || "/assets/images/about-us/aboutThumb1_1.jpg"}
                 alt="Wall Street Interiors Architectural Studio"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 style={{ width: "100%", height: "460px", objectFit: "cover" }}
               />
 

@@ -12,8 +12,12 @@ import { HomepageSettings, HomepagePromo, WorkGallery } from "@/types";
 import { addToCart } from "@/lib/cart";
 import { addToWishlist, toggleWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
-import ProductImageGallery from "@/components/shop/ProductImageGallery";
-import GsapScrollAnimation from "@/components/common/GsapScrollAnimation";
+import dynamic from "next/dynamic";
+import FeatureSection from "@/components/home/FeatureSection";
+
+const ProductImageGallery = dynamic(() => import("@/components/shop/ProductImageGallery"), { ssr: false });
+const GsapScrollAnimation = dynamic(() => import("@/components/common/GsapScrollAnimation"), { ssr: false });
+const NewsletterOfferModal = dynamic(() => import("@/components/home/NewsletterOfferModal"), { ssr: false });
 
 function getEmbedUrl(url?: string): string {
   if (!url) return "https://www.youtube-nocookie.com/embed/Cn4G2lZ_g2I?autoplay=1";
@@ -70,6 +74,113 @@ const getCategoryCoverImage = (cat: ProductCategory): string => {
   return "";
 };
 
+const padZero = (n: number) => String(n).padStart(2, "0");
+
+function useDealCountdown(targetDate: string | Date | undefined) {
+  const targetDateStr = targetDate ? String(targetDate) : "2026-12-31T23:59:59";
+  const calculateRemaining = () => {
+    const now = new Date().getTime();
+    const target = new Date(targetDateStr).getTime();
+    const diff = target - now;
+    if (isNaN(diff) || diff <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+    }
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((diff % (1000 * 60)) / 1000),
+      expired: false,
+    };
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateRemaining);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const timer = setInterval(() => {
+      setTimeLeft(calculateRemaining());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDateStr]);
+
+  return { timeLeft, isMounted };
+}
+
+function DealTimerInline({ targetDateStr }: { targetDateStr?: string | Date }) {
+  const { timeLeft, isMounted } = useDealCountdown(targetDateStr);
+
+  if (!isMounted) {
+    return (
+      <span suppressHydrationWarning>
+        00d : 00h : 00m : <span className="sec" suppressHydrationWarning>00s</span>
+      </span>
+    );
+  }
+
+  if (timeLeft.expired) {
+    return <span style={{ color: "#EF4444" }}>Expired</span>;
+  }
+
+  return (
+    <span suppressHydrationWarning>
+      {padZero(timeLeft.days)}d : {padZero(timeLeft.hours)}h : {padZero(timeLeft.minutes)}m :{" "}
+      <span className="sec" suppressHydrationWarning>{padZero(timeLeft.seconds)}s</span>
+    </span>
+  );
+}
+
+function DealTimerBoxes({ targetDateStr }: { targetDateStr?: string | Date }) {
+  const { timeLeft, isMounted } = useDealCountdown(targetDateStr);
+
+  return (
+    <div className="wsi-hot-deal-card__timer-box" suppressHydrationWarning>
+      <div className="wsi-hot-deal-card__timer-unit">
+        <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
+          {!isMounted ? "00" : timeLeft.expired ? "00" : padZero(timeLeft.days)}
+        </div>
+        <div className="wsi-hot-deal-card__timer-label">Days</div>
+      </div>
+      <div className="wsi-hot-deal-card__timer-unit">
+        <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
+          {!isMounted ? "00" : timeLeft.expired ? "00" : padZero(timeLeft.hours)}
+        </div>
+        <div className="wsi-hot-deal-card__timer-label">Hrs</div>
+      </div>
+      <div className="wsi-hot-deal-card__timer-unit">
+        <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
+          {!isMounted ? "00" : timeLeft.expired ? "00" : padZero(timeLeft.minutes)}
+        </div>
+        <div className="wsi-hot-deal-card__timer-label">Min</div>
+      </div>
+      <div className="wsi-hot-deal-card__timer-unit">
+        <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
+          {!isMounted ? "00" : timeLeft.expired ? "00" : padZero(timeLeft.seconds)}
+        </div>
+        <div className="wsi-hot-deal-card__timer-label">Sec</div>
+      </div>
+    </div>
+  );
+}
+
+function DealTimerPill({ targetDateStr }: { targetDateStr?: string | Date }) {
+  const { timeLeft, isMounted } = useDealCountdown(targetDateStr);
+
+  return (
+    <div className="wsi-hot-deal-card__timer-pill" suppressHydrationWarning>
+      <i className="fa-sharp fa-solid fa-alarm-clock"></i>
+      <span suppressHydrationWarning>
+        {!isMounted
+          ? "00d : 00h : 00m"
+          : timeLeft.expired
+            ? "Ended"
+            : `${padZero(timeLeft.days)}d : ${padZero(timeLeft.hours)}h : ${padZero(timeLeft.minutes)}m`}
+      </span>
+    </div>
+  );
+}
+
 interface HomeClientProps {
   categories: ProductCategory[];
   bestSellerProducts: Product[];
@@ -98,13 +209,13 @@ export default function HomeClient({
   galleryItems = [],
 }: HomeClientProps) {
   // Tab States
-  const [bestSellerTab, setBestSellerTab] = useState<"latest" | "popular" | "onsale">("latest");
+  const [bestSellerCategory, setBestSellerCategory] = useState<string>("all");
+  const [bestSellerBrand, setBestSellerBrand] = useState<string>("all");
   const [featuredTab, setFeaturedTab] = useState<string>("all");
 
   // Modals & Popups
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [showNewsletter, setShowNewsletter] = useState(false);
   const [modalQty, setModalQty] = useState(1);
   const [showBackTop, setShowBackTop] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
@@ -169,24 +280,6 @@ export default function HomeClient({
     return () => clearInterval(slideTimer);
   }, [heroSlideImages.length]);
 
-  // Show newsletter modal after 6 seconds on initial load
-  useEffect(() => {
-    const dismissed = localStorage.getItem("newsletter_dismissed");
-    if (!dismissed) {
-      const timer = setTimeout(() => {
-        setShowNewsletter(true);
-      }, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  const dismissNewsletter = (neverAgain = false) => {
-    setShowNewsletter(false);
-    if (neverAgain) {
-      localStorage.setItem("newsletter_dismissed", "true");
-    }
-  };
-
   // Dynamic Live Countdown Timer State connected to admin campaign end date
   const targetDateStr = homepageSettings?.weekly_deal_end_date || "2026-12-31T23:59:59";
   const isTimerEnabled =
@@ -194,44 +287,20 @@ export default function HomeClient({
       ? Boolean(homepageSettings.weekly_deal_enabled)
       : true;
 
-  const calculateRemaining = () => {
-    const now = new Date().getTime();
-    const target = new Date(targetDateStr).getTime();
-    const diff = target - now;
-
-    if (isNaN(diff) || diff <= 0) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
-    }
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-    return { days, hours, minutes, seconds, expired: false };
-  };
-
-  const [timeLeft, setTimeLeft] = useState(calculateRemaining);
-  const [isMounted, setIsMounted] = useState(false);
-
+  // Back to top scroll handler with RAF throttling & passive listener
   useEffect(() => {
-    setIsMounted(true);
-    const timer = setInterval(() => {
-      setTimeLeft(calculateRemaining());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [targetDateStr]);
-
-  // Back to top scroll handler
-  useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowBackTop(true);
-      } else {
-        setShowBackTop(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shouldShow = window.scrollY > 300;
+          setShowBackTop((prev) => (prev !== shouldShow ? shouldShow : prev));
+          ticking = false;
+        });
+        ticking = true;
       }
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -270,21 +339,41 @@ export default function HomeClient({
     return categories.filter((c) => !c.parent_id);
   }, [categories]);
 
-  // Dynamic Best Seller Tabs List (Latest, Popular, On-Sale)
-  const activeBestSellerList = useMemo(() => {
-    if (bestSellerTab === "popular") {
-      const list = popularProducts.length > 0 ? popularProducts : bestSellerProducts.filter((p) => p.is_popular);
-      return list.length > 0 ? list : bestSellerProducts;
+  // Dynamic Categories and Brands for Trendy Items / Best Deals section
+  const bestSellerCategoryTabs = useMemo(() => {
+    const catSlugsWithProducts = new Set(
+      bestSellerProducts.map((p) => p.category_slug?.toLowerCase()).filter(Boolean)
+    );
+    const matching = categories.filter((c) => catSlugsWithProducts.has(c.slug.toLowerCase()));
+    if (matching.length > 0) return matching.slice(0, 5);
+    return categories.slice(0, 5);
+  }, [categories, bestSellerProducts]);
+
+  const bestSellerBrands = useMemo(() => {
+    const brandSet = new Set<string>();
+    bestSellerProducts.forEach((p) => {
+      if (p.brand && p.brand.trim()) {
+        brandSet.add(p.brand.trim());
+      }
+    });
+    return Array.from(brandSet);
+  }, [bestSellerProducts]);
+
+  const filteredBestSellers = useMemo(() => {
+    let list = bestSellerProducts;
+    if (bestSellerCategory !== "all") {
+      list = list.filter(
+        (p) =>
+          p.category_slug?.toLowerCase() === bestSellerCategory.toLowerCase() ||
+          p.subcategory_slug?.toLowerCase() === bestSellerCategory.toLowerCase() ||
+          p.category_name?.toLowerCase() === bestSellerCategory.toLowerCase()
+      );
     }
-    if (bestSellerTab === "onsale") {
-      const list =
-        onSaleProducts.length > 0
-          ? onSaleProducts
-          : bestSellerProducts.filter((p) => p.is_on_sale || (p.discount_percent && p.discount_percent > 0));
-      return list.length > 0 ? list : bestSellerProducts;
+    if (bestSellerBrand !== "all") {
+      list = list.filter((p) => p.brand?.toLowerCase() === bestSellerBrand.toLowerCase());
     }
-    return bestSellerProducts;
-  }, [bestSellerTab, bestSellerProducts, popularProducts, onSaleProducts]);
+    return list;
+  }, [bestSellerProducts, bestSellerCategory, bestSellerBrand]);
 
   // Filter Featured Products by Category Tab
   const filteredFeaturedProducts = useMemo(() => {
@@ -868,159 +957,202 @@ export default function HomeClient({
         </section>
       )}
 
+      {/* ================================================================
+          3. VALUE PROPOSITION FEATURES SECTION (Below Categories Section)
+      ================================================================ */}
+      <FeatureSection
+        enabled={homepageSettings?.features_enabled}
+        featuresJson={homepageSettings?.features_json}
+      />
 
       {/* ================================================================
-          4. BEST SELLER SECTION (lines 1150-1920 of index.html)
+          4. BEST SELLER / TRENDY ITEMS SECTION (lines 1150-1920 of index.html)
       ================================================================ */}
-      {activeBestSellerList && activeBestSellerList.length > 0 && (
-        <section className="best-seller-section section-padding fix bg-1 gsap-scroll-section">
-          <div className="container">
-            <div className="wsi-section-header-split">
-              <div className="wsi-section-title-wrap">
-                <div className="wsi-section-subtitle">
-                  <i className="fa-solid fa-sparkles"></i>
-                  <span>Best Deals</span>
+      {bestSellerProducts && bestSellerProducts.length > 0 && (
+        <section className="best-seller-product-items-section section-padding2 bg-color3 fix gsap-scroll-section" id="best-sellers">
+          <div className="best-seller-product-items-container-wrapper style4">
+            <div className="container">
+              <div className="best-seller-product-items-wrapper style1 text-center mb-30">
+                <div className="section-title">
+                  <div className="subtitle style1">Trendy Items</div>
+                  <h3 className="title">our trendy fasion products</h3>
                 </div>
-                <TextType
-                  as="h2"
-                  className="wsi-section-title"
-                  text={["Best Sellers", "Top Selling Products", "Most Loved Furniture"]}
-                  typingSpeed={60}
-                  pauseDuration={2400}
-                  deletingSpeed={35}
-                  deleteMode="backspace"
-                  typeEffect="fade"
-                  cursorStyle="bar"
-                  cursorColor="var(--color-primary, #FF4035)"
-                  cursorGlide
-                  showCursor
-                />
               </div>
-              <div className="wsi-section-header-right d-flex flex-wrap align-items-center gap-3">
-                <div className="d-flex align-items-center gap-2 wsi-scrollable-tabs">
-                  <button
-                    className={`wsi-nav-pill-btn ${bestSellerTab === "latest" ? "active" : ""}`}
-                    type="button"
-                    onClick={() => setBestSellerTab("latest")}
-                  >
-                    Latest
-                  </button>
-                  <button
-                    className={`wsi-nav-pill-btn ${bestSellerTab === "popular" ? "active" : ""}`}
-                    type="button"
-                    onClick={() => setBestSellerTab("popular")}
-                  >
-                    Popular
-                  </button>
-                  <button
-                    className={`wsi-nav-pill-btn ${bestSellerTab === "onsale" ? "active" : ""}`}
-                    type="button"
-                    onClick={() => setBestSellerTab("onsale")}
-                  >
-                    On-sale
-                  </button>
-                </div>
-                <Link className="theme-btn style7" href="/shop">
-                  View all
-                </Link>
-              </div>
-            </div>
 
-            <div className="row">
-              <div className="col-12">
-                <div className="tab-content" id="pills-tabContent">
-                  <div className="tab-pane fade show active">
-                    <div className="best-seller-tab-content-wrapper">
-                      <div className="row g-3 g-md-4">
-                        {activeBestSellerList.slice(0, 8).map((product, idx) => (
-                          <div key={product.id || idx} className="col-xl-3 col-md-6 col-6">
-                            <div className="wsi-best-seller-card">
-                              <div className="wsi-best-seller-card__thumb">
-                                <Link href={`/product/${product.slug}`} className="d-block w-100 h-100">
-                                  {product.image ? (
-                                    <img
-                                      src={product.image}
-                                      alt={product.name}
-                                      loading="lazy"
-                                      decoding="async"
-                                      className="wsi-best-seller-card__img"
-                                    />
-                                  ) : (
-                                    <div style={{ width: "100%", height: "100%", minHeight: "180px", backgroundColor: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
-                                      <i className="fa-solid fa-couch" style={{ fontSize: "2rem" }}></i>
-                                    </div>
-                                  )}
-                                </Link>
-                                {Boolean(product.discount_percent && product.discount_percent > 0) && (
-                                  <span className="wsi-best-seller-card__badge">
-                                    -{product.discount_percent}%
-                                  </span>
-                                )}
-                              </div>
-                            <div className="wsi-best-seller-card__content">
-                              {product.category_name && (
-                                <span className="wsi-best-seller-card__cat">{product.category_name}</span>
-                              )}
-                              <h4 className="wsi-best-seller-card__title">
-                                <Link href={`/product/${product.slug}`} title={product.name}>
-                                  {product.name}
-                                </Link>
-                              </h4>
-                              <div className="wsi-best-seller-card__rating">
-                                <div className="wsi-best-seller-card__stars">
-                                  {[...Array(5)].map((_, i) => (
-                                    <i
-                                      key={i}
-                                      className={i < (product.rating || 5) ? "fa-solid fa-star" : "fa-regular fa-star"}
-                                    ></i>
-                                  ))}
-                                </div>
-                                <span className="wsi-best-seller-card__reviews">
-                                  ({product.reviews_count || 0})
-                                </span>
-                              </div>
-                              <div className="wsi-best-seller-card__price-wrap">
-                                <span className="wsi-best-seller-card__price">₹{Number(product.price).toFixed(2)}</span>
-                                {product.original_price && (
-                                  <span className="wsi-best-seller-card__price-orig">₹{Number(product.original_price).toFixed(2)}</span>
-                                )}
-                              </div>
-                              <div className="wsi-best-seller-card__actions">
+              <div className="feature-flex-tab-wrapper">
+                <div className="feature-tab-btn-wrapper">
+                  <ul className="nav nav-pills" id="pills-tab" role="tablist">
+                    <li className="nav-item" role="presentation">
+                      <button
+                        className={`nav-link ${bestSellerCategory === "all" ? "active" : ""}`}
+                        id="pills-one-tab"
+                        data-bs-toggle="pill"
+                        data-bs-target="#pills-one"
+                        type="button"
+                        role="tab"
+                        aria-controls="pills-one"
+                        aria-selected={bestSellerCategory === "all"}
+                        onClick={() => setBestSellerCategory("all")}
+                        style={{ width: "auto", minWidth: "110px", padding: "5px 18px" }}
+                      >
+                        All
+                      </button>
+                    </li>
+                    {bestSellerCategoryTabs.map((cat, idx) => (
+                      <li key={cat.id || cat.slug || idx} className="nav-item" role="presentation">
+                        <button
+                          className={`nav-link ${bestSellerCategory === cat.slug ? "active" : ""}`}
+                          type="button"
+                          role="tab"
+                          aria-selected={bestSellerCategory === cat.slug}
+                          onClick={() => setBestSellerCategory(cat.slug)}
+                          style={{ width: "auto", minWidth: "110px", padding: "5px 18px" }}
+                        >
+                          {cat.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="feature-select">
+                  <div className="nav-item">
+                    <div className="form">
+                      <select
+                        className="single-select form-select w-100"
+                        value={bestSellerBrand}
+                        onChange={(e) => setBestSellerBrand(e.target.value)}
+                        style={{
+                          display: "block",
+                          height: "40px",
+                          width: "200px",
+                          borderRadius: "100px",
+                          padding: "0 20px",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          borderColor: "var(--border-6, #EAEAEA)",
+                          backgroundColor: "#FFFFFF",
+                          color: "var(--title, #0F172A)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <option value="all">Select Brand Name</option>
+                        {bestSellerBrands.map((b) => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="tab-content" id="pills-tabContent">
+                <div className="tab-pane fade show active" id="pills-one" role="tabpanel" aria-labelledby="pills-one-tab">
+                  <div className="row g-4">
+                    {filteredBestSellers.length === 0 ? (
+                      <div className="col-12 text-center py-5" style={{ color: "#94A3B8" }}>
+                        <i className="fa-solid fa-box-open mb-2" style={{ fontSize: "2rem" }}></i>
+                        <p>No products found in this category.</p>
+                      </div>
+                    ) : (
+                      filteredBestSellers.slice(0, 8).map((product, idx) => {
+                        const badgeText =
+                          product.discount_percent && product.discount_percent > 0
+                            ? `${product.discount_percent}% off`
+                            : product.is_popular
+                            ? "TRANDING"
+                            : product.is_featured
+                            ? "NEW"
+                            : product.is_on_sale
+                            ? "25% off"
+                            : null;
+
+                        return (
+                          <div key={product.id || idx} className="col-xl-3 col-md-6">
+                            <div className="best-seller-product-items-two">
+                              <div className="icon-box2">
                                 <button
                                   type="button"
-                                  className="wsi-mini-action-btn"
                                   onClick={() => openQuickView(product)}
                                   title="Quick View"
+                                  aria-label="Quick View"
+                                  style={{ border: "none", cursor: "pointer" }}
                                 >
                                   <i className="fa-regular fa-eye"></i>
                                 </button>
                                 <button
                                   type="button"
-                                  className="wsi-mini-action-btn"
                                   onClick={() => handleAddToWishlist(product)}
                                   title="Add to Wishlist"
+                                  aria-label="Add to Wishlist"
+                                  style={{ border: "none", cursor: "pointer" }}
                                 >
                                   <i className="fa-regular fa-heart"></i>
                                 </button>
                                 <button
                                   type="button"
-                                  className="wsi-mini-action-btn"
                                   onClick={() => handleAddToCart(product)}
                                   title="Add to Cart"
+                                  aria-label="Add to Cart"
+                                  style={{ border: "none", cursor: "pointer" }}
                                 >
                                   <i className="fa-light fa-bag-shopping"></i>
                                 </button>
                               </div>
+
+                              {badgeText && (
+                                <div className="best-seller-product-items-two__badge1">
+                                  {badgeText}
+                                </div>
+                              )}
+
+                              <div className="best-seller-product-items-two__thumb">
+                                <Link href={`/product/${product.slug}`} className="d-block">
+                                  <img
+                                    src={product.image || "/assets/images/best-seller/bestSellerProductThumb2_1.png"}
+                                    alt={product.name}
+                                    loading="lazy"
+                                    decoding="async"
+                                    style={{
+                                      maxHeight: "220px",
+                                      height: "220px",
+                                      width: "100%",
+                                      objectFit: "contain",
+                                      display: "block",
+                                      margin: "0 auto",
+                                    }}
+                                  />
+                                </Link>
+                              </div>
+
+                              <div className="best-seller-product-items-two__content">
+                                <div className="best-seller-product-items-two__details">
+                                  <p className="best-seller-product-items-two__details--subtitle">
+                                    {product.category_name || "FASHION BAG"}
+                                  </p>
+                                  <h6 className="best-seller-product-items-two__details--title">
+                                    <Link href={`/product/${product.slug}`}>{product.name}</Link>
+                                  </h6>
+                                  <div className="best-seller-product-items-two__details--price">
+                                    <span className="offer-price">₹{Number(product.price).toFixed(2)}</span>
+                                    {product.original_price && (
+                                      <span className="original-price">
+                                        ₹{Number(product.original_price).toFixed(2)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
           {/* DRONE VIDEO SHOWCASE CONTAINER (lines 1897-1920 of index.html) */}
           <div
@@ -1080,7 +1212,8 @@ export default function HomeClient({
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
       )}
 
       {/* ================================================================
@@ -1515,18 +1648,7 @@ export default function HomeClient({
                         {isTimerEnabled && (
                           <div className="wsi-hot-deal-banner__timer" suppressHydrationWarning>
                             <i className="fa-sharp fa-solid fa-alarm-clock"></i>
-                            {!isMounted ? (
-                              <span suppressHydrationWarning>
-                                00d : 00h : 00m : <span className="sec" suppressHydrationWarning>00s</span>
-                              </span>
-                            ) : timeLeft.expired ? (
-                              <span style={{ color: "#EF4444" }}>Expired</span>
-                            ) : (
-                              <span suppressHydrationWarning>
-                                {pad(timeLeft.days)}d : {pad(timeLeft.hours)}h : {pad(timeLeft.minutes)}m :{" "}
-                                <span className="sec" suppressHydrationWarning>{pad(timeLeft.seconds)}s</span>
-                              </span>
-                            )}
+                            <DealTimerInline targetDateStr={targetDateStr} />
                           </div>
                         )}
                       </div>
@@ -1579,18 +1701,7 @@ export default function HomeClient({
                         {isTimerEnabled && (
                           <div className="wsi-hot-deal-banner__timer" suppressHydrationWarning>
                             <i className="fa-sharp fa-solid fa-alarm-clock"></i>
-                            {!isMounted ? (
-                              <span suppressHydrationWarning>
-                                00d : 00h : 00m : <span className="sec" suppressHydrationWarning>00s</span>
-                              </span>
-                            ) : timeLeft.expired ? (
-                              <span style={{ color: "#EF4444" }}>Expired</span>
-                            ) : (
-                              <span suppressHydrationWarning>
-                                {pad(timeLeft.days)}d : {pad(timeLeft.hours)}h : {pad(timeLeft.minutes)}m :{" "}
-                                <span className="sec" suppressHydrationWarning>{pad(timeLeft.seconds)}s</span>
-                              </span>
-                            )}
+                            <DealTimerInline targetDateStr={targetDateStr} />
                           </div>
                         )}
                       </div>
@@ -1697,46 +1808,12 @@ export default function HomeClient({
 
                       {/* Card 0: 4-Box Countdown Timer */}
                       {vIdx === 0 && isTimerEnabled && (
-                        <div className="wsi-hot-deal-card__timer-box" suppressHydrationWarning>
-                          <div className="wsi-hot-deal-card__timer-unit">
-                            <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
-                              {!isMounted ? "00" : timeLeft.expired ? "00" : pad(timeLeft.days)}
-                            </div>
-                            <div className="wsi-hot-deal-card__timer-label">Days</div>
-                          </div>
-                          <div className="wsi-hot-deal-card__timer-unit">
-                            <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
-                              {!isMounted ? "00" : timeLeft.expired ? "00" : pad(timeLeft.hours)}
-                            </div>
-                            <div className="wsi-hot-deal-card__timer-label">Hrs</div>
-                          </div>
-                          <div className="wsi-hot-deal-card__timer-unit">
-                            <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
-                              {!isMounted ? "00" : timeLeft.expired ? "00" : pad(timeLeft.minutes)}
-                            </div>
-                            <div className="wsi-hot-deal-card__timer-label">Min</div>
-                          </div>
-                          <div className="wsi-hot-deal-card__timer-unit">
-                            <div className="wsi-hot-deal-card__timer-num" suppressHydrationWarning>
-                              {!isMounted ? "00" : timeLeft.expired ? "00" : pad(timeLeft.seconds)}
-                            </div>
-                            <div className="wsi-hot-deal-card__timer-label">Sec</div>
-                          </div>
-                        </div>
+                        <DealTimerBoxes targetDateStr={targetDateStr} />
                       )}
 
                       {/* Card 1: Pill Timer with "Hurry Up! offers ends in:" */}
                       {vIdx === 1 && isTimerEnabled && (
-                        <div className="wsi-hot-deal-card__timer-pill" suppressHydrationWarning>
-                          <i className="fa-sharp fa-solid fa-alarm-clock"></i>
-                          <span suppressHydrationWarning>
-                            {!isMounted
-                              ? "00d : 00h : 00m"
-                              : timeLeft.expired
-                                ? "Ended"
-                                : `${pad(timeLeft.days)}d : ${pad(timeLeft.hours)}h : ${pad(timeLeft.minutes)}m`}
-                          </span>
-                        </div>
+                        <DealTimerPill targetDateStr={targetDateStr} />
                       )}
 
                       <div className="wsi-hot-deal-card__footer">
@@ -1854,94 +1931,7 @@ export default function HomeClient({
       {/* ================================================================
           11. NEWSLETTER MODAL AREA (lines 4503-4548 of index.html)
       ================================================================ */}
-      {showNewsletter && (
-        <div
-          className="modal fade bd-example-modal-lg common-newsletter-modal show d-block"
-          id="exampleModal"
-          tabIndex={-1}
-          role="dialog"
-          aria-hidden="true"
-          style={{ backgroundColor: "rgba(0,0,0,0.65)", zIndex: 1055 }}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-            <div className="modal-content">
-              <div className="modal-body modal1 modal-bg">
-                <div className="row">
-                  <div className="col-12 text-end">
-                    <button
-                      type="button"
-                      className="close border-0 bg-transparent fs-3 p-2"
-                      onClick={() => dismissNewsletter(false)}
-                      aria-label="Close"
-                    >
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div className="col-lg-12">
-                    <div className="row align-items-center">
-                      <div className="col-lg-5 col-md-12">
-                        <div className="offer-modal-img d-none d-lg-block">
-                          <img
-                            src="/assets/images/modal/common-modal.jpg?v=2"
-                            alt="img"
-                            loading="lazy"
-                            decoding="async"
-                            style={{ borderRadius: "12px", maxWidth: "100%", objectFit: "cover" }}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-7 col-md-12">
-                        <div className="offer-modal-right p-3">
-                          <h3>Subcribe to Our Newsletter</h3>
-                          <p>
-                            Subscribe to our newsletter and Save your{" "}
-                            <span style={{ color: "#FF4035", fontWeight: 700 }}>20% money</span> with discount code
-                            today.
-                          </p>
-                          <form
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              alert("Thank you for subscribing! Your 20% discount code is: WALLSTREET20");
-                              dismissNewsletter(true);
-                            }}
-                          >
-                            <div className="input-group mb-3">
-                              <input
-                                type="email"
-                                className="form-control"
-                                placeholder="Enter your email"
-                                required
-                              />
-                              <div className="input-group-append">
-                                <button type="submit" className="theme-btn style6">
-                                  Subscribe
-                                </button>
-                              </div>
-                            </div>
-                            <div className="check_boxed_modal d-flex align-items-center gap-2">
-                              <input
-                                type="checkbox"
-                                id="vehicle1"
-                                name="vehicle1"
-                                onChange={(e) => {
-                                  if (e.target.checked) dismissNewsletter(true);
-                                }}
-                              />
-                              <label htmlFor="vehicle1" style={{ fontSize: "14px", cursor: "pointer" }}>
-                                Do not show this window
-                              </label>
-                            </div>
-                          </form>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <NewsletterOfferModal settings={homepageSettings} />
 
       {/* ================================================================
           12. QUICK VIEW MODAL (lines 572-651 of index.html)
