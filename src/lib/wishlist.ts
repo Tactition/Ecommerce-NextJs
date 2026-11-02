@@ -25,7 +25,11 @@ export function getWishlist(): WishlistItem[] {
     const raw = localStorage.getItem(WISHLIST_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is WishlistItem =>
+        Boolean(item && typeof item.productId === "number" && item.name)
+    );
   } catch (e) {
     console.error("Failed to parse wishlist from localStorage:", e);
     return [];

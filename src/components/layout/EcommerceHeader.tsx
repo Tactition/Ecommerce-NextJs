@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { NavMenuItem } from "@/lib/actions/menus";
-import { ProductCategory } from "@/lib/actions/products";
+import { ProductCategory, validateWishlistItemsAction } from "@/lib/actions/products";
 import { ContactNumberItem, ContactEmailItem } from "@/types";
 import { getCart, removeFromCart, CartItem } from "@/lib/cart";
-import { getWishlist, WishlistItem } from "@/lib/wishlist";
+import { getWishlist, saveWishlist, WishlistItem } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
 import LanguageTranslator from "@/components/common/LanguageTranslator";
 
@@ -253,6 +253,23 @@ export default function EcommerceHeader({
 
     const currentWishlist = getWishlist();
     setWishlistItems(currentWishlist);
+
+    // Auto-prune any stale/orphan wishlist products that no longer exist in the database
+    if (currentWishlist.length > 0) {
+      validateWishlistItemsAction(currentWishlist)
+        .then((activeIds) => {
+          const validWishlist = currentWishlist.filter((item) =>
+            activeIds.includes(item.productId)
+          );
+          if (validWishlist.length !== currentWishlist.length) {
+            saveWishlist(validWishlist);
+            setWishlistItems(validWishlist);
+          }
+        })
+        .catch((err) => {
+          console.error("Wishlist validation error:", err);
+        });
+    }
 
     const handleCartUpdate = (e: any) => {
       const updated = e.detail || getCart();

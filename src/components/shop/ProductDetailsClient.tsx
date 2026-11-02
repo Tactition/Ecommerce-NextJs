@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Product } from "@/lib/actions/products";
 import { ProductVariation, ProductAttribute } from "@/lib/actions/variations";
 import { addToCart } from "@/lib/cart";
+import { toggleWishlist, isInWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
 import ProductImageGallery from "@/components/shop/ProductImageGallery";
 
@@ -92,6 +93,15 @@ export default function ProductDetailsClient({
       setActiveImage(product.image);
     }
   }, [currentVariation, product.image, userSelectedGalleryImage]);
+
+  React.useEffect(() => {
+    setInWishlist(isInWishlist(product.id));
+    const handleWishlistUpdate = () => {
+      setInWishlist(isInWishlist(product.id));
+    };
+    window.addEventListener("wishlist-updated", handleWishlistUpdate);
+    return () => window.removeEventListener("wishlist-updated", handleWishlistUpdate);
+  }, [product.id]);
 
   const currentImage = (activeImage && activeImage.trim() !== "")
     ? activeImage
@@ -368,10 +378,19 @@ export default function ProductDetailsClient({
     if (!requireAuth("wishlist")) {
       return;
     }
-    const next = !inWishlist;
-    setInWishlist(next);
+    const { added } = toggleWishlist({
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: displayPrice,
+      originalPrice: displayOriginalPrice,
+      image: activeImage || product.image,
+      categoryName: product.category_name,
+      stock: displayStock,
+    });
+    setInWishlist(added);
     showNotification(
-      next
+      added
         ? `Added "${product.name}" to your wishlist!`
         : `Removed "${product.name}" from your wishlist.`
     );

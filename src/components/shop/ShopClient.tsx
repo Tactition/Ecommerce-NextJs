@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Product, ProductCategory } from "@/lib/actions/products";
 import { addToCart } from "@/lib/cart";
-import { addToWishlist } from "@/lib/wishlist";
+import { addToWishlist, toggleWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
 import ProductImageGallery from "@/components/shop/ProductImageGallery";
 import {
@@ -131,7 +131,7 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
 
   const handleAddToWishlist = (p: Product) => {
     if (!requireAuth("wishlist")) return;
-    addToWishlist({
+    const { added } = toggleWishlist({
       productId: p.id,
       name: p.name,
       slug: p.slug,
@@ -143,7 +143,12 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
       rating: p.rating,
       badge: p.badge,
     });
-    showToast(`Added "${p.name}" to your wishlist!`, "wishlist");
+    showToast(
+      added
+        ? `Added "${p.name}" to your wishlist!`
+        : `Removed "${p.name}" from your wishlist.`,
+      "wishlist"
+    );
   };
 
   const resetAllFilters = () => {

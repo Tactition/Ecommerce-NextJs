@@ -427,6 +427,28 @@ export async function getProductsByIds(ids: number[]): Promise<Product[]> {
   return fetchProductsByIdsUncached(ids);
 }
 
+export async function validateWishlistItemsAction(
+  items: { productId: number }[]
+): Promise<number[]> {
+  if (!items || items.length === 0) return [];
+  const ids = items
+    .map((i) => i.productId)
+    .filter((id) => typeof id === "number" && id > 0);
+  if (ids.length === 0) return [];
+
+  try {
+    const placeholders = ids.map(() => "?").join(",");
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT id FROM products WHERE id IN (${placeholders}) AND status = 'active'`,
+      ids
+    );
+    return rows.map((r) => Number(r.id));
+  } catch (err) {
+    console.error("Error validating wishlist IDs:", err);
+    return ids;
+  }
+}
+
 const fetchAllProductsUncached = async (): Promise<Product[]> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(

@@ -10,7 +10,7 @@ import HomeGallerySection from "@/components/home/HomeGallerySection";
 import TextType from "@/components/common/TextType";
 import { HomepageSettings, HomepagePromo, WorkGallery } from "@/types";
 import { addToCart } from "@/lib/cart";
-import { addToWishlist } from "@/lib/wishlist";
+import { addToWishlist, toggleWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
 import ProductImageGallery from "@/components/shop/ProductImageGallery";
 import GsapScrollAnimation from "@/components/common/GsapScrollAnimation";
@@ -128,7 +128,7 @@ export default function HomeClient({
 
   const handleAddToWishlist = (product: Product) => {
     if (!requireAuth("wishlist")) return;
-    addToWishlist({
+    const { added } = toggleWishlist({
       productId: product.id,
       name: product.name,
       slug: product.slug,
@@ -140,7 +140,11 @@ export default function HomeClient({
       rating: product.rating,
       badge: product.badge,
     });
-    setNotification(`Added "${product.name}" to your wishlist!`);
+    setNotification(
+      added
+        ? `Added "${product.name}" to your wishlist!`
+        : `Removed "${product.name}" from your wishlist.`
+    );
     setTimeout(() => setNotification(null), 3000);
   };
 

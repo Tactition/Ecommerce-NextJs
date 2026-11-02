@@ -1,27 +1,75 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Product } from "@/lib/actions/products";
 import { addToCart } from "@/lib/cart";
+import {
+  getWishlist,
+  saveWishlist,
+  removeFromWishlist,
+  clearWishlist,
+  WishlistItem,
+} from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 interface WishlistClientProps {
-  initialProducts: Product[];
+  initialProducts?: Product[];
 }
 
-export default function WishlistClient({ initialProducts }: WishlistClientProps) {
+export default function WishlistClient({ initialProducts = [] }: WishlistClientProps) {
   const { requireAuth } = useAuth();
-  // Use initial active products from DB or default to first 4
-  const [items, setItems] = useState<Product[]>(() => {
-    return initialProducts.slice(0, 4);
-  });
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
-  const removeItem = (id: number) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    showNotification("Item removed from your wishlist.");
-  };
+  useEffect(() => {
+    const stored = getWishlist();
+
+    // Auto-sync with initialProducts if available to refresh prices/stock and prune deleted items
+    if (initialProducts.length > 0 && stored.length > 0) {
+      const activeIds = new Set(initialProducts.map((p) => p.id));
+      const validStored = stored.filter((item) => activeIds.has(item.productId));
+
+      const refreshed = validStored.map((item) => {
+        const live = initialProducts.find((p) => p.id === item.productId);
+        if (!live) return item;
+        return {
+          ...item,
+          name: live.name,
+          slug: live.slug,
+          price: live.price,
+          originalPrice: live.original_price,
+          image: live.image,
+          stock: live.stock,
+          categoryName: live.category_name,
+        };
+      });
+
+      if (validStored.length !== stored.length) {
+        saveWishlist(refreshed);
+      }
+      setItems(refreshed);
+    } else {
+      setItems(stored);
+    }
+
+    setIsLoaded(true);
+
+    const handleWishlistUpdate = (e: any) => {
+      const updated = e.detail || getWishlist();
+      setItems(updated);
+    };
+
+    window.addEventListener("wishlist-updated", handleWishlistUpdate);
+    window.addEventListener("storage", (e) => {
+      if (e.key === "wallstreet_wishlist_v1") handleWishlistUpdate({});
+    });
+
+    return () => {
+      window.removeEventListener("wishlist-updated", handleWishlistUpdate);
+    };
+  }, [initialProducts]);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -30,24 +78,31 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
     }, 3000);
   };
 
-  const handleAddToCart = (product: Product) => {
-    if (!requireAuth("cart")) return;
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      originalPrice: product.original_price,
-      quantity: 1,
-      image: product.image,
-      maxStock: product.stock,
-    });
-    showNotification(`"${product.name}" was added to your shopping cart!`);
+  const removeItem = (productId: number) => {
+    const updated = removeFromWishlist(productId);
+    setItems(updated);
+    showNotification("Item removed from your wishlist.");
   };
 
-  const restoreDemoItems = () => {
-    setItems(initialProducts.slice(0, 4));
-    showNotification("Wishlist restored!");
+  const handleClearWishlist = () => {
+    clearWishlist();
+    setItems([]);
+    showNotification("Wishlist cleared.");
+  };
+
+  const handleAddToCart = (item: WishlistItem) => {
+    if (!requireAuth("cart")) return;
+    addToCart({
+      productId: item.productId,
+      name: item.name,
+      slug: item.slug,
+      price: item.price,
+      originalPrice: item.originalPrice,
+      quantity: 1,
+      image: item.image,
+      maxStock: item.stock || 99,
+    });
+    showNotification(`"${item.name}" was added to your shopping cart!`);
   };
 
   return (
@@ -120,7 +175,13 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
             </div>
           )}
 
-          {items.length === 0 ? (
+          {!isLoaded ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-danger" role="status">
+                <span className="visually-hidden">Loading wishlist...</span>
+              </div>
+            </div>
+          ) : items.length === 0 ? (
             <div className="text-center py-5">
               <div style={{ maxWidth: "480px", margin: "0 auto" }}>
                 <div style={{ fontSize: "4.5rem", color: "#CBD5E1", marginBottom: "20px" }}>
@@ -130,17 +191,11 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
                   Your Wishlist is Empty
                 </h3>
                 <p style={{ color: "#64748B", marginBottom: "30px", lineHeight: 1.6 }}>
-                  You don&apos;t have any products saved in your wishlist yet. Explore our electronic collection and save your favorite devices!
+                  You don&apos;t have any products saved in your wishlist yet. Explore our bespoke blinds, curtains, and interior collections and save your favorite items!
                 </p>
                 <div className="d-flex justify-content-center gap-3">
-                  <button
-                    onClick={restoreDemoItems}
-                    className="theme-btn"
-                    style={{ cursor: "pointer" }}
-                  >
-                    Restore Demo Items
-                  </button>
                   <Link href="/shop" className="theme-btn style6">
+                    <i className="fa-solid fa-bag-shopping me-2"></i>
                     Explore Shop
                   </Link>
                 </div>
@@ -163,11 +218,11 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
                   </thead>
                   <tbody>
                     {items.map((item) => (
-                      <tr key={item.id} className="cart_item" style={{ verticalAlign: "middle" }}>
+                      <tr key={item.productId} className="cart_item" style={{ verticalAlign: "middle" }}>
                         <td className="product" data-title="Product" style={{ padding: "20px 15px" }}>
                           <button
                             type="button"
-                            onClick={() => removeItem(item.id)}
+                            onClick={() => removeItem(item.productId)}
                             style={{
                               background: "none",
                               border: "none",
@@ -179,6 +234,7 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
                             onMouseEnter={(e) => (e.currentTarget.style.color = "#FF4035")}
                             onMouseLeave={(e) => (e.currentTarget.style.color = "#94A3B8")}
                             aria-label="Remove item"
+                            title="Remove from wishlist"
                           >
                             <i className="fa-solid fa-xmark"></i>
                           </button>
@@ -209,7 +265,7 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
                           <span className="amount">
                             <bdi>
                               <span>₹</span>
-                              {item.price.toFixed(2)}
+                              {Number(item.price).toFixed(2)}
                             </bdi>
                           </span>
                         </td>
@@ -218,15 +274,15 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
                           <span className="amount">
                             <bdi>
                               <span>₹</span>
-                              {item.price.toFixed(2)}
+                              {Number(item.price).toFixed(2)}
                             </bdi>
                           </span>
                         </td>
 
                         <td data-title="stock" style={{ textAlign: "center" }}>
-                          {item.stock > 0 ? (
+                          {(item.stock ?? 10) > 0 ? (
                             <span className="stock" style={{ color: "#10B981", fontWeight: 600 }}>
-                              <i className="fa-solid fa-circle-check me-1"></i> In stock ({item.stock})
+                              <i className="fa-solid fa-circle-check me-1"></i> In stock
                             </span>
                           ) : (
                             <span className="stock_out" style={{ color: "#EF4444", fontWeight: 600 }}>
@@ -267,10 +323,7 @@ export default function WishlistClient({ initialProducts }: WishlistClientProps)
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setItems([]);
-                    showNotification("Wishlist cleared.");
-                  }}
+                  onClick={handleClearWishlist}
                   className="theme-btn style7 border-0"
                   style={{ cursor: "pointer", background: "#F1F5F9", color: "#475569" }}
                 >
