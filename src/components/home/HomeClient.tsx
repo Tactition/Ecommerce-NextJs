@@ -1065,8 +1065,8 @@ export default function HomeClient({
               <div className="col-lg-6">
                 <div className="video-thumb text-center">
                   <img
-                    src="/assets/images/video/drone.png?v=2"
-                    alt="Thumb"
+                    src={homepageSettings?.hero_video_thumb || "/assets/images/video/drone.png?v=2"}
+                    alt="Video Showcase Product"
                     loading="lazy"
                     decoding="async"
                     style={{ maxWidth: "100%", maxHeight: "320px", objectFit: "contain" }}

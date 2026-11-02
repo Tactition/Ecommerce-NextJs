@@ -78,7 +78,7 @@ export default function SettingsDashboardPage() {
       setHeroImage(h.hero_image || "/assets/images/intro/introThumb1_1.png");
       setHeroImage2(h.hero_image_2 || "/assets/images/intro/introThumb1_2.png");
       setHeroImage3(h.hero_image_3 || "/assets/images/intro/introThumb1_3.png");
-      setHeroVideoThumb(h.hero_video_thumb || "/assets/images/intro/introThumbShape1_3.png");
+      setHeroVideoThumb(h.hero_video_thumb || "/assets/images/video/drone.png?v=2");
       setAboutImage(h.about_image || "");
 
       setPhoneList(parsePhoneNumbers(s));
@@ -1033,9 +1033,12 @@ export default function SettingsDashboardPage() {
                   <ImageUploader
                     value={heroVideoThumb}
                     onChange={setHeroVideoThumb}
-                    label="Video Button Bubble Thumbnail"
+                    label="Video Showcase Banner Image (Replaces Drone Photo)"
                     name="hero_video_thumb"
                   />
+                  <small style={{ color: "#64748B", fontSize: "0.78rem", marginTop: "4px", display: "block" }}>
+                    Image displayed on the right side of the video showcase section banner on the homepage.
+                  </small>
                 </div>
               </div>
             </div>

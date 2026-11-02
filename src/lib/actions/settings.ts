@@ -21,7 +21,7 @@ const fetchHomepageSettingsUncached = async (): Promise<HomepageSettings> => {
     hero_price: "₹45,500",
     hero_colors: "#770215,#E9CF10,#35424B",
     hero_video_url: "https://www.youtube.com/watch?v=Cn4G2lZ_g2I",
-    hero_video_thumb: "/assets/images/intro/introThumbShape1_3.png",
+    hero_video_thumb: "/assets/images/video/drone.png?v=2",
     hero_button_text: "Add To Cart",
     hero_button_link: "/shop",
     hero_secondary_button_text: "View Now",
