@@ -83,13 +83,6 @@ export default function MobileNavigation({ settings }: MobileNavProps) {
           >
             Contact
           </Link>
-          <Link
-            href="/dashboard"
-            onClick={() => setIsOpen(false)}
-            style={{ fontSize: "1.1rem", fontWeight: 600, padding: "10px 0", borderBottom: "1px solid #F1F5F9", color: "var(--color-primary)" }}
-          >
-            Admin Portal
-          </Link>
 
           <div style={{ marginTop: "auto", paddingTop: "20px", borderTop: "1px solid #E2E8F0" }}>
             {settings.company_phone ? (

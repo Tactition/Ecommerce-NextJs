@@ -33,7 +33,7 @@ export async function getRolePermissions(roleSlug: string): Promise<string[]> {
   const normalizedSlug = roleSlug.trim().toLowerCase();
 
   // Super Administrator always has unrestricted wildcard access
-  if (normalizedSlug === "admin") {
+  if (normalizedSlug === "admin" || normalizedSlug === "superadmin") {
     return ["*"];
   }
 
@@ -74,7 +74,7 @@ export function canUser(
   action: string
 ): boolean {
   if (!session) return false;
-  if (session.role === "admin") return true;
+  if (session.role === "admin" || session.role === "superadmin") return true;
 
   return hasPermission(session.permissions, module, action);
 }
@@ -93,7 +93,7 @@ export async function requirePermission(
   }
 
   // Super Administrator bypass
-  if (session.role === "admin") {
+  if (session.role === "admin" || session.role === "superadmin") {
     return session;
   }
 

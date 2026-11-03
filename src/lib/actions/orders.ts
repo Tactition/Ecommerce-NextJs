@@ -2,7 +2,9 @@
 
 import pool from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { getSession, requireAuth } from "@/lib/auth";
+import { getCustomerSession } from "@/lib/auth/customer";
+import { getDealerSession } from "@/lib/auth/dealer";
+import { requireAdmin } from "@/lib/auth/admin";
 import { revalidatePath } from "next/cache";
 
 export interface OrderItemInput {
@@ -41,10 +43,11 @@ export interface CreateOrderInput {
   shippingPostalCode?: string;
   shippingCountry?: string;
   orderNotes?: string;
-  paymentMethod: "cod" | "upi" | "card" | "bank_transfer";
+  paymentMethod: "cod" | "upi" | "card" | "bank_transfer" | "credit_terms";
   couponCode?: string;
   discountPercent?: number;
   items: OrderItemInput[];
+  purchaseOrderNumber?: string;
 }
 
 export interface PlacedOrder {
@@ -105,9 +108,25 @@ export async function createOrderAction(data: CreateOrderInput): Promise<{
 }> {
   try {
     // 0. Enforce authenticated checkout
-    const session = await getSession();
-    if (!session) {
+    const customer = await getCustomerSession();
+    const dealer = await getDealerSession();
+
+    if (!customer && !dealer) {
       return { success: false, error: "Please sign in to complete your purchase." };
+    }
+
+    // Check if dealer order
+    let isB2B = 0;
+    let dealerId: number | null = null;
+    let customerId: number | null = customer?.customerId || null;
+    let invoiceTerms: string | null = null;
+
+    if (dealer && dealer.approvalStatus === "APPROVED") {
+      isB2B = 1;
+      dealerId = dealer.dealerId;
+      if (data.paymentMethod === "credit_terms") {
+        invoiceTerms = "Net 30 Days";
+      }
     }
 
     // 1. Validation
@@ -155,23 +174,25 @@ export async function createOrderAction(data: CreateOrderInput): Promise<{
     // 4. Insert into orders table
     const [orderRes] = await pool.execute<ResultSetHeader>(
       `INSERT INTO orders (
-        order_number, user_id, first_name, last_name, company_name, gstin,
+        order_number, user_id, is_b2b, dealer_id, first_name, last_name, company_name, gstin,
         email, phone, address_line1, address_line2, city, state, postal_code, country,
         ship_to_different, shipping_first_name, shipping_last_name, shipping_address_line1,
         shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country,
         order_notes, subtotal, discount_amount, coupon_code, shipping_fee, total_amount,
-        payment_method, payment_status, order_status
+        payment_method, invoice_terms, purchase_order_number, payment_status, order_status
       ) VALUES (
-        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
-        ?, ?, ?
+        ?, ?, ?, ?, ?
       )`,
       [
         orderNumber,
-        session.userId,
+        customerId,
+        isB2B,
+        dealerId,
         data.firstName.trim(),
         data.lastName.trim(),
         data.companyName?.trim() || null,
@@ -200,7 +221,9 @@ export async function createOrderAction(data: CreateOrderInput): Promise<{
         shippingFee,
         totalAmount,
         data.paymentMethod || "cod",
-        data.paymentMethod === "cod" ? "pending" : "pending",
+        invoiceTerms,
+        data.purchaseOrderNumber?.trim() || null,
+        data.paymentMethod === "credit_terms" ? "pending" : (data.paymentMethod === "cod" ? "pending" : "pending"),
         "confirmed",
       ]
     );
@@ -374,7 +397,7 @@ export interface AdminOrderStats {
 }
 
 export async function getOrderStatsAdminAction(): Promise<AdminOrderStats> {
-  await requireAuth();
+  await requireAdmin();
 
   try {
     const [rows] = await pool.query<RowDataPacket[]>(`
@@ -429,7 +452,7 @@ export async function getAllOrdersAdminAction(options?: {
   orders: AdminOrderSummary[];
   stats: AdminOrderStats;
 }> {
-  await requireAuth();
+  await requireAdmin();
 
   try {
     const stats = await getOrderStatsAdminAction();
@@ -573,7 +596,7 @@ export async function getAllOrdersAdminAction(options?: {
 }
 
 export async function getOrderDetailsAdminAction(orderId: number): Promise<PlacedOrder | null> {
-  await requireAuth();
+  await requireAdmin();
 
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -661,7 +684,7 @@ export async function updateOrderStatusAction(
   orderId: number,
   status: string
 ): Promise<{ success: boolean; error?: string }> {
-  await requireAuth();
+  await requireAdmin();
 
   const allowedStatuses = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
   if (!allowedStatuses.includes(status)) {
@@ -688,7 +711,7 @@ export async function updateOrderPaymentStatusAction(
   orderId: number,
   paymentStatus: string
 ): Promise<{ success: boolean; error?: string }> {
-  await requireAuth();
+  await requireAdmin();
 
   const allowedPaymentStatuses = ["pending", "paid", "failed", "refunded"];
   if (!allowedPaymentStatuses.includes(paymentStatus)) {
@@ -712,7 +735,7 @@ export async function updateOrderPaymentStatusAction(
 }
 
 export async function deleteOrderAction(orderId: number): Promise<{ success: boolean; error?: string }> {
-  await requireAuth();
+  await requireAdmin();
 
   try {
     await pool.execute<ResultSetHeader>(`DELETE FROM order_items WHERE order_id = ?`, [orderId]);

@@ -1,11 +1,16 @@
 import React from "react";
-import { getSession } from "@/lib/auth";
+import { getAdminSession } from "@/lib/auth/admin";
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import { AdminAuthProvider } from "@/components/auth/AdminAuthProvider";
 import "@/app/dashboard.css";
 
 export const metadata = {
-  title: "Admin Dashboard | Wall Street Interiors",
+  title: "Admin Console | Wall Street Interiors",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -15,23 +20,39 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
-  if (!session) {
-    redirect("/login");
+  const admin = await getAdminSession();
+  if (!admin) {
+    redirect("/admin/login");
   }
 
   const isStaff =
-    session.role === "admin" ||
-    session.role === "editor" ||
-    session.role === "manager";
+    admin.role === "superadmin" ||
+    admin.role === "manager" ||
+    admin.role === "editor" ||
+    admin.role === "support";
 
   if (!isStaff) {
-    redirect("/profile");
+    redirect("/admin/login?error=unauthorized_staff");
   }
 
   return (
-    <DashboardShell user={session}>
-      {children}
-    </DashboardShell>
+    <AdminAuthProvider initialSession={admin}>
+      <DashboardShell
+        user={{
+          id: admin.adminId,
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          permissions:
+            admin.permissions && admin.permissions.length > 0
+              ? admin.permissions
+              : admin.role === "superadmin"
+              ? ["*"]
+              : [],
+        }}
+      >
+        {children}
+      </DashboardShell>
+    </AdminAuthProvider>
   );
 }

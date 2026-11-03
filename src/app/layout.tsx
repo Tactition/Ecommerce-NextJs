@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Outfit, Onest } from "next/font/google";
 import "./globals.css";
+import "./b2b.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import LayoutShell from "@/components/layout/LayoutShell";
 import { getSiteSettings } from "@/lib/actions/settings";
-import { getSession } from "@/lib/auth";
+import { getCustomerSession } from "@/lib/auth/customer";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import FloatingWhatsApp from "@/components/common/FloatingWhatsApp";
 
@@ -83,9 +84,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [settings, session] = await Promise.all([
+  const [settings, customerSession] = await Promise.all([
     getSiteSettings(),
-    getSession(),
+    getCustomerSession(),
   ]);
   const favicon = settings.site_favicon || "/assets/images/favicon.png";
 
@@ -214,7 +215,7 @@ export default async function RootLayout({
         <link rel="stylesheet" href="/assets/css/main.css" />
       </head>
       <body suppressHydrationWarning>
-        <AuthProvider initialSession={session}>
+        <AuthProvider initialSession={customerSession}>
           <LayoutShell header={<Header />} footer={<Footer />}>
             {children}
           </LayoutShell>

@@ -11,8 +11,12 @@ export default function FloatingWhatsApp({ whatsappNumber = "+919018454526" }: F
   const pathname = usePathname();
   const [isHovered, setIsHovered] = useState(false);
 
-  // Do not display in admin dashboard
-  if (pathname?.startsWith("/dashboard")) {
+  // Do not display in admin dashboard, admin login, or dealer portal
+  if (
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/dealer")
+  ) {
     return null;
   }
 

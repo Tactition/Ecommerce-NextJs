@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { requireAuth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth/admin";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import AdminAccountClient from "@/components/dashboard/AdminAccountClient";
@@ -12,31 +12,22 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminAccountPage() {
-  const session = await requireAuth();
-
-  const isStaff =
-    session.role === "admin" ||
-    session.role === "editor" ||
-    session.role === "manager";
-
-  if (!isStaff) {
-    redirect("/admin?error=admin_required");
-  }
+  const admin = await requireAdmin();
 
   const [rows] = await pool.execute<RowDataPacket[]>(
-    "SELECT id, name, email, role FROM users WHERE id = ? LIMIT 1",
-    [session.userId]
+    "SELECT id, name, email, role FROM admin_users WHERE id = ? LIMIT 1",
+    [admin.adminId]
   );
 
   if (!rows || rows.length === 0) {
-    redirect("/login");
+    redirect("/admin/login");
   }
 
   const currentUser = {
     id: Number(rows[0].id),
-    name: String(rows[0].name || session.name || "Administrator"),
-    email: String(rows[0].email || session.email),
-    role: String(rows[0].role || session.role),
+    name: String(rows[0].name || admin.name || "Administrator"),
+    email: String(rows[0].email || admin.email),
+    role: String(rows[0].role || admin.role),
   };
 
   return <AdminAccountClient currentUser={currentUser} />;

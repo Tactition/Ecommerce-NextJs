@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getAdminSession } from "@/lib/auth/admin";
 import AdminLoginForm from "./AdminLoginForm";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +16,8 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminGatewayPage() {
-  const session = await getSession();
-
-  const isStaff =
-    session &&
-    (session.role === "admin" ||
-      session.role === "editor" ||
-      session.role === "manager");
-
-  if (isStaff) {
+  const admin = await getAdminSession();
+  if (admin) {
     redirect("/dashboard");
   }
 

@@ -12,13 +12,22 @@ interface LayoutShellProps {
 
 export default function LayoutShell({ header, footer, children }: LayoutShellProps) {
   const pathname = usePathname();
-  const isDashboardOrAuth = pathname?.startsWith("/dashboard") || pathname === "/login" || pathname === "/register";
 
-  if (isDashboardOrAuth) {
+  // Exclude public storefront header & footer on all Admin, Dealer, and standalone Auth routes
+  const isStandalone =
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/dealer") ||
+    pathname === "/login" ||
+    pathname === "/register";
+
+  if (isStandalone) {
     return (
       <>
         <TopProgressBar />
-        <main className="admin-root-shell" style={{ minHeight: "100vh" }}>{children}</main>
+        <main className="isolated-portal-shell" style={{ minHeight: "100vh" }}>
+          {children}
+        </main>
       </>
     );
   }
@@ -32,5 +41,3 @@ export default function LayoutShell({ header, footer, children }: LayoutShellPro
     </>
   );
 }
-
-

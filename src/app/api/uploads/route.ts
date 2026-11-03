@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAdminSession } from "@/lib/auth/admin";
 import pool from "@/lib/db";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
@@ -9,12 +9,12 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getAdminSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!["admin", "editor"].includes(session.role)) {
+    if (!["superadmin", "editor", "manager"].includes(session.role)) {
       return NextResponse.json({ error: "Forbidden: Insufficient privileges" }, { status: 403 });
     }
 

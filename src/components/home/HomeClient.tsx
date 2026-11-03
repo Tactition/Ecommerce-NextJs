@@ -1154,59 +1154,174 @@ export default function HomeClient({
                 </div>
               </div>
 
-          {/* DRONE VIDEO SHOWCASE CONTAINER (lines 1897-1920 of index.html) */}
+          {/* VIDEO SHOWCASE STUDIO SECTION */}
           <div
-            className="video-container bg-img"
+            className="wsi-video-showcase position-relative overflow-hidden"
             style={{
-              backgroundImage: "url(/assets/images/video/video-bg.jpg)",
+              background: "linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)",
               marginTop: "60px",
               borderRadius: "24px",
               padding: "50px",
+              boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.35)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
             }}
           >
-            <div className="row align-items-center">
+            <div className="row align-items-center g-4">
               <div className="col-lg-6">
-                <div className="video-content">
-                  <div className="video-box mb-4">
+                <div style={{ textAlign: "left", maxWidth: "520px" }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      background: "rgba(212, 175, 55, 0.15)",
+                      border: "1px solid rgba(212, 175, 55, 0.35)",
+                      borderRadius: "50px",
+                      padding: "6px 16px",
+                      marginBottom: "18px",
+                    }}
+                  >
+                    <i className="fa-solid fa-film" style={{ color: "#D4AF37", fontSize: "0.8rem" }}></i>
+                    <span
+                      style={{
+                        color: "#F8FAFC",
+                        fontSize: "0.82rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.8px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Studio Tour &amp; Showcase
+                    </span>
+                  </div>
+
+                  <h3
+                    style={{
+                      fontSize: "clamp(1.9rem, 3.2vw, 2.6rem)",
+                      fontWeight: 800,
+                      color: "#FFFFFF",
+                      lineHeight: 1.25,
+                      marginBottom: "16px",
+                      letterSpacing: "-0.5px",
+                    }}
+                  >
+                    Architectural Perspectives &amp; Elevated Living
+                  </h3>
+
+                  <p
+                    style={{
+                      color: "rgba(248, 250, 252, 0.86)",
+                      fontSize: "1.05rem",
+                      lineHeight: 1.65,
+                      marginBottom: "28px",
+                      maxWidth: "480px",
+                    }}
+                  >
+                    Experience Kashmir&apos;s finest window blinds, motorized curtains, and architectural wall systems designed for refined residences and commercial spaces.
+                  </p>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      className="play-btn popup-video border-0 bg-transparent"
                       onClick={() => setIsVideoModalOpen(true)}
-                      aria-label="Play video"
+                      aria-label="Play video showcase"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "13px 26px",
+                        borderRadius: "50px",
+                        background: "linear-gradient(135deg, #FF4035 0%, #D4AF37 100%)",
+                        color: "#FFFFFF",
+                        border: "none",
+                        fontWeight: 700,
+                        fontSize: "0.95rem",
+                        cursor: "pointer",
+                        boxShadow: "0 8px 24px rgba(255, 64, 53, 0.35)",
+                        transition: "all 0.3s ease",
+                      }}
                     >
-                      <i className="fa-sharp fa-solid fa-play"></i>
+                      <i className="fa-solid fa-play" style={{ fontSize: "0.85rem" }}></i>
+                      <span>Watch Studio Video</span>
                     </button>
+
+                    <Link
+                      className="theme-btn style3"
+                      href="/shop"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "13px 28px",
+                        borderRadius: "50px",
+                        fontWeight: 700,
+                        fontSize: "0.95rem",
+                        textDecoration: "none",
+                      }}
+                    >
+                      <span>Explore Catalog</span>
+                      <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.85rem" }}></i>
+                    </Link>
                   </div>
-                  <div className="section-title">
-                    <TextType
-                      as="h3"
-                      className="title"
-                      text={["See The Worlds Like Birds", "Architectural Perspectives", "Elevated Living Views"]}
-                      typingSpeed={60}
-                      pauseDuration={2400}
-                      deletingSpeed={35}
-                      deleteMode="backspace"
-                      typeEffect="fade"
-                      cursorStyle="bar"
-                      cursorColor="var(--color-primary, #FF4035)"
-                      cursorGlide
-                      showCursor
-                    />
-                  </div>
-                  <Link className="theme-btn style3" href="/shop">
-                    View All Products
-                  </Link>
                 </div>
               </div>
+
               <div className="col-lg-6">
-                <div className="video-thumb text-center">
-                  <img
-                    src={homepageSettings?.hero_video_thumb || "/assets/images/video/drone.png?v=2"}
-                    alt="Video Showcase Product"
-                    loading="lazy"
-                    decoding="async"
-                    style={{ maxWidth: "100%", maxHeight: "320px", objectFit: "contain" }}
-                  />
+                <div
+                  style={{
+                    position: "relative",
+                    maxWidth: "480px",
+                    width: "100%",
+                    margin: "0 auto",
+                    borderRadius: "20px",
+                    overflow: "hidden",
+                    boxShadow: "0 20px 45px rgba(0, 0, 0, 0.4)",
+                    border: "2px solid rgba(255, 255, 255, 0.15)",
+                    background: "rgba(15, 23, 42, 0.8)",
+                  }}
+                >
+                  <div style={{ position: "relative", width: "100%", height: "290px" }}>
+                    <img
+                      src={homepageSettings?.hero_video_thumb || "/assets/images/video/drone.png?v=2"}
+                      alt="Video Showcase"
+                      loading="lazy"
+                      decoding="async"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsVideoModalOpen(true)}
+                      aria-label="Play video showcase"
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: "64px",
+                        height: "64px",
+                        borderRadius: "50%",
+                        background: "rgba(15, 23, 42, 0.85)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        border: "2px solid rgba(255, 255, 255, 0.6)",
+                        color: "#FFFFFF",
+                        fontSize: "20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        paddingLeft: "4px",
+                        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.6)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <i className="fa-solid fa-play"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1451,7 +1566,7 @@ export default function HomeClient({
                 <div
                   className="wsi-bundle-banner position-relative overflow-hidden"
                   style={{
-                    backgroundImage: `url(${homepageSettings?.bundle_offer_bg_image || "/assets/images/cta/ctaBg1_1.jpg"})`,
+                    backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(30, 41, 59, 0.65) 100%), url(${homepageSettings?.bundle_offer_bg_image || "/assets/images/cta/ctaBg1_1.jpg"})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     borderRadius: "24px",
@@ -1459,7 +1574,8 @@ export default function HomeClient({
                     minHeight: "360px",
                     display: "flex",
                     alignItems: "center",
-                    boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
                   }}
                 >
                   <div className="row align-items-center w-100 g-4" style={{ margin: 0, zIndex: 2 }}>
@@ -1471,19 +1587,18 @@ export default function HomeClient({
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "8px",
-                              background: "rgba(255, 255, 255, 0.2)",
-                              backdropFilter: "blur(12px)",
-                              WebkitBackdropFilter: "blur(12px)",
-                              border: "1px solid rgba(255, 255, 255, 0.4)",
+                              background: "linear-gradient(135deg, #FF4035 0%, #E02B20 100%)",
                               borderRadius: "50px",
                               padding: "6px 18px",
                               marginBottom: "16px",
-                              boxShadow: "0 4px 15px rgba(0, 0, 0, 0.12)",
+                              boxShadow: "0 6px 16px rgba(255, 64, 53, 0.35)",
+                              border: "1px solid rgba(255, 255, 255, 0.3)",
                             }}
                           >
+                            <i className="fa-solid fa-tags" style={{ color: "#FFFFFF", fontSize: "0.8rem" }}></i>
                             <span
                               style={{
-                                fontSize: "0.85rem",
+                                fontSize: "0.82rem",
                                 fontWeight: 800,
                                 color: "#FFFFFF",
                                 letterSpacing: "0.8px",

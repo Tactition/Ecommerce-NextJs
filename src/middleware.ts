@@ -1,196 +1,215 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken, COOKIE_NAME } from "@/lib/token";
-import { hasPermission, RBAC_MODULE_IDS } from "@/types/rbac";
+import { verifyCustomerToken, CUSTOMER_COOKIE } from "@/lib/auth/tokens/customerToken";
+import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/auth/tokens/adminToken";
+import { verifyDealerToken, DEALER_COOKIE } from "@/lib/auth/tokens/dealerToken";
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  const token = request.cookies.get(COOKIE_NAME)?.value;
-  const session = token ? await verifySessionToken(token) : null;
 
-  // 1. If user is already authenticated and visits /login or /register
-  if (pathname === "/login" || pathname === "/register") {
-    if (session) {
-      const redirectUrl = request.nextUrl.searchParams.get("redirectTo");
+  // ============================================================================
+  // 1. ADMIN DOMAIN ROUTING (/admin/*, /dashboard/*, /api/admin/*)
+  // ============================================================================
+  if (
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/api/admin")
+  ) {
+    const adminToken = request.cookies.get(ADMIN_COOKIE)?.value;
+    const adminSession = adminToken ? await verifyAdminToken(adminToken) : null;
 
-      const isStaff =
-        session.role === "admin" ||
-        session.role === "editor" ||
-        session.role === "manager";
+    // Security Headers for all Admin responses
+    const response = NextResponse.next();
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
 
-      if (isStaff) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+    const isAdminLoginRoute = pathname === "/admin" || pathname === "/admin/login";
+
+    // 1a. If admin visits admin login page
+    if (isAdminLoginRoute) {
+      if (adminSession) {
+        const rawRedirect = request.nextUrl.searchParams.get("redirectTo");
+        let safeRedirect = "/dashboard";
+        if (
+          rawRedirect &&
+          (rawRedirect.startsWith("/admin") || rawRedirect.startsWith("/dashboard")) &&
+          !rawRedirect.startsWith("//")
+        ) {
+          safeRedirect = rawRedirect;
+        }
+        return NextResponse.redirect(new URL(safeRedirect, request.url));
       }
+      // If unauthenticated or other roles logged in: SHOW ADMIN LOGIN FORM CLEANLY
+      return response;
+    }
+
+    // 1b. Protected Admin API Routes
+    if (pathname.startsWith("/api/admin")) {
+      if (pathname.startsWith("/api/admin/auth/")) {
+        return NextResponse.next(); // Public auth endpoints (login)
+      }
+      if (!adminSession) {
+        return NextResponse.json(
+          { error: "Unauthorized: Valid administrator session required." },
+          { status: 401 }
+        );
+      }
+      return NextResponse.next();
+    }
+
+    // 1c. Protected Admin Pages (/dashboard/*, /admin/*)
+    if (!adminSession) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("redirectTo", pathname + search);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Attach verified admin identity headers
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-admin-id", String(adminSession.adminId));
+    requestHeaders.set("x-admin-email", adminSession.email);
+    requestHeaders.set("x-admin-name", adminSession.name);
+    requestHeaders.set("x-admin-role", adminSession.role);
+    requestHeaders.set("x-admin-permissions", JSON.stringify(adminSession.permissions));
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+      headers: response.headers,
+    });
+  }
+
+  // ============================================================================
+  // 2. DEALER DOMAIN ROUTING (/dealer/*, /api/dealer/*)
+  // ============================================================================
+  if (pathname.startsWith("/dealer") || pathname.startsWith("/api/dealer")) {
+    const dealerToken = request.cookies.get(DEALER_COOKIE)?.value;
+    const dealerSession = dealerToken ? await verifyDealerToken(dealerToken) : null;
+
+    const response = NextResponse.next();
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+
+    const isPublicDealerRoute =
+      pathname === "/dealer/login" ||
+      pathname === "/dealer/register" ||
+      pathname === "/dealer/pending" ||
+      pathname === "/dealer/rejected" ||
+      pathname === "/dealer/suspended";
+
+    // 2a. If dealer visits dealer login or registration
+    if (pathname === "/dealer/login" || pathname === "/dealer/register") {
+      if (dealerSession) {
+        if (dealerSession.approvalStatus === "APPROVED") {
+          return NextResponse.redirect(new URL("/dealer", request.url));
+        } else if (dealerSession.approvalStatus === "PENDING") {
+          return NextResponse.redirect(new URL("/dealer/pending", request.url));
+        } else if (dealerSession.approvalStatus === "REJECTED") {
+          return NextResponse.redirect(new URL("/dealer/rejected", request.url));
+        } else if (dealerSession.approvalStatus === "SUSPENDED") {
+          return NextResponse.redirect(new URL("/dealer/suspended", request.url));
+        }
+      }
+      // If unauthenticated or other roles logged in: SHOW DEALER LOGIN FORM CLEANLY
+      return response;
+    }
+
+    // 2b. Protected Dealer API Routes
+    if (pathname.startsWith("/api/dealer")) {
+      if (pathname.startsWith("/api/dealer/auth/")) {
+        return NextResponse.next();
+      }
+      if (!dealerSession || dealerSession.approvalStatus !== "APPROVED") {
+        return NextResponse.json(
+          { error: "Unauthorized: Approved wholesale trade account required." },
+          { status: 401 }
+        );
+      }
+      return NextResponse.next();
+    }
+
+    // 2c. Gate verification for non-public dealer portal pages
+    if (!isPublicDealerRoute) {
+      if (!dealerSession) {
+        const loginUrl = new URL("/dealer/login", request.url);
+        loginUrl.searchParams.set("redirectTo", pathname + search);
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+
+    if (dealerSession) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-dealer-id", String(dealerSession.dealerId));
+      requestHeaders.set("x-dealer-email", dealerSession.email);
+      requestHeaders.set("x-dealer-company", dealerSession.companyName);
+      requestHeaders.set("x-dealer-status", dealerSession.approvalStatus);
+
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+        headers: response.headers,
+      });
+    }
+
+    return response;
+  }
+
+  // ============================================================================
+  // 3. CUSTOMER DOMAIN ROUTING (/login, /register, /profile/*, /account/*, /checkout/*)
+  // ============================================================================
+  const customerToken = request.cookies.get(CUSTOMER_COOKIE)?.value;
+  const customerSession = customerToken ? await verifyCustomerToken(customerToken) : null;
+
+  // 3a. Customer Login & Register Pages
+  if (pathname === "/login" || pathname === "/register") {
+    if (customerSession) {
+      const rawRedirect = request.nextUrl.searchParams.get("redirectTo");
+      let safeRedirect = "/profile";
 
       if (
-        redirectUrl &&
-        redirectUrl.startsWith("/") &&
-        !redirectUrl.startsWith("//") &&
-        !redirectUrl.startsWith("/dashboard")
+        rawRedirect &&
+        rawRedirect.startsWith("/") &&
+        !rawRedirect.startsWith("//") &&
+        !rawRedirect.startsWith("/admin") &&
+        !rawRedirect.startsWith("/dashboard") &&
+        !rawRedirect.startsWith("/dealer")
       ) {
-        return NextResponse.redirect(new URL(redirectUrl, request.url));
+        safeRedirect = rawRedirect;
       }
-
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL(safeRedirect, request.url));
     }
+    // If not a customer (or admin/dealer logged in on another tab): SHOW CUSTOMER LOGIN
     return NextResponse.next();
   }
 
-  // 1.5. Admin Gateway Route: /admin (Dedicated Admin Login Form)
-  if (pathname === "/admin" || pathname === "/admin/") {
-    if (session) {
-      const isStaff =
-        session.role === "admin" ||
-        session.role === "editor" ||
-        session.role === "manager";
-      if (isStaff) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
-      }
-    }
-    // Let unauthenticated or non-staff users view /admin directly (renders AdminLoginForm)
-    return NextResponse.next();
-  }
-
-  // 2. Protected Admin Dashboard Routes - STRICT AUTHORIZATION (NO PUBLIC / CUSTOMER ACCESS)
-  if (pathname.startsWith("/dashboard")) {
-    if (!session) {
-      const adminLoginUrl = new URL("/admin", request.url);
-      adminLoginUrl.searchParams.set("redirectTo", pathname + search);
-      adminLoginUrl.searchParams.set("reason", "admin_login_required");
-      return NextResponse.redirect(adminLoginUrl);
+  // 3b. Protected Customer Storefront Areas (/profile, /account, /checkout)
+  if (
+    pathname === "/profile" ||
+    pathname.startsWith("/profile/") ||
+    pathname === "/account" ||
+    pathname.startsWith("/account/") ||
+    pathname === "/checkout" ||
+    pathname.startsWith("/checkout/")
+  ) {
+    if (!customerSession) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirectTo", pathname + search);
+      return NextResponse.redirect(loginUrl);
     }
 
-    // Disallow regular customers or unauthorized roles from accessing admin dashboard
-    const isStaff =
-      session.role === "admin" ||
-      session.role === "editor" ||
-      session.role === "manager";
-
-    if (!isStaff) {
-      const adminLoginUrl = new URL("/admin", request.url);
-      adminLoginUrl.searchParams.set("redirectTo", pathname + search);
-      adminLoginUrl.searchParams.set("error", "admin_required");
-      return NextResponse.redirect(adminLoginUrl);
-    }
-
-    // Dynamic RBAC module access check:
-    const pathParts = pathname.split("/").filter(Boolean);
-    const requestedModule = pathParts[1]; // e.g. "products", "settings", "roles", "users"
-
-    if (requestedModule && RBAC_MODULE_IDS.includes(requestedModule)) {
-      const isSuperAdmin = session.role === "admin";
-      const canAccessModule =
-        isSuperAdmin || hasPermission(session.permissions, requestedModule, "view");
-
-      if (!canAccessModule) {
-        const deniedUrl = new URL("/dashboard", request.url);
-        deniedUrl.searchParams.set("unauthorized", requestedModule);
-        return NextResponse.redirect(deniedUrl);
-      }
-    }
-
-    // Attach verified user identity headers for downstream server components
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", String(session.userId));
-    requestHeaders.set("x-user-email", session.email);
-    requestHeaders.set("x-user-name", session.name);
-    requestHeaders.set("x-user-role", session.role);
-    if (session.permissions) {
-      requestHeaders.set("x-user-permissions", JSON.stringify(session.permissions));
-    }
+    requestHeaders.set("x-customer-id", String(customerSession.customerId));
+    requestHeaders.set("x-customer-email", customerSession.email);
+    requestHeaders.set("x-customer-name", customerSession.name);
 
     return NextResponse.next({
       request: {
         headers: requestHeaders,
       },
     });
-  }
-
-  // 3. Protected Customer Checkout Flow (Must be logged in to purchase products)
-  if (pathname === "/checkout" || pathname.startsWith("/checkout/")) {
-    if (!session) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirectTo", "/checkout");
-      loginUrl.searchParams.set("reason", "checkout_login_required");
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
-  // 3.5 Protected Dealer Portal Routes
-  if (pathname.startsWith("/dealer")) {
-    // Prevent search engine indexing of dealer portal
-    const response = NextResponse.next();
-    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
-
-    const isPublicDealerRoute = 
-      pathname === "/dealer/login" || 
-      pathname === "/dealer/register" || 
-      pathname === "/dealer/pending" || 
-      pathname === "/dealer/rejected" || 
-      pathname === "/dealer/suspended";
-
-    if (!session) {
-      if (!isPublicDealerRoute) {
-        const loginUrl = new URL("/dealer/login", request.url);
-        loginUrl.searchParams.set("redirectTo", pathname + search);
-        return NextResponse.redirect(loginUrl);
-      }
-      return response;
-    }
-
-    // If authenticated user is NOT a dealer (e.g. regular customer)
-    if (session.role !== "dealer" && session.role !== "admin") {
-      if (!isPublicDealerRoute) {
-        const regUrl = new URL("/dealer/register", request.url);
-        regUrl.searchParams.set("error", "dealer_account_required");
-        return NextResponse.redirect(regUrl);
-      }
-      return response;
-    }
-
-    // If authenticated dealer visits login or register, redirect them
-    if (pathname === "/dealer/login" || pathname === "/dealer/register") {
-      if (session.dealerStatus === "APPROVED" || session.role === "admin") {
-        return NextResponse.redirect(new URL("/dealer", request.url));
-      } else if (session.dealerStatus === "PENDING") {
-        return NextResponse.redirect(new URL("/dealer/pending", request.url));
-      } else if (session.dealerStatus === "REJECTED") {
-        return NextResponse.redirect(new URL("/dealer/rejected", request.url));
-      } else if (session.dealerStatus === "SUSPENDED") {
-        return NextResponse.redirect(new URL("/dealer/suspended", request.url));
-      }
-    }
-
-    // For protected dealer routes, check dealerStatus
-    if (!isPublicDealerRoute && session.role === "dealer") {
-      if (session.dealerStatus === "PENDING") {
-        return NextResponse.redirect(new URL("/dealer/pending", request.url));
-      }
-      if (session.dealerStatus === "REJECTED") {
-        return NextResponse.redirect(new URL("/dealer/rejected", request.url));
-      }
-      if (session.dealerStatus === "SUSPENDED") {
-        return NextResponse.redirect(new URL("/dealer/suspended", request.url));
-      }
-    }
-
-    return response;
-  }
-
-  // 4. Protected API Routes
-  if (pathname.startsWith("/api/uploads") || pathname.startsWith("/api/admin")) {
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized: Please sign in to access this API." },
-        { status: 401 }
-      );
-    }
-
-    if (pathname.startsWith("/api/admin") && session.role !== "admin") {
-      return NextResponse.json(
-        { error: "Forbidden: Administrator role required." },
-        { status: 403 }
-      );
-    }
   }
 
   return NextResponse.next();
@@ -200,14 +219,19 @@ export const config = {
   matcher: [
     "/admin",
     "/admin/:path*",
+    "/dashboard",
     "/dashboard/:path*",
-    "/checkout/:path*",
-    "/checkout",
-    "/dealer/:path*",
+    "/api/admin/:path*",
     "/dealer",
+    "/dealer/:path*",
+    "/api/dealer/:path*",
     "/login",
     "/register",
-    "/api/uploads",
-    "/api/admin/:path*",
+    "/profile",
+    "/profile/:path*",
+    "/account",
+    "/account/:path*",
+    "/checkout",
+    "/checkout/:path*",
   ],
 };

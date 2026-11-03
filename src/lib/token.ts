@@ -15,6 +15,9 @@ export interface SessionPayload {
   name: string;
   role: string;
   permissions?: string[]; // e.g. ["products:view", "products:create", ...] or ["*"]
+  dealerId?: number;
+  dealerStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+  tierId?: number;
   [key: string]: unknown;
 }
 
@@ -29,6 +32,9 @@ export async function signSessionToken(payload: SessionPayload): Promise<string>
     name: payload.name,
     role: payload.role,
     permissions: payload.permissions || [],
+    dealerId: payload.dealerId,
+    dealerStatus: payload.dealerStatus,
+    tierId: payload.tierId,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -56,6 +62,9 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
       name: String(payload.name || ""),
       role: String(payload.role || "customer"),
       permissions,
+      dealerId: payload.dealerId ? Number(payload.dealerId) : undefined,
+      dealerStatus: payload.dealerStatus as any,
+      tierId: payload.tierId ? Number(payload.tierId) : undefined,
     };
   } catch {
     return null;

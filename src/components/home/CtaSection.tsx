@@ -10,7 +10,7 @@ export default function CtaSection() {
             <div
               className="wsi-bundle-banner position-relative overflow-hidden"
               style={{
-                backgroundImage: "url(/assets/images/cta/ctaBg1_1.jpg)",
+                backgroundImage: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(30, 41, 59, 0.65) 100%), url(/assets/images/cta/ctaBg1_1.jpg)",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 borderRadius: "24px",
@@ -18,7 +18,8 @@ export default function CtaSection() {
                 minHeight: "360px",
                 display: "flex",
                 alignItems: "center",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
               }}
             >
               <div className="row align-items-center w-100 g-4" style={{ margin: 0, zIndex: 2 }}>
@@ -29,19 +30,18 @@ export default function CtaSection() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "8px",
-                        background: "rgba(255, 255, 255, 0.2)",
-                        backdropFilter: "blur(12px)",
-                        WebkitBackdropFilter: "blur(12px)",
-                        border: "1px solid rgba(255, 255, 255, 0.4)",
+                        background: "linear-gradient(135deg, #FF4035 0%, #E02B20 100%)",
                         borderRadius: "50px",
                         padding: "6px 18px",
                         marginBottom: "16px",
-                        boxShadow: "0 4px 15px rgba(0, 0, 0, 0.12)",
+                        boxShadow: "0 6px 16px rgba(255, 64, 53, 0.35)",
+                        border: "1px solid rgba(255, 255, 255, 0.3)",
                       }}
                     >
+                      <i className="fa-solid fa-tags" style={{ color: "#FFFFFF", fontSize: "0.8rem" }}></i>
                       <span
                         style={{
-                          fontSize: "0.85rem",
+                          fontSize: "0.82rem",
                           fontWeight: 800,
                           color: "#FFFFFF",
                           letterSpacing: "0.8px",

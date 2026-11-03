@@ -85,7 +85,7 @@ export default function EcommerceHeader({
   workingHours = "",
 }: EcommerceHeaderProps) {
   const router = useRouter();
-  const { user, isAuthenticated, isStaff, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [liveSearchResults, setLiveSearchResults] = useState<{
@@ -612,7 +612,7 @@ export default function EcommerceHeader({
                             {user?.name}
                           </div>
                           <div style={{ color: "#94A3B8", fontSize: "0.75rem", marginTop: "2px" }}>
-                            {isStaff ? "Administrator / Staff" : "Customer Account"}
+                            {user?.email || "Customer Account"}
                           </div>
                         </div>
                       </div>
@@ -659,27 +659,6 @@ export default function EcommerceHeader({
                       >
                         <i className="fa-solid fa-user"></i> My Profile & Orders
                       </Link>
-                      {isStaff && (
-                        <Link
-                          href="/dashboard"
-                          onClick={() => setIsOffcanvasOpen(false)}
-                          style={{
-                            padding: "7px 14px",
-                            backgroundColor: "rgba(255, 64, 53, 0.2)",
-                            border: "1px solid rgba(255, 64, 53, 0.4)",
-                            color: "#FF4035",
-                            borderRadius: "8px",
-                            fontSize: "0.8rem",
-                            fontWeight: 700,
-                            textDecoration: "none",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <i className="fa-solid fa-gauge"></i> Admin
-                        </Link>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -1089,24 +1068,6 @@ export default function EcommerceHeader({
                       <i className="fa-solid fa-user-circle"></i>
                       <span>Hi, {user?.name ? user.name.split(" ")[0] : "My Account"}</span>
                     </Link>
-
-                    {isStaff && (
-                      <Link
-                        href="/dashboard"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px",
-                          fontWeight: 700,
-                          fontSize: "13px",
-                          color: "var(--theme, #FF4035)",
-                          textDecoration: "none",
-                        }}
-                      >
-                        <i className="fa-solid fa-gauge-high"></i>
-                        <span>Admin</span>
-                      </Link>
-                    )}
 
                     <button
                       type="button"

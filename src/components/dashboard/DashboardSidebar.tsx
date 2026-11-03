@@ -29,7 +29,7 @@ import {
   Briefcase,
   ShoppingBag,
 } from "lucide-react";
-import { logoutAction } from "@/lib/actions/auth";
+import { logoutAdminAction } from "@/lib/actions/adminAuth";
 
 interface DashboardSidebarProps {
   user?: {
@@ -53,35 +53,60 @@ export default function DashboardSidebar({
   closeMobile,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const isAdmin = user?.role === "admin";
-  const userPerms = user?.permissions || [];
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const userPerms = user?.permissions || (isAdmin ? ["*"] : []);
 
-  const links = [
-    { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Customer Orders", href: "/dashboard/orders", icon: ShoppingBag, module: "orders" },
-    { label: "Products", href: "/dashboard/products", icon: Package, module: "products" },
-    { label: "Categories", href: "/dashboard/categories", icon: FolderTree, module: "categories" },
-    { label: "Menu Management", href: "/dashboard/menus", icon: Compass, module: "menus" },
-    { label: "Careers & Jobs", href: "/dashboard/careers", icon: Briefcase, module: "careers" },
-    { label: "Partner Brands", href: "/dashboard/brands", icon: Award, module: "brands" },
-    { label: "Testimonials", href: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials" },
-    { label: "FAQs", href: "/dashboard/faqs", icon: HelpCircle, module: "faqs" },
-    { label: "Blog Posts", href: "/dashboard/blog", icon: BookOpen, module: "blog" },
-    { label: "Enquiries & Subscribers", href: "/dashboard/submissions", icon: Mail, module: "submissions" },
-    { label: "Users & Team", href: "/dashboard/users", icon: Users, module: "users", adminOnly: true },
-    { label: "Roles & Access", href: "/dashboard/roles", icon: KeyRound, module: "roles", adminOnly: true },
-    { label: "Website Settings", href: "/dashboard/settings", icon: Settings, module: "settings", adminOnly: true },
-    { label: "Profile & Security", href: "/dashboard/account", icon: ShieldCheck },
+  interface NavLinkItem {
+    label: string;
+    href: string;
+    icon: React.ElementType;
+    section: "COMMERCE" | "CONTENT MASTERS" | "ADMINISTRATION";
+    module?: string;
+    adminOnly?: boolean;
+  }
+
+  const links: NavLinkItem[] = [
+    // COMMERCE
+    { label: "Overview", href: "/dashboard", icon: LayoutDashboard, section: "COMMERCE" },
+    { label: "Customer Orders", href: "/dashboard/orders", icon: ShoppingBag, module: "orders", section: "COMMERCE" },
+    { label: "Products", href: "/dashboard/products", icon: Package, module: "products", section: "COMMERCE" },
+    { label: "Categories", href: "/dashboard/categories", icon: FolderTree, module: "categories", section: "COMMERCE" },
+    { label: "B2B Dealers", href: "/dashboard/dealers", icon: Briefcase, adminOnly: true, module: "dealers", section: "COMMERCE" },
+    { label: "Wholesale Pricing", href: "/dashboard/pricing/wholesale", icon: Settings, adminOnly: true, module: "wholesale", section: "COMMERCE" },
+
+    // CONTENT & CATALOG MASTERS
+    { label: "Portfolio Gallery", href: "/dashboard/gallery", icon: Camera, module: "gallery", section: "CONTENT MASTERS" },
+    { label: "Studio Services", href: "/dashboard/services", icon: Wrench, module: "services", section: "CONTENT MASTERS" },
+    { label: "Menu Management", href: "/dashboard/menus", icon: Compass, module: "menus", section: "CONTENT MASTERS" },
+    { label: "Careers & Jobs", href: "/dashboard/careers", icon: Briefcase, module: "careers", section: "CONTENT MASTERS" },
+    { label: "Partner Brands", href: "/dashboard/brands", icon: Award, module: "brands", section: "CONTENT MASTERS" },
+    { label: "Testimonials", href: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials", section: "CONTENT MASTERS" },
+    { label: "FAQs", href: "/dashboard/faqs", icon: HelpCircle, module: "faqs", section: "CONTENT MASTERS" },
+    { label: "Blog Posts", href: "/dashboard/blog", icon: BookOpen, module: "blog", section: "CONTENT MASTERS" },
+
+    // SYSTEM & ADMINISTRATION
+    { label: "Enquiries & Forms", href: "/dashboard/submissions", icon: Mail, module: "submissions", section: "ADMINISTRATION" },
+    { label: "Users & Team", href: "/dashboard/users", icon: Users, module: "users", adminOnly: true, section: "ADMINISTRATION" },
+    { label: "Roles & Access", href: "/dashboard/roles", icon: KeyRound, module: "roles", adminOnly: true, section: "ADMINISTRATION" },
+    { label: "Website Settings", href: "/dashboard/settings", icon: Settings, module: "settings", adminOnly: true, section: "ADMINISTRATION" },
+    { label: "Profile & Security", href: "/dashboard/account", icon: ShieldCheck, section: "ADMINISTRATION" },
   ];
 
   // Dynamically filter links based on user module:view permissions
   const visibleLinks = links.filter((link) => {
-    if (!link.module) return true; // Overview is always visible
     if (isAdmin) return true;
+    if (link.adminOnly) return false;
+    if (!link.module) return true;
     if (userPerms.includes("*") || userPerms.includes("*:*")) return true;
     if (userPerms.includes(`${link.module}:*`) || userPerms.includes(`${link.module}:view`)) return true;
     return false;
   });
+
+  const sections: Array<"COMMERCE" | "CONTENT MASTERS" | "ADMINISTRATION"> = [
+    "COMMERCE",
+    "CONTENT MASTERS",
+    "ADMINISTRATION",
+  ];
 
   return (
     <aside
@@ -131,51 +156,70 @@ export default function DashboardSidebar({
 
       {/* Navigation List */}
       <nav className="sidebar-nav-container">
-        {!isCollapsed && (
-          <div className="sidebar-section-heading">MANAGEMENT</div>
-        )}
-
-        {visibleLinks.map((link) => {
-          const Icon = link.icon;
-          const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(`${link.href}/`));
+        {sections.map((sectionName) => {
+          const sectionLinks = visibleLinks.filter((l) => l.section === sectionName);
+          if (sectionLinks.length === 0) return null;
 
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              prefetch={true}
-              onClick={closeMobile}
-              className={`dashboard-nav-item ${isActive ? "active" : ""}`}
-            >
-              <div className="nav-icon-wrap" style={{ position: "relative" }}>
-                <Icon size={19} />
-              </div>
+            <div key={sectionName} style={{ marginBottom: "12px" }}>
               {!isCollapsed && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flex: 1 }}>
-                  <span className="nav-label-text">{link.label}</span>
-                  {link.adminOnly && (
-                    <span
-                      style={{
-                        fontSize: "0.68rem",
-                        padding: "1px 6px",
-                        borderRadius: "4px",
-                        backgroundColor: isAdmin ? "rgba(255, 64, 53, 0.15)" : "#F1F5F9",
-                        color: isAdmin ? "#FF4035" : "#64748B",
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Admin
-                    </span>
-                  )}
-                </div>
+                <div className="sidebar-section-heading">{sectionName}</div>
               )}
+              {sectionLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive =
+                  pathname === link.href ||
+                  (link.href !== "/dashboard" && pathname.startsWith(`${link.href}/`));
 
-              {/* Floating Animated Tooltip in Collapsed Mode */}
-              <div className="sidebar-tooltip">
-                <span>{link.label} {link.adminOnly ? "(Admin)" : ""}</span>
-              </div>
-            </Link>
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    prefetch={true}
+                    onClick={closeMobile}
+                    className={`dashboard-nav-item ${isActive ? "active" : ""}`}
+                  >
+                    <div className="nav-icon-wrap" style={{ position: "relative" }}>
+                      <Icon size={16} />
+                    </div>
+                    {!isCollapsed && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flex: 1,
+                        }}
+                      >
+                        <span className="nav-label-text">{link.label}</span>
+                        {link.adminOnly && (
+                          <span
+                            style={{
+                              fontSize: "0.68rem",
+                              padding: "1px 6px",
+                              borderRadius: "4px",
+                              backgroundColor: isAdmin ? "rgba(255, 64, 53, 0.15)" : "#F1F5F9",
+                              color: isAdmin ? "#FF4035" : "#64748B",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Floating Animated Tooltip in Collapsed Mode */}
+                    <div className="sidebar-tooltip">
+                      <span>
+                        {link.label} {link.adminOnly ? "(Admin)" : ""}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
@@ -233,7 +277,15 @@ export default function DashboardSidebar({
                   textTransform: "capitalize",
                 }}
               >
-                {user.role === "admin" ? "Super Admin" : user.role}
+                {user.role === "superadmin"
+                  ? "Super Administrator"
+                  : user.role === "admin"
+                  ? "Administrator"
+                  : user.role === "manager"
+                  ? "Store Manager"
+                  : user.role === "editor"
+                  ? "Content Editor"
+                  : user.role}
               </div>
             </div>
           </div>
@@ -254,7 +306,7 @@ export default function DashboardSidebar({
           </div>
         </Link>
 
-        <form action={logoutAction} style={{ width: "100%" }}>
+        <form action={logoutAdminAction} style={{ width: "100%" }}>
           <button
             type="submit"
             className="sidebar-signout-btn"

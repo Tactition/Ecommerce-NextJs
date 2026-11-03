@@ -3,8 +3,7 @@
 import pool from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
 import { requireAuth } from "@/lib/auth";
-import { cookies } from "next/headers";
-import { COOKIE_NAME, signSessionToken, SessionPayload } from "@/lib/token";
+import { createAdminSession, AdminRole } from "@/lib/auth/admin";
 import { userCreateSchema, userUpdateSchema } from "@/lib/validations";
 import { User } from "@/types";
 import { revalidatePath } from "next/cache";
@@ -40,7 +39,7 @@ export async function getAllUsers(): Promise<User[]> {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT u.id, u.name, u.email, u.role, u.created_at, r.name as role_name
-       FROM users u
+       FROM admin_users u
        LEFT JOIN roles r ON r.slug = u.role
        ORDER BY u.id ASC`
     );
@@ -88,21 +87,21 @@ export async function createUserAction(formData: FormData) {
   try {
     // Check if email already exists
     const [existing] = await pool.execute<RowDataPacket[]>(
-      "SELECT id FROM users WHERE email = ? LIMIT 1",
+      "SELECT id FROM admin_users WHERE email = ? LIMIT 1",
       [cleanEmail]
     );
 
     if (existing && existing.length > 0) {
       return {
         success: false,
-        error: "A user with this email address already exists.",
+        error: "A staff account with this email address already exists.",
       };
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
 
     const [result] = await pool.execute<ResultSetHeader>(
-      "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
+      "INSERT INTO admin_users (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
       [name.trim(), cleanEmail, passwordHash, role]
     );
 
@@ -146,40 +145,40 @@ export async function updateUserAction(formData: FormData) {
   try {
     // 1. Check if user exists
     const [currentRows] = await pool.execute<RowDataPacket[]>(
-      "SELECT id, role FROM users WHERE id = ? LIMIT 1",
+      "SELECT id, role FROM admin_users WHERE id = ? LIMIT 1",
       [id]
     );
 
     if (!currentRows || currentRows.length === 0) {
-      return { success: false, error: "User not found." };
+      return { success: false, error: "Staff account not found." };
     }
 
     const currentRole = currentRows[0].role;
 
     // 2. Prevent removing the last admin
-    if (currentRole === "admin" && role !== "admin") {
+    if (currentRole === "superadmin" && role !== "superadmin") {
       const [adminCountRows] = await pool.execute<RowDataPacket[]>(
-        "SELECT COUNT(*) as count FROM users WHERE role = 'admin'"
+        "SELECT COUNT(*) as count FROM admin_users WHERE role = 'superadmin'"
       );
       const adminCount = Number(adminCountRows[0]?.count || 0);
       if (adminCount <= 1) {
         return {
           success: false,
-          error: "Cannot change role: The system must have at least one active Administrator.",
+          error: "Cannot change role: The system must have at least one active Super Administrator.",
         };
       }
     }
 
     // 3. Check duplicate email with another user
     const [emailCheck] = await pool.execute<RowDataPacket[]>(
-      "SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1",
+      "SELECT id FROM admin_users WHERE email = ? AND id != ? LIMIT 1",
       [cleanEmail, id]
     );
 
     if (emailCheck && emailCheck.length > 0) {
       return {
         success: false,
-        error: "This email address is already in use by another user.",
+        error: "This email address is already in use by another staff account.",
       };
     }
 
@@ -187,12 +186,12 @@ export async function updateUserAction(formData: FormData) {
     if (password && password.trim().length >= 6) {
       const passwordHash = await bcrypt.hash(password.trim(), 10);
       await pool.execute<ResultSetHeader>(
-        "UPDATE users SET name = ?, email = ?, password_hash = ?, role = ? WHERE id = ?",
+        "UPDATE admin_users SET name = ?, email = ?, password_hash = ?, role = ? WHERE id = ?",
         [name.trim(), cleanEmail, passwordHash, role, id]
       );
     } else {
       await pool.execute<ResultSetHeader>(
-        "UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?",
+        "UPDATE admin_users SET name = ?, email = ?, role = ? WHERE id = ?",
         [name.trim(), cleanEmail, role, id]
       );
     }
@@ -223,31 +222,31 @@ export async function deleteUserAction(targetUserId: number) {
 
   try {
     const [targetRows] = await pool.execute<RowDataPacket[]>(
-      "SELECT id, role FROM users WHERE id = ? LIMIT 1",
+      "SELECT id, role FROM admin_users WHERE id = ? LIMIT 1",
       [targetUserId]
     );
 
     if (!targetRows || targetRows.length === 0) {
-      return { success: false, error: "User not found." };
+      return { success: false, error: "Staff member not found." };
     }
 
     const targetUser = targetRows[0];
 
-    // If target is an admin, check that another admin exists
-    if (targetUser.role === "admin") {
+    // If target is superadmin, check that another admin exists
+    if (targetUser.role === "superadmin") {
       const [adminCountRows] = await pool.execute<RowDataPacket[]>(
-        "SELECT COUNT(*) as count FROM users WHERE role = 'admin'"
+        "SELECT COUNT(*) as count FROM admin_users WHERE role = 'superadmin'"
       );
       const adminCount = Number(adminCountRows[0]?.count || 0);
       if (adminCount <= 1) {
         return {
           success: false,
-          error: "Cannot delete user: The system must retain at least one Administrator account.",
+          error: "Cannot delete user: The system must retain at least one Super Administrator account.",
         };
       }
     }
 
-    await pool.execute<ResultSetHeader>("DELETE FROM users WHERE id = ?", [targetUserId]);
+    await pool.execute<ResultSetHeader>("DELETE FROM admin_users WHERE id = ?", [targetUserId]);
 
     revalidatePath("/dashboard/users");
     return { success: true };
@@ -293,14 +292,14 @@ export async function updateAdminCredentialsAction(formData: FormData) {
   try {
     // 1. Check if email is already taken by another account
     const [existing] = await pool.execute<RowDataPacket[]>(
-      "SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1",
+      "SELECT id FROM admin_users WHERE email = ? AND id != ? LIMIT 1",
       [email, session.userId]
     );
 
     if (existing && existing.length > 0) {
       return {
         success: false,
-        error: "This email address is already in use by another user account.",
+        error: "This email address is already in use by another staff account.",
       };
     }
 
@@ -329,12 +328,12 @@ export async function updateAdminCredentialsAction(formData: FormData) {
 
       // Verify current password against database
       const [userRows] = await pool.execute<RowDataPacket[]>(
-        "SELECT password_hash FROM users WHERE id = ? LIMIT 1",
+        "SELECT password_hash FROM admin_users WHERE id = ? LIMIT 1",
         [session.userId]
       );
 
       if (!userRows || userRows.length === 0) {
-        return { success: false, error: "User account not found." };
+        return { success: false, error: "Staff account not found." };
       }
 
       const isCurrentValid = await bcrypt.compare(
@@ -351,32 +350,25 @@ export async function updateAdminCredentialsAction(formData: FormData) {
 
       const newHash = await bcrypt.hash(newPassword, 10);
       await pool.execute<ResultSetHeader>(
-        "UPDATE users SET name = ?, email = ?, password_hash = ? WHERE id = ?",
+        "UPDATE admin_users SET name = ?, email = ?, password_hash = ? WHERE id = ?",
         [name, email, newHash, session.userId]
       );
     } else {
       // Just update name and email
       await pool.execute<ResultSetHeader>(
-        "UPDATE users SET name = ?, email = ? WHERE id = ?",
+        "UPDATE admin_users SET name = ?, email = ? WHERE id = ?",
         [name, email, session.userId]
       );
     }
 
     // 3. Refresh session cookie with updated name/email
     try {
-      const cookieStore = await cookies();
-      const freshPayload: SessionPayload = {
-        ...session,
-        name,
+      await createAdminSession({
+        id: session.userId,
         email,
-      };
-      const freshToken = await signSessionToken(freshPayload);
-      cookieStore.set(COOKIE_NAME, freshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
+        name,
+        role: session.role as AdminRole,
+        permissions: session.permissions,
       });
     } catch (cookieErr) {
       console.warn("Could not rewrite cookie in server action:", cookieErr);

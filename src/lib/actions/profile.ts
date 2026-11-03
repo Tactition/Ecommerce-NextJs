@@ -1,7 +1,7 @@
 "use server";
 
 import pool from "@/lib/db";
-import { getSession, createSession } from "@/lib/auth";
+import { getCustomerSession, createCustomerSession } from "@/lib/auth/customer";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
@@ -78,26 +78,26 @@ export interface UserProfileStats {
 }
 
 /**
- * Fetch profile data for the current authenticated user
+ * Fetch profile data for the authenticated customer
  */
 export async function getUserProfileAction(): Promise<{
   profile: UserProfileData | null;
   error?: string;
 }> {
   try {
-    const session = await getSession();
-    if (!session || !session.userId) {
+    const session = await getCustomerSession();
+    if (!session || !session.customerId) {
       return { profile: null, error: "Please sign in to view your profile." };
     }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, email, phone, role, created_at, address_line1, city, state, postal_code 
-       FROM users WHERE id = ? LIMIT 1`,
-      [session.userId]
+      `SELECT id, name, email, phone, created_at, address_line1, city, state, postal_code 
+       FROM customers WHERE id = ? LIMIT 1`,
+      [session.customerId]
     );
 
     if (!rows || rows.length === 0) {
-      return { profile: null, error: "User account not found." };
+      return { profile: null, error: "Customer account not found." };
     }
 
     const u = rows[0];
@@ -106,7 +106,7 @@ export async function getUserProfileAction(): Promise<{
       name: String(u.name || ""),
       email: String(u.email || ""),
       phone: u.phone ? String(u.phone) : null,
-      role: String(u.role || "customer"),
+      role: "customer",
       created_at: u.created_at ? new Date(u.created_at).toISOString() : new Date().toISOString(),
       address_line1: u.address_line1 ? String(u.address_line1) : null,
       city: u.city ? String(u.city) : null,
@@ -114,14 +114,14 @@ export async function getUserProfileAction(): Promise<{
       postal_code: u.postal_code ? String(u.postal_code) : null,
     };
 
-    // If profile has no address, check if user has placed an order previously
+    // If profile has no address, check if customer has placed an order previously
     if (!profile.address_line1) {
       const [lastOrders] = await pool.query<RowDataPacket[]>(
         `SELECT address_line1, city, state, postal_code, phone 
          FROM orders 
          WHERE user_id = ? OR LOWER(email) = LOWER(?) 
          ORDER BY id DESC LIMIT 1`,
-        [session.userId, session.email]
+        [session.customerId, session.email]
       );
 
       if (lastOrders && lastOrders.length > 0) {
@@ -143,7 +143,7 @@ export async function getUserProfileAction(): Promise<{
 }
 
 /**
- * Fetch all orders and stats for the authenticated user
+ * Fetch all orders and stats for the authenticated customer
  */
 export async function getUserOrdersAction(): Promise<{
   orders: UserOrder[];
@@ -151,8 +151,8 @@ export async function getUserOrdersAction(): Promise<{
   error?: string;
 }> {
   try {
-    const session = await getSession();
-    if (!session || !session.userId) {
+    const session = await getCustomerSession();
+    if (!session || !session.customerId) {
       return {
         orders: [],
         stats: { totalOrders: 0, totalSpent: 0, activeOrders: 0, completedOrders: 0 },
@@ -165,7 +165,7 @@ export async function getUserOrdersAction(): Promise<{
       `SELECT * FROM orders 
        WHERE user_id = ? OR LOWER(email) = LOWER(?)
        ORDER BY id DESC`,
-      [session.userId, session.email]
+      [session.customerId, session.email]
     );
 
     if (!orderRows || orderRows.length === 0) {
@@ -292,7 +292,7 @@ export async function getUserOrdersAction(): Promise<{
 }
 
 /**
- * Update personal profile details
+ * Update customer profile details
  */
 export async function updateUserProfileAction(data: {
   name: string;
@@ -303,8 +303,8 @@ export async function updateUserProfileAction(data: {
   postalCode?: string;
 }): Promise<{ success: boolean; error?: string; message?: string }> {
   try {
-    const session = await getSession();
-    if (!session || !session.userId) {
+    const session = await getCustomerSession();
+    if (!session || !session.customerId) {
       return { success: false, error: "Unauthorized. Please sign in." };
     }
 
@@ -320,17 +320,19 @@ export async function updateUserProfileAction(data: {
     const cleanPostal = data.postalCode ? data.postalCode.trim() : null;
 
     await pool.execute<ResultSetHeader>(
-      `UPDATE users 
+      `UPDATE customers 
        SET name = ?, phone = ?, address_line1 = ?, city = ?, state = ?, postal_code = ? 
        WHERE id = ?`,
-      [cleanName, cleanPhone, cleanAddress, cleanCity, cleanState, cleanPostal, session.userId]
+      [cleanName, cleanPhone, cleanAddress, cleanCity, cleanState, cleanPostal, session.customerId]
     );
 
-    // Refresh session cookie with the new name if changed
+    // Refresh customer session cookie if name changed
     if (cleanName !== session.name) {
-      await createSession({
-        ...session,
+      await createCustomerSession({
+        id: session.customerId,
+        email: session.email,
         name: cleanName,
+        phone: cleanPhone || session.phone,
       });
     }
 
@@ -344,7 +346,7 @@ export async function updateUserProfileAction(data: {
 }
 
 /**
- * Change account password
+ * Change customer account password
  */
 export async function changeUserPasswordAction(data: {
   currentPassword: string;
@@ -352,8 +354,8 @@ export async function changeUserPasswordAction(data: {
   confirmPassword: string;
 }): Promise<{ success: boolean; error?: string; message?: string }> {
   try {
-    const session = await getSession();
-    if (!session || !session.userId) {
+    const session = await getCustomerSession();
+    if (!session || !session.customerId) {
       return { success: false, error: "Unauthorized. Please sign in." };
     }
 
@@ -368,8 +370,8 @@ export async function changeUserPasswordAction(data: {
     }
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT password_hash FROM users WHERE id = ? LIMIT 1`,
-      [session.userId]
+      `SELECT password_hash FROM customers WHERE id = ? LIMIT 1`,
+      [session.customerId]
     );
 
     if (!rows || rows.length === 0) {
@@ -384,8 +386,8 @@ export async function changeUserPasswordAction(data: {
 
     const newHash = await bcrypt.hash(data.newPassword, 10);
     await pool.execute<ResultSetHeader>(
-      `UPDATE users SET password_hash = ? WHERE id = ?`,
-      [newHash, session.userId]
+      `UPDATE customers SET password_hash = ? WHERE id = ?`,
+      [newHash, session.customerId]
     );
 
     return { success: true, message: "Your password has been changed securely." };
@@ -396,15 +398,15 @@ export async function changeUserPasswordAction(data: {
 }
 
 /**
- * User order cancellation request (only if pending or confirmed)
+ * Customer order cancellation request (only if pending or confirmed)
  */
 export async function cancelUserOrderAction(
   orderId: number,
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const session = await getSession();
-    if (!session || !session.userId) {
+    const session = await getCustomerSession();
+    if (!session || !session.customerId) {
       return { success: false, error: "Unauthorized. Please sign in." };
     }
 
@@ -420,7 +422,7 @@ export async function cancelUserOrderAction(
 
     const order = rows[0];
     const isOwner =
-      order.user_id === session.userId ||
+      order.user_id === session.customerId ||
       (order.email && order.email.toLowerCase() === session.email.toLowerCase());
 
     if (!isOwner) {

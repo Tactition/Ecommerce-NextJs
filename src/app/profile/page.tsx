@@ -1,7 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getCustomerSession } from "@/lib/auth/customer";
 import { getUserProfileAction, getUserOrdersAction } from "@/lib/actions/profile";
 import { getSiteSettings } from "@/lib/actions/settings";
 import ProfileClient from "@/components/profile/ProfileClient";
@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const session = await getSession();
+  const session = await getCustomerSession();
 
-  if (!session || !session.userId) {
+  if (!session || !session.customerId) {
     redirect("/login?redirectTo=/profile");
   }
 

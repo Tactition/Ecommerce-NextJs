@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { adminLoginAction } from "@/lib/actions/auth";
+import { loginAdminAction } from "@/lib/actions/adminAuth";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -38,7 +38,7 @@ export default function AdminLoginForm() {
     formData.set("redirectTo", rawRedirect);
 
     try {
-      const res = await adminLoginAction(null, formData);
+      const res = await loginAdminAction(null, formData);
       setIsLoading(false);
 
       if (!res.success) {

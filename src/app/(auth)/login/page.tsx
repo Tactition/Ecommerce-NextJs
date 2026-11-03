@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { loginAction } from "@/lib/actions/auth";
+import { loginCustomerAction } from "@/lib/actions/customerAuth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -42,7 +42,7 @@ function CustomerLoginForm() {
     formData.set("redirectTo", safeRedirect);
 
     try {
-      const res = await loginAction(null, formData);
+      const res = await loginCustomerAction(null, formData);
 
       setIsLoading(false);
       if (!res.success) {

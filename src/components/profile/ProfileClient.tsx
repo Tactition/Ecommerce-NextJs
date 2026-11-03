@@ -40,7 +40,7 @@ import {
   changeUserPasswordAction,
   cancelUserOrderAction,
 } from "@/lib/actions/profile";
-import { logoutAction } from "@/lib/actions/auth";
+import { logoutCustomerAction } from "@/lib/actions/customerAuth";
 
 interface ProfileClientProps {
   initialProfile: UserProfileData;
@@ -405,28 +405,12 @@ export default function ProfileClient({
             </div>
 
             <div className="d-flex align-items-center gap-2">
-              {profile.role === "admin" && (
-                <Link
-                  href="/dashboard"
-                  style={{
-                    backgroundColor: "#0F172A",
-                    color: "#FFFFFF",
-                    padding: "9px 16px",
-                    borderRadius: "8px",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <Sparkles size={15} color="#FFD700" /> Admin Command Center
-                </Link>
-              )}
               <button
                 type="button"
-                onClick={() => logoutAction("/login")}
+                onClick={async () => {
+                  await logoutCustomerAction();
+                  window.location.href = "/login";
+                }}
                 style={{
                   backgroundColor: "transparent",
                   border: "1px solid #CBD5E1",

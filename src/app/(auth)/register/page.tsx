@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { registerAction } from "@/lib/actions/auth";
+import { registerCustomerAction } from "@/lib/actions/customerAuth";
 import {
   User,
   Mail,
@@ -73,7 +73,7 @@ function RegisterForm() {
     submission.set("redirectTo", redirectTo);
 
     try {
-      const res = await registerAction(null, submission);
+      const res = await registerCustomerAction(null, submission);
 
       if (!res.success) {
         setError(res.error || "Unable to register. Please try again.");
@@ -544,6 +544,8 @@ function RegisterForm() {
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";
 
 export default function RegisterPage() {
   return (

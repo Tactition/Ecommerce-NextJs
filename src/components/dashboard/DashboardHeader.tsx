@@ -18,6 +18,7 @@ interface DashboardHeaderProps {
     email?: string;
     name?: string;
     role?: string;
+    permissions?: string[];
   } | null;
   toggleMobile: () => void;
   isCollapsed: boolean;
@@ -30,6 +31,20 @@ export default function DashboardHeader({
   isCollapsed,
   toggleCollapse,
 }: DashboardHeaderProps) {
+  const isSuperOrAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const roleDisplay =
+    user?.role === "superadmin"
+      ? "Super Administrator"
+      : user?.role === "admin"
+      ? "Administrator"
+      : user?.role === "manager"
+      ? "Store Manager"
+      : user?.role === "editor"
+      ? "Content Editor"
+      : user?.role === "support"
+      ? "Customer Support"
+      : "Staff Member";
+
   return (
     <header className="dashboard-header">
       {/* Left side: Mobile Toggle, Desktop Collapse & Title */}
@@ -100,7 +115,7 @@ export default function DashboardHeader({
           <div
             className="dashboard-user-avatar"
             style={{
-              backgroundColor: user?.role === "admin" ? "#FF4035" : "#3B82F6",
+              backgroundColor: isSuperOrAdmin ? "#FF4035" : "#3B82F6",
               color: "#FFFFFF",
               fontWeight: 800,
             }}
@@ -114,12 +129,12 @@ export default function DashboardHeader({
             <div
               className="dashboard-user-role"
               style={{
-                color: user?.role === "admin" ? "#EF4444" : "#3B82F6",
+                color: isSuperOrAdmin ? "#EF4444" : "#3B82F6",
                 fontWeight: 600,
                 fontSize: "0.74rem",
               }}
             >
-              {user?.role === "admin" ? "Super Admin" : "Content Editor"}
+              {roleDisplay}
             </div>
           </div>
         </Link>

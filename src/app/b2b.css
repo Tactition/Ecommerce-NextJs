@@ -1,0 +1,275 @@
+/* ==========================================================================
+   WALL STREET INTERIORS — B2B DEALER & TRADE PORTAL STYLES
+   ========================================================================== */
+
+.b2b-portal-wrapper {
+  min-height: 85vh;
+  background-color: #F8FAFC;
+  padding: 40px 20px 80px 20px;
+  font-family: var(--font-primary, 'Plus Jakarta Sans', sans-serif);
+  color: #0F172A;
+}
+
+.b2b-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* 1. Header Banner Card */
+.b2b-header-card {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  border-radius: 20px;
+  padding: 32px 36px;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+  .b2b-header-card {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.b2b-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.b2b-badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34D399;
+}
+
+.b2b-badge-pending {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #FBBF24;
+}
+
+.b2b-badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #F87171;
+}
+
+.b2b-header-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+  font-family: var(--font-heading, 'Outfit', sans-serif);
+}
+
+.b2b-header-sub {
+  color: #94A3B8;
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.b2b-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.b2b-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #FF4035 0%, #D9251A 100%);
+  color: #FFFFFF !important;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 12px 22px;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(255, 64, 53, 0.35);
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.b2b-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 64, 53, 0.45);
+}
+
+.b2b-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF !important;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 12px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.b2b-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* 2. Trade Metric Cards Grid */
+.b2b-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.b2b-metric-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.b2b-metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #64748B;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.b2b-metric-value {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 4px;
+  font-family: var(--font-heading, 'Outfit', sans-serif);
+}
+
+.b2b-metric-sub {
+  font-size: 0.8rem;
+  color: #64748B;
+  margin: 0;
+}
+
+/* 3. White Cards & Tables */
+.b2b-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.b2b-card-header {
+  padding: 22px 28px;
+  border-bottom: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.b2b-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 3px 0;
+  font-family: var(--font-heading, 'Outfit', sans-serif);
+}
+
+.b2b-card-sub {
+  font-size: 0.82rem;
+  color: #64748B;
+  margin: 0;
+}
+
+.b2b-card-body {
+  padding: 28px;
+}
+
+/* 4. Data Tables */
+.b2b-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.b2b-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.b2b-table th {
+  background: #F8FAFC;
+  padding: 14px 20px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748B;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.b2b-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #F1F5F9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.b2b-table tr:hover td {
+  background-color: #F8FAFC;
+}
+
+/* 5. Printable Invoice Styles */
+.b2b-invoice-box {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .b2b-portal-wrapper {
+    background: #FFFFFF !important;
+    padding: 0 !important;
+  }
+  .b2b-invoice-box {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
