@@ -11,37 +11,31 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/login" || pathname === "/register") {
     if (session) {
       const redirectUrl = request.nextUrl.searchParams.get("redirectTo");
-      const hasAdminIntent =
-        request.nextUrl.searchParams.get("error") === "admin_required" ||
-        redirectUrl?.startsWith("/dashboard");
 
       const isStaff =
         session.role === "admin" ||
         session.role === "editor" ||
         session.role === "manager";
 
-      // If user is a customer wanting to sign in as admin, let them access /login
-      if (!isStaff && hasAdminIntent) {
-        return NextResponse.next();
+      if (isStaff) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
       }
 
       if (
         redirectUrl &&
         redirectUrl.startsWith("/") &&
         !redirectUrl.startsWith("//") &&
-        (!redirectUrl.startsWith("/dashboard") || isStaff)
+        !redirectUrl.startsWith("/dashboard")
       ) {
         return NextResponse.redirect(new URL(redirectUrl, request.url));
       }
 
-      return NextResponse.redirect(
-        new URL(isStaff ? "/dashboard" : "/", request.url)
-      );
+      return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
   }
 
-  // 1.5. Convenience Admin Gateway Route
+  // 1.5. Admin Gateway Route: /admin (Dedicated Admin Login Form)
   if (pathname === "/admin" || pathname === "/admin/") {
     if (session) {
       const isStaff =
@@ -52,20 +46,17 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
     }
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("tab", "admin");
-    loginUrl.searchParams.set("redirectTo", "/dashboard");
-    return NextResponse.redirect(loginUrl);
+    // Let unauthenticated or non-staff users view /admin directly (renders AdminLoginForm)
+    return NextResponse.next();
   }
 
   // 2. Protected Admin Dashboard Routes - STRICT AUTHORIZATION (NO PUBLIC / CUSTOMER ACCESS)
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("tab", "admin");
-      loginUrl.searchParams.set("redirectTo", pathname + search);
-      loginUrl.searchParams.set("reason", "admin_login_required");
-      return NextResponse.redirect(loginUrl);
+      const adminLoginUrl = new URL("/admin", request.url);
+      adminLoginUrl.searchParams.set("redirectTo", pathname + search);
+      adminLoginUrl.searchParams.set("reason", "admin_login_required");
+      return NextResponse.redirect(adminLoginUrl);
     }
 
     // Disallow regular customers or unauthorized roles from accessing admin dashboard
@@ -75,11 +66,10 @@ export async function middleware(request: NextRequest) {
       session.role === "manager";
 
     if (!isStaff) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("tab", "admin");
-      loginUrl.searchParams.set("redirectTo", pathname + search);
-      loginUrl.searchParams.set("error", "admin_required");
-      return NextResponse.redirect(loginUrl);
+      const adminLoginUrl = new URL("/admin", request.url);
+      adminLoginUrl.searchParams.set("redirectTo", pathname + search);
+      adminLoginUrl.searchParams.set("error", "admin_required");
+      return NextResponse.redirect(adminLoginUrl);
     }
 
     // Dynamic RBAC module access check:
@@ -125,6 +115,67 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // 3.5 Protected Dealer Portal Routes
+  if (pathname.startsWith("/dealer")) {
+    // Prevent search engine indexing of dealer portal
+    const response = NextResponse.next();
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+
+    const isPublicDealerRoute = 
+      pathname === "/dealer/login" || 
+      pathname === "/dealer/register" || 
+      pathname === "/dealer/pending" || 
+      pathname === "/dealer/rejected" || 
+      pathname === "/dealer/suspended";
+
+    if (!session) {
+      if (!isPublicDealerRoute) {
+        const loginUrl = new URL("/dealer/login", request.url);
+        loginUrl.searchParams.set("redirectTo", pathname + search);
+        return NextResponse.redirect(loginUrl);
+      }
+      return response;
+    }
+
+    // If authenticated user is NOT a dealer (e.g. regular customer)
+    if (session.role !== "dealer" && session.role !== "admin") {
+      if (!isPublicDealerRoute) {
+        const regUrl = new URL("/dealer/register", request.url);
+        regUrl.searchParams.set("error", "dealer_account_required");
+        return NextResponse.redirect(regUrl);
+      }
+      return response;
+    }
+
+    // If authenticated dealer visits login or register, redirect them
+    if (pathname === "/dealer/login" || pathname === "/dealer/register") {
+      if (session.dealerStatus === "APPROVED" || session.role === "admin") {
+        return NextResponse.redirect(new URL("/dealer", request.url));
+      } else if (session.dealerStatus === "PENDING") {
+        return NextResponse.redirect(new URL("/dealer/pending", request.url));
+      } else if (session.dealerStatus === "REJECTED") {
+        return NextResponse.redirect(new URL("/dealer/rejected", request.url));
+      } else if (session.dealerStatus === "SUSPENDED") {
+        return NextResponse.redirect(new URL("/dealer/suspended", request.url));
+      }
+    }
+
+    // For protected dealer routes, check dealerStatus
+    if (!isPublicDealerRoute && session.role === "dealer") {
+      if (session.dealerStatus === "PENDING") {
+        return NextResponse.redirect(new URL("/dealer/pending", request.url));
+      }
+      if (session.dealerStatus === "REJECTED") {
+        return NextResponse.redirect(new URL("/dealer/rejected", request.url));
+      }
+      if (session.dealerStatus === "SUSPENDED") {
+        return NextResponse.redirect(new URL("/dealer/suspended", request.url));
+      }
+    }
+
+    return response;
+  }
+
   // 4. Protected API Routes
   if (pathname.startsWith("/api/uploads") || pathname.startsWith("/api/admin")) {
     if (!session) {
@@ -147,9 +198,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin",
+    "/admin/:path*",
     "/dashboard/:path*",
     "/checkout/:path*",
     "/checkout",
+    "/dealer/:path*",
+    "/dealer",
     "/login",
     "/register",
     "/api/uploads",

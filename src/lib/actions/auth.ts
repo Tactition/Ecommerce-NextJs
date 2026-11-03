@@ -81,6 +81,76 @@ export async function loginAction(prevState: unknown, formData: FormData) {
   }
 }
 
+export async function adminLoginAction(prevState: unknown, formData: FormData) {
+  try {
+    const rawData = {
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
+
+    const validated = loginSchema.safeParse(rawData);
+    if (!validated.success) {
+      return {
+        success: false,
+        error: validated.error.errors[0]?.message || "Invalid input data.",
+      };
+    }
+
+    const user = await verifyUserCredentials(validated.data.email, validated.data.password);
+    if (!user) {
+      return {
+        success: false,
+        error: "Invalid administrator credentials. Access denied.",
+      };
+    }
+
+    const isStaff = user.role === "admin" || user.role === "editor" || user.role === "manager";
+    if (!isStaff) {
+      return {
+        success: false,
+        error: "Access Denied: You do not have staff or administrator privileges to access this console.",
+      };
+    }
+
+    const permissions = await getRolePermissions(user.role);
+
+    await createSession({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      permissions,
+    });
+
+    const targetRedirect = formData.get("redirectTo");
+    let safeRedirect = "/dashboard";
+    if (
+      typeof targetRedirect === "string" &&
+      targetRedirect.startsWith("/dashboard") &&
+      !targetRedirect.startsWith("//")
+    ) {
+      safeRedirect = targetRedirect;
+    }
+
+    return {
+      success: true,
+      redirectTo: safeRedirect,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Authentication failed.";
+    return {
+      success: false,
+      error: message,
+    };
+  }
+}
+
 export async function registerAction(prevState: unknown, formData: FormData) {
   try {
     const rawData = {

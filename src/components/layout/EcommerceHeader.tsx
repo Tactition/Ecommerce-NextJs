@@ -352,7 +352,7 @@ export default function EcommerceHeader({
           <div className="wsi-cat-sidebar__top">
             <div className="d-flex align-items-center gap-2">
               <span className="wsi-cat-sidebar__top-icon">
-                <i className="icon-app"></i>
+                <i className="fa-solid fa-layer-group"></i>
               </span>
               <div>
                 <h3 className="wsi-cat-sidebar__title">All Categories</h3>
@@ -365,29 +365,39 @@ export default function EcommerceHeader({
               onClick={() => setIsCategorySidebarOpen(false)}
               aria-label="Close categories sidebar"
             >
-              <i className="fas fa-times"></i>
+              <i className="fa-solid fa-xmark"></i>
             </button>
           </div>
 
           {/* Real-time Category Search Bar */}
           <div className="wsi-cat-sidebar__search">
-            <i className="fa-regular fa-magnifying-glass wsi-cat-sidebar__search-icon"></i>
-            <input
-              type="text"
-              placeholder="Search categories..."
-              value={categorySearchQuery}
-              onChange={(e) => setCategorySearchQuery(e.target.value)}
-              className="wsi-cat-sidebar__search-input"
-            />
+            <div className="wsi-cat-sidebar__search-wrap">
+              <i className="fa-regular fa-magnifying-glass wsi-cat-sidebar__search-icon"></i>
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={categorySearchQuery}
+                onChange={(e) => setCategorySearchQuery(e.target.value)}
+                className="wsi-cat-sidebar__search-input"
+              />
+              {categorySearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setCategorySearchQuery("")}
+                  className="wsi-cat-sidebar__search-clear"
+                  title="Clear search"
+                  aria-label="Clear search"
+                >
+                  <i className="fa-solid fa-circle-xmark"></i>
+                </button>
+              )}
+            </div>
             {categorySearchQuery && (
-              <button
-                type="button"
-                onClick={() => setCategorySearchQuery("")}
-                className="wsi-cat-sidebar__search-clear"
-                title="Clear search"
-              >
-                <i className="fas fa-times"></i>
-              </button>
+              <div className="wsi-cat-sidebar__search-meta">
+                <span>
+                  {filteredCategories.length} {filteredCategories.length === 1 ? "category" : "categories"} found
+                </span>
+              </div>
             )}
           </div>
 
@@ -399,7 +409,10 @@ export default function EcommerceHeader({
                 const isExpanded = Boolean(expandedCategories[cat.id]);
 
                 return (
-                  <div key={cat.id} className="wsi-cat-item">
+                  <div
+                    key={cat.id}
+                    className={`wsi-cat-item ${isExpanded ? "wsi-cat-item--expanded" : ""}`}
+                  >
                     <div className="wsi-cat-item__head">
                       <Link
                         href={cat.url}
@@ -411,74 +424,103 @@ export default function EcommerceHeader({
                             <img
                               src={cat.image}
                               alt={cat.name}
-                              style={{ width: "22px", height: "22px", objectFit: "cover", borderRadius: "4px" }}
+                              className="wsi-cat-item__img"
                             />
                           ) : (
-                            <i className="fa-regular fa-layer-group"></i>
+                            <i className="fa-solid fa-shapes"></i>
                           )}
                         </span>
-                        <span className="wsi-cat-item__name">{cat.name}</span>
-                        {cat.itemCount !== undefined && cat.itemCount > 0 && (
-                          <span className="wsi-cat-item__count">{cat.itemCount}</span>
-                        )}
+                        <div className="wsi-cat-item__info">
+                          <span className="wsi-cat-item__name">{cat.name}</span>
+                          {hasChildren && (
+                            <span className="wsi-cat-item__subtext">
+                              {cat.children.length} {cat.children.length === 1 ? "collection" : "collections"}
+                            </span>
+                          )}
+                        </div>
                       </Link>
 
-                      {hasChildren && (
-                        <button
-                          type="button"
-                          className={`wsi-cat-item__toggle ${isExpanded ? "expanded" : ""}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setExpandedCategories((prev) => ({
-                              ...prev,
-                              [cat.id]: !prev[cat.id],
-                            }));
-                          }}
-                          aria-label={`Toggle ${cat.name} subcategories`}
-                        >
-                          <i className={`fa-solid ${isExpanded ? "fa-minus" : "fa-plus"}`}></i>
-                        </button>
-                      )}
+                      <div className="wsi-cat-item__actions">
+                        {cat.itemCount !== undefined && cat.itemCount > 0 && (
+                          <span className="wsi-cat-item__count" title={`${cat.itemCount} products`}>
+                            {cat.itemCount}
+                          </span>
+                        )}
+
+                        {hasChildren ? (
+                          <button
+                            type="button"
+                            className={`wsi-cat-item__toggle ${isExpanded ? "expanded" : ""}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setExpandedCategories((prev) => ({
+                                ...prev,
+                                [cat.id]: !prev[cat.id],
+                              }));
+                            }}
+                            aria-label={`Toggle ${cat.name} subcategories`}
+                            title={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
+                          >
+                            <i className="fa-solid fa-chevron-down"></i>
+                          </button>
+                        ) : (
+                          <Link
+                            href={cat.url}
+                            className="wsi-cat-item__arrow"
+                            onClick={() => setIsCategorySidebarOpen(false)}
+                            aria-hidden="true"
+                            tabIndex={-1}
+                          >
+                            <i className="fa-regular fa-chevron-right"></i>
+                          </Link>
+                        )}
+                      </div>
                     </div>
 
                     {/* Subcategories Accordion */}
                     {hasChildren && isExpanded && (
-                      <ul className="wsi-cat-sublist">
-                        {cat.children.map((sub) => (
-                          <li key={sub.id} className="wsi-cat-subitem">
-                            <Link
-                              href={sub.url}
-                              className="wsi-cat-sublink"
-                              onClick={() => setIsCategorySidebarOpen(false)}
-                            >
-                              <span className="wsi-cat-sublink__bullet"></span>
-                              <span className="wsi-cat-sublink__name">{sub.name}</span>
-                              {sub.itemCount !== undefined && sub.itemCount > 0 && (
-                                <span className="wsi-cat-sublink__count">{sub.itemCount}</span>
-                              )}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="wsi-cat-sublist-wrapper">
+                        <ul className="wsi-cat-sublist">
+                          {cat.children.map((sub) => (
+                            <li key={sub.id} className="wsi-cat-subitem">
+                              <Link
+                                href={sub.url}
+                                className="wsi-cat-sublink"
+                                onClick={() => setIsCategorySidebarOpen(false)}
+                              >
+                                <span className="wsi-cat-sublink__bullet"></span>
+                                <span className="wsi-cat-sublink__name">{sub.name}</span>
+                                {sub.itemCount !== undefined && sub.itemCount > 0 && (
+                                  <span className="wsi-cat-sublink__count">{sub.itemCount}</span>
+                                )}
+                                <i className="fa-regular fa-chevron-right wsi-cat-sublink__arrow"></i>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 );
               })
             ) : (
               <div className="wsi-cat-sidebar__empty">
-                <i className="fa-regular fa-folder-open"></i>
+                <div className="wsi-cat-sidebar__empty-icon">
+                  <i className="fa-regular fa-magnifying-glass"></i>
+                </div>
+                <h5>No categories found</h5>
                 <p>
                   {categorySearchQuery
-                    ? `No categories match "${categorySearchQuery}"`
-                    : "No categories published yet."}
+                    ? `No collections match "${categorySearchQuery}". Try another keyword or clear the search.`
+                    : "No categories are currently published."}
                 </p>
                 {categorySearchQuery && (
                   <button
                     type="button"
                     onClick={() => setCategorySearchQuery("")}
                     className="theme-btn btn-sm"
-                    style={{ padding: "6px 14px", fontSize: "0.82rem" }}
+                    style={{ padding: "8px 18px", fontSize: "0.85rem", borderRadius: "8px" }}
                   >
                     Clear Search
                   </button>
@@ -491,12 +533,18 @@ export default function EcommerceHeader({
           <div className="wsi-cat-sidebar__footer">
             <Link
               href="/shop"
-              className="theme-btn w-100 text-center d-flex align-items-center justify-content-center gap-2"
+              className="wsi-cat-sidebar__explore-btn"
               onClick={() => setIsCategorySidebarOpen(false)}
             >
               <span>Explore All Products</span>
               <i className="fa-solid fa-arrow-right-long"></i>
             </Link>
+            <div className="wsi-cat-sidebar__dealer-note">
+              <span>Wholesale Buyer or Architect?</span>
+              <Link href="/dealer/login" onClick={() => setIsCategorySidebarOpen(false)}>
+                Dealer Portal &rarr;
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -921,7 +969,7 @@ export default function EcommerceHeader({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
             <Link
-              href="/login?redirectTo=/dashboard&error=admin_required"
+              href="/admin?error=admin_required"
               style={{
                 padding: "6px 14px",
                 backgroundColor: "#DC2626",
@@ -1000,6 +1048,27 @@ export default function EcommerceHeader({
               </div>
             </div>
             <div className="lang" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <Link
+                href="/dealer/login"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#FBBF24",
+                  textDecoration: "none",
+                  padding: "3px 10px",
+                  borderRadius: "6px",
+                  backgroundColor: "rgba(251, 191, 36, 0.12)",
+                  border: "1px solid rgba(251, 191, 36, 0.28)",
+                  transition: "all 0.2s ease",
+                }}
+                title="B2B Wholesale Trade Portal for Interior Contractors & Retailers"
+              >
+                <i className="fa-solid fa-briefcase"></i>
+                <span>Dealer Desk</span>
+              </Link>
               <LanguageTranslator />
               <div className="user">
                 {isAuthenticated ? (
@@ -1105,7 +1174,7 @@ export default function EcommerceHeader({
                     title="All Product Categories"
                   >
                     <span className="wsi-header-cat-btn__icon">
-                      <i className="icon-app"></i>
+                      <i className="fa-solid fa-layer-group"></i>
                     </span>
                     <span className="wsi-header-cat-btn__text">Categories</span>
                     <i className="fa-regular fa-chevron-down wsi-header-cat-btn__chevron"></i>

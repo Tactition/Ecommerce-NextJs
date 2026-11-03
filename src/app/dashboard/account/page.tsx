@@ -20,7 +20,7 @@ export default async function AdminAccountPage() {
     session.role === "manager";
 
   if (!isStaff) {
-    redirect("/login?error=admin_required");
+    redirect("/admin?error=admin_required");
   }
 
   const [rows] = await pool.execute<RowDataPacket[]>(
