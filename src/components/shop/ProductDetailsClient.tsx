@@ -762,402 +762,242 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                       "Engineered with certified high-fidelity components, robust joinery, and precision architectural finishing to deliver exceptional luxury aesthetics and long-lasting durability."}
                   </p>
 
-                  {/* Metadata Tags */}
-                  <div
-                    style={{
-                      padding: "16px",
-                      background: "#F8FAFC",
-                      borderRadius: "12px",
-                      border: "1px solid #E2E8F0",
-                      marginBottom: "24px",
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "20px",
-                      fontSize: "0.88rem",
-                    }}
-                  >
-                    <div>
-                      <span style={{ color: "#64748B", fontWeight: 500 }}>SKU: </span>
-                      <strong style={{ color: "#0F172A" }}>{displaySku}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "#64748B", fontWeight: 500 }}>Category: </span>
-                      <strong style={{ color: "#0F172A" }}>{product.category_name}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "#64748B", fontWeight: 500 }}>Brand: </span>
-                      <strong style={{ color: "#0F172A" }}>{product.brand || "Wall Street Interiors"}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "#64748B", fontWeight: 500 }}>Availability: </span>
-                      {displayStock > 0 ? (
-                        <span style={{ color: "#10B981", fontWeight: 700 }}>
-                          <i className="fa-solid fa-circle-check me-1"></i> In Stock ({displayStock} units)
-                        </span>
-                      ) : (
-                        <span style={{ color: "#EF4444", fontWeight: 700 }}>Out of Stock</span>
-                      )}
-                    </div>
+                  {/* Clean Minimal Metadata Line */}
+                  <div className="d-flex align-items-center gap-2 flex-wrap mb-3" style={{ fontSize: "0.82rem", color: "#64748B" }}>
+                    <span>SKU: <strong style={{ color: "#0F172A" }}>{displaySku}</strong></span>
+                    <span style={{ color: "#CBD5E1" }}>•</span>
+                    <span>Category: <strong style={{ color: "#0F172A" }}>{product.category_name}</strong></span>
+                    <span style={{ color: "#CBD5E1" }}>•</span>
+                    <span>Brand: <strong style={{ color: "#0F172A" }}>{product.brand || "Wall Street Interiors"}</strong></span>
+                    <span style={{ color: "#CBD5E1" }}>•</span>
+                    {displayStock > 0 ? (
+                      <span style={{ color: "#10B981", fontWeight: 700 }}>
+                        <i className="fa-solid fa-circle-check me-1"></i> In Stock
+                      </span>
+                    ) : (
+                      <span style={{ color: "#EF4444", fontWeight: 700 }}>Out of Stock</span>
+                    )}
                   </div>
 
                   {/* ══════════════════════════════════════════════════════════════ */}
-                  {/* UNIFIED SIZING & OPTIONS SECTION                               */}
-                  {/* Merges Standard Pre-Set Sizes & Custom Made-to-Measure         */}
+                  {/* MINIMAL SIZING & DIMENSIONS COMPONENT                          */}
+                  {/* Dropdown for standard sizes + compact inline custom drawer     */}
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {(hasStandardSizes || isCustomSizingEnabled) && (
-                    <div
-                      style={{
-                        marginBottom: "24px",
-                        padding: "20px 22px",
-                        backgroundColor: isCustomMode ? "var(--bg-1, #FFF5F4)" : "#F8FAFC",
-                        borderRadius: "14px",
-                        border: isCustomMode ? "2px solid var(--theme, #FF4035)" : "1px solid #E2E8F0",
-                        boxShadow: isCustomMode ? "0 6px 20px rgba(255, 64, 53, 0.08)" : "none",
-                        transition: "all 0.25s ease",
-                      }}
-                    >
-                      {/* Section Header */}
-                      <div style={{ marginBottom: "14px" }}>
-                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                          <div className="d-flex align-items-center gap-2">
-                            <span style={{ fontSize: "1.1rem" }}>📐</span>
-                            <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "1rem" }}>
-                              {hasStandardSizes && isCustomSizingEnabled
-                                ? "Select Size & Dimensions"
-                                : hasStandardSizes
-                                ? "Select Standard Size"
-                                : "Dimensions (Made to Measure)"}
-                            </span>
-                          </div>
-                          {isCustomMode && (
-                            <span
-                              style={{
-                                fontSize: "0.74rem",
-                                backgroundColor: "rgba(255, 64, 53, 0.1)",
-                                color: "var(--theme, #FF4035)",
-                                padding: "3px 10px",
-                                borderRadius: "20px",
-                                fontWeight: 700,
-                                border: "1px solid rgba(255, 64, 53, 0.2)",
-                              }}
-                            >
-                              Custom Cut • Ready to Install
-                            </span>
-                          )}
-                        </div>
-                        <p style={{ fontSize: "0.78rem", color: "#64748B", margin: "4px 0 0 0" }}>
-                          {hasStandardSizes && isCustomSizingEnabled
-                            ? "Choose a pre-set standard size or select Made to Measure for custom room dimensions"
-                            : hasStandardSizes
-                            ? "Select your preferred pre-cut standard size below"
-                            : "Crafted to your exact window/room dimensions. Enter measurements in feet & inches below."}
-                        </p>
-                      </div>
-
-                      {/* Unified Sizing Selection Cards (When standard sizes exist) */}
-                      {hasStandardSizes && (
-                        <div style={{ marginBottom: isCustomMode ? "18px" : "0" }}>
-                          <div className="d-flex flex-wrap gap-2">
-                            {standardSizes.map((sz) => {
-                              const isSelected = activeSizingMode === "standard" && sizeAttribute && selectedAttributeValues[sizeAttribute.id] === sz.id;
-                              return (
-                                <button
-                                  key={sz.id}
-                                  type="button"
-                                  onClick={() => {
-                                    if (sizeAttribute) {
-                                      handleSelectAttributeValue(sizeAttribute.id, sz.id);
-                                    }
-                                    setSizingMode("standard");
-                                  }}
-                                  style={{
-                                    border: isSelected ? "2px solid var(--theme, #FF4035)" : "1.5px solid #CBD5E1",
-                                    backgroundColor: isSelected ? "#FFFFFF" : "#FFFFFF",
-                                    color: isSelected ? "var(--theme, #FF4035)" : "#334155",
-                                    padding: "9px 18px",
-                                    borderRadius: "10px",
-                                    fontWeight: 700,
-                                    fontSize: "0.88rem",
-                                    cursor: "pointer",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "8px",
-                                    boxShadow: isSelected ? "0 3px 10px rgba(255, 64, 53, 0.18)" : "0 1px 2px rgba(0,0,0,0.03)",
-                                    transition: "all 0.15s ease",
-                                  }}
-                                >
-                                  <span>{sz.label}</span>
-                                  {isSelected && (
-                                    <span style={{ color: "var(--theme, #FF4035)", fontWeight: 800 }}>✓</span>
-                                  )}
-                                </button>
-                              );
-                            })}
-
-                            {/* Unified Custom Size Button */}
-                            {isCustomSizingEnabled && (
-                              <button
-                                type="button"
-                                onClick={() => setSizingMode("custom")}
-                                style={{
-                                  border: activeSizingMode === "custom" ? "2px solid var(--theme, #FF4035)" : "1.5px dashed #94A3B8",
-                                  backgroundColor: activeSizingMode === "custom" ? "#FFFFFF" : "#F8FAFC",
-                                  color: activeSizingMode === "custom" ? "var(--theme, #FF4035)" : "#475569",
-                                  padding: "9px 18px",
-                                  borderRadius: "10px",
-                                  fontWeight: 700,
-                                  fontSize: "0.88rem",
-                                  cursor: "pointer",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                  boxShadow: activeSizingMode === "custom" ? "0 3px 10px rgba(255, 64, 53, 0.18)" : "none",
-                                  transition: "all 0.15s ease",
-                                }}
-                              >
-                                <span>📐</span>
-                                <span>Made to Measure (Custom Size)</span>
-                                {activeSizingMode === "custom" && (
-                                  <span style={{ color: "var(--theme, #FF4035)", fontWeight: 800 }}>✓</span>
-                                )}
-                              </button>
+                    <div style={{ marginBottom: "20px" }}>
+                      {/* Case 1: When standard sizes exist (or both standard & custom) -> Sleek Dropdown */}
+                      {hasStandardSizes ? (
+                        <div className="mb-2">
+                          <div className="d-flex align-items-center justify-content-between mb-1">
+                            <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0F172A", margin: 0 }}>
+                              Size / Dimensions:
+                            </label>
+                            {isCustomMode && (
+                              <span style={{ fontSize: "0.75rem", color: "var(--theme, #FF4035)", fontWeight: 600 }}>
+                                Custom Rate: ₹{customRate.toFixed(2)}/{customUnitLabel}
+                              </span>
                             )}
                           </div>
-                        </div>
-                      )}
 
-                      {/* Custom Sizing Measurement Panel (Rendered when custom mode is active) */}
+                          <div style={{ position: "relative", maxWidth: "420px" }}>
+                            <select
+                              value={
+                                activeSizingMode === "custom"
+                                  ? "__custom__"
+                                  : (sizeAttribute && selectedAttributeValues[sizeAttribute.id] ? selectedAttributeValues[sizeAttribute.id] : "")
+                              }
+                              onChange={(e) => {
+                                if (e.target.value === "__custom__") {
+                                  setSizingMode("custom");
+                                } else {
+                                  const valId = Number(e.target.value);
+                                  if (sizeAttribute && valId) {
+                                    handleSelectAttributeValue(sizeAttribute.id, valId);
+                                  }
+                                  setSizingMode("standard");
+                                }
+                              }}
+                              style={{
+                                width: "100%",
+                                padding: "9px 36px 9px 12px",
+                                borderRadius: "8px",
+                                border: "1.5px solid #CBD5E1",
+                                backgroundColor: "#FFFFFF",
+                                color: "#0F172A",
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                appearance: "none",
+                                cursor: "pointer",
+                                outline: "none",
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                                backgroundRepeat: "no-repeat",
+                                backgroundPosition: "right 12px center",
+                              }}
+                            >
+                              <option value="" disabled>Select a size...</option>
+                              {standardSizes.map((sz) => (
+                                <option key={sz.id} value={sz.id}>
+                                  {sz.label} (Standard Size)
+                                </option>
+                              ))}
+                              {isCustomSizingEnabled && (
+                                <option value="__custom__">
+                                  📐 Made to Measure (Custom Dimensions)
+                                </option>
+                              )}
+                            </select>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {/* Case 2 / Drawer: When in Custom Mode (or when only custom sizing exists) -> Compact Inline Dimensions */}
                       {isCustomMode && (
                         <div
                           style={{
-                            backgroundColor: "#FFFFFF",
-                            padding: "18px 20px",
-                            borderRadius: "12px",
-                            border: "1.5px solid rgba(255, 64, 53, 0.22)",
-                            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
+                            marginTop: hasStandardSizes ? "10px" : "0",
+                            padding: "12px 16px",
+                            backgroundColor: "#F8FAFC",
+                            borderRadius: "10px",
+                            border: "1px solid #E2E8F0",
+                            maxWidth: "520px",
                           }}
                         >
-                          {/* Quick 1-Click Presets */}
-                          <div style={{ marginBottom: "14px" }}>
-                            <div className="d-flex align-items-center justify-content-between mb-2">
-                              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                                Quick Window / Room Presets:
+                          <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0F172A" }}>
+                              {!hasStandardSizes ? "📐 Dimensions (Made to Measure):" : "Custom Window Measurements:"}
+                            </span>
+                            <span style={{ fontSize: "0.82rem", color: "var(--theme, #FF4035)", fontWeight: 800 }}>
+                              ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                              <span style={{ fontWeight: 500, color: "#64748B", fontSize: "0.72rem", marginLeft: "4px" }}>
+                                ({customTotalMeasurement} {customUnitLabel})
                               </span>
-                              <span style={{ fontSize: "0.74rem", color: "var(--theme, #FF4035)", fontWeight: 600 }}>
-                                Custom Rate: ₹{customRate.toFixed(2)} / {customUnitLabel}
-                              </span>
-                            </div>
-                            <div className="d-flex flex-wrap gap-2">
-                              {quickPresets.map((preset) => (
-                                <button
-                                  key={preset.label}
-                                  type="button"
-                                  onClick={() => {
-                                    setWidthFeet(preset.wFt);
-                                    setWidthInches(preset.wIn);
-                                    setLengthFeet(preset.lFt);
-                                    setLengthInches(preset.lIn);
-                                  }}
-                                  style={{
-                                    padding: "5px 12px",
-                                    borderRadius: "20px",
-                                    fontSize: "0.76rem",
-                                    fontWeight: 600,
-                                    backgroundColor: "#F1F5F9",
-                                    border: "1px solid #CBD5E1",
-                                    color: "#334155",
-                                    cursor: "pointer",
-                                    transition: "all 0.15s ease",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = "var(--bg-1, #FFF5F4)";
-                                    e.currentTarget.style.borderColor = "var(--theme, #FF4035)";
-                                    e.currentTarget.style.color = "var(--theme, #FF4035)";
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = "#F1F5F9";
-                                    e.currentTarget.style.borderColor = "#CBD5E1";
-                                    e.currentTarget.style.color = "#334155";
-                                  }}
-                                >
-                                  + {preset.label}
-                                </button>
-                              ))}
-                            </div>
+                            </span>
                           </div>
 
-                          {/* Dimension Input Cards (Width & Height) */}
-                          <div className="row g-3 mb-3">
-                            {/* Width Inputs */}
+                          {/* Inline Dimension Inputs */}
+                          <div className="d-flex align-items-center gap-2 flex-wrap">
                             {hasWidth && (
-                              <div className="col-sm-6">
-                                <div className="d-flex justify-content-between align-items-center mb-1">
-                                  <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0F172A", margin: 0 }}>
-                                    Width (Across) *
-                                  </label>
-                                  <span style={{ fontSize: "0.75rem", color: "var(--theme, #FF4035)", fontWeight: 700 }}>
-                                    {totalWidthFeet.toFixed(2)} ft
-                                  </span>
-                                </div>
-                                <div className="d-flex gap-2">
-                                  <div style={{ position: "relative", flex: 1 }}>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="1"
-                                      value={widthFeet}
-                                      onChange={(e) => setWidthFeet(e.target.value)}
-                                      placeholder="Feet"
-                                      style={{
-                                        width: "100%",
-                                        padding: "8px 32px 8px 12px",
-                                        borderRadius: "8px",
-                                        border: "1.5px solid #CBD5E1",
-                                        fontWeight: 700,
-                                        fontSize: "0.92rem",
-                                        color: "#0F172A",
-                                        outline: "none",
-                                      }}
-                                    />
-                                    <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
-                                      ft
-                                    </span>
-                                  </div>
-                                  <div style={{ position: "relative", flex: 1 }}>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="11"
-                                      step="1"
-                                      value={widthInches}
-                                      onChange={(e) => setWidthInches(e.target.value)}
-                                      placeholder="Inches"
-                                      style={{
-                                        width: "100%",
-                                        padding: "8px 32px 8px 12px",
-                                        borderRadius: "8px",
-                                        border: "1.5px solid #CBD5E1",
-                                        fontWeight: 700,
-                                        fontSize: "0.92rem",
-                                        color: "#0F172A",
-                                        outline: "none",
-                                      }}
-                                    />
-                                    <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
-                                      in
-                                    </span>
-                                  </div>
-                                </div>
+                              <div className="d-flex align-items-center gap-1">
+                                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>Width:</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={widthFeet}
+                                  onChange={(e) => setWidthFeet(e.target.value)}
+                                  placeholder="0"
+                                  style={{
+                                    width: "48px",
+                                    padding: "5px 4px",
+                                    borderRadius: "6px",
+                                    border: "1px solid #CBD5E1",
+                                    textAlign: "center",
+                                    fontWeight: 700,
+                                    fontSize: "0.88rem",
+                                    outline: "none",
+                                    color: "#0F172A",
+                                  }}
+                                />
+                                <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>ft</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="11"
+                                  value={widthInches}
+                                  onChange={(e) => setWidthInches(e.target.value)}
+                                  placeholder="0"
+                                  style={{
+                                    width: "48px",
+                                    padding: "5px 4px",
+                                    borderRadius: "6px",
+                                    border: "1px solid #CBD5E1",
+                                    textAlign: "center",
+                                    fontWeight: 700,
+                                    fontSize: "0.88rem",
+                                    outline: "none",
+                                    color: "#0F172A",
+                                  }}
+                                />
+                                <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>in</span>
                               </div>
                             )}
 
-                            {/* Height / Length Inputs */}
-                            <div className={hasWidth ? "col-sm-6" : "col-12"}>
-                              <div className="d-flex justify-content-between align-items-center mb-1">
-                                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0F172A", margin: 0 }}>
-                                  {hasWidth ? "Height / Drop (Top to Bottom) *" : "Length *"}
-                                </label>
-                                <span style={{ fontSize: "0.75rem", color: "var(--theme, #FF4035)", fontWeight: 700 }}>
-                                  {totalLengthFeet.toFixed(2)} ft
-                                </span>
-                              </div>
-                              <div className="d-flex gap-2">
-                                <div style={{ position: "relative", flex: 1 }}>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value={lengthFeet}
-                                    onChange={(e) => setLengthFeet(e.target.value)}
-                                    placeholder="Feet"
-                                    style={{
-                                      width: "100%",
-                                      padding: "8px 32px 8px 12px",
-                                      borderRadius: "8px",
-                                      border: "1.5px solid #CBD5E1",
-                                      fontWeight: 700,
-                                      fontSize: "0.92rem",
-                                      color: "#0F172A",
-                                      outline: "none",
-                                    }}
-                                  />
-                                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
-                                    ft
-                                  </span>
-                                </div>
-                                <div style={{ position: "relative", flex: 1 }}>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="11"
-                                    step="1"
-                                    value={lengthInches}
-                                    onChange={(e) => setLengthInches(e.target.value)}
-                                    placeholder="Inches"
-                                    style={{
-                                      width: "100%",
-                                      padding: "8px 32px 8px 12px",
-                                      borderRadius: "8px",
-                                      border: "1.5px solid #CBD5E1",
-                                      fontWeight: 700,
-                                      fontSize: "0.92rem",
-                                      color: "#0F172A",
-                                      outline: "none",
-                                    }}
-                                  />
-                                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
-                                    in
-                                  </span>
-                                </div>
-                              </div>
+                            {hasWidth && <span style={{ color: "#94A3B8", fontWeight: 700, margin: "0 2px" }}>×</span>}
+
+                            <div className="d-flex align-items-center gap-1">
+                              <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>
+                                {hasWidth ? "Height:" : "Length:"}
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={lengthFeet}
+                                onChange={(e) => setLengthFeet(e.target.value)}
+                                placeholder="0"
+                                style={{
+                                  width: "48px",
+                                  padding: "5px 4px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #CBD5E1",
+                                  textAlign: "center",
+                                  fontWeight: 700,
+                                  fontSize: "0.88rem",
+                                  outline: "none",
+                                  color: "#0F172A",
+                                }}
+                              />
+                              <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>ft</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="11"
+                                value={lengthInches}
+                                onChange={(e) => setLengthInches(e.target.value)}
+                                placeholder="0"
+                                style={{
+                                  width: "48px",
+                                  padding: "5px 4px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #CBD5E1",
+                                  textAlign: "center",
+                                  fontWeight: 700,
+                                  fontSize: "0.88rem",
+                                  outline: "none",
+                                  color: "#0F172A",
+                                }}
+                              />
+                              <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>in</span>
                             </div>
                           </div>
 
-                          {/* Calculation & Price Summary Box */}
-                          <div
-                            style={{
-                              backgroundColor: "#F8FAFC",
-                              borderRadius: "10px",
-                              padding: "12px 16px",
-                              border: "1px solid #E2E8F0",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              flexWrap: "wrap",
-                              gap: "10px",
-                            }}
-                          >
-                            <div>
-                              <div style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>
-                                Calculated {customUnit === "sq_ft" ? "Area" : "Footage"}:
-                              </div>
-                              <div style={{ fontSize: "0.98rem", fontWeight: 800, color: "#0F172A" }}>
-                                {customTotalMeasurement} {customUnitLabel}{" "}
-                                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748B" }}>
-                                  ({hasWidth ? `${widthFtNum}ft ${widthInNum}in × ${lengthFtNum}ft ${lengthInNum}in` : `${lengthFtNum}ft ${lengthInNum}in`})
-                                </span>
-                              </div>
-                            </div>
-
-                            <div style={{ textAlign: "right" }}>
-                              <div style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>
-                                Estimated Custom Price:
-                              </div>
-                              <div style={{ fontSize: "1.15rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
-                                ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                              </div>
-                              {customMinPriceApplied && (
-                                <span style={{ fontSize: "0.7rem", color: "#B45309", fontWeight: 700 }}>
-                                  * Min order charge applied
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Friendly Reassurance Footer */}
-                          <div style={{ marginTop: "10px", fontSize: "0.74rem", color: "#059669", display: "flex", alignItems: "center", gap: "6px" }}>
-                            <span>✓</span>
-                            <span>Precision-cut in Srinagar to your exact fit. Heavy-duty brackets & mounting hardware included.</span>
+                          {/* Presets and Info in One Subtle Sub-Row */}
+                          <div className="d-flex align-items-center gap-2 mt-2 pt-2 flex-wrap" style={{ borderTop: "1px dashed #E2E8F0", fontSize: "0.74rem" }}>
+                            <span style={{ color: "#64748B", fontWeight: 600 }}>Presets:</span>
+                            {quickPresets.map((preset) => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => {
+                                  setWidthFeet(preset.wFt);
+                                  setWidthInches(preset.wIn);
+                                  setLengthFeet(preset.lFt);
+                                  setLengthInches(preset.lIn);
+                                }}
+                                style={{
+                                  border: "none",
+                                  background: "transparent",
+                                  color: "#2563EB",
+                                  cursor: "pointer",
+                                  padding: "0 2px",
+                                  fontSize: "0.74rem",
+                                  textDecoration: "underline",
+                                }}
+                              >
+                                {preset.label.split(" ")[0]}
+                              </button>
+                            ))}
+                            <span style={{ marginLeft: "auto", color: "#059669", fontSize: "0.72rem" }}>
+                              ✓ Brackets &amp; Hardware Included
+                            </span>
                           </div>
                         </div>
                       )}
