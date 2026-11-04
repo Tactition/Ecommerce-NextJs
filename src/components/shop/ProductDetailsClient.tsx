@@ -219,6 +219,7 @@ export default function ProductDetailsClient({
   const [lengthInches, setLengthInches] = useState<string>("0");
   const [widthFeet, setWidthFeet] = useState<string>("4");
   const [widthInches, setWidthInches] = useState<string>("0");
+  const [showPricingBreakdown, setShowPricingBreakdown] = useState<boolean>(false);
 
   const quickPresets = [
     { label: "Small (3 × 4 ft)", wFt: "3", wIn: "0", lFt: "4", lIn: "0" },
@@ -1049,65 +1050,121 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                             ))}
                           </div>
 
-                          {/* Live Transparent Math & Calculation Breakdown */}
+                          {/* Sizing & Pricing Calculation Dropdown */}
                           <div
                             style={{
                               backgroundColor: "#FFFFFF",
                               border: "1.5px solid #E2E8F0",
-                              borderRadius: "8px",
-                              padding: "12px 14px",
-                              marginBottom: "8px",
+                              borderRadius: "10px",
+                              overflow: "hidden",
+                              marginBottom: "10px",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                              transition: "all 0.2s ease",
                             }}
                           >
-                            <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748B", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                              Transparent Price Calculation:
-                            </div>
-
-                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.82rem", color: "#334155" }}>
-                              <div className="d-flex justify-content-between align-items-center">
-                                <span>1. Total Area / Footage:</span>
-                                <strong>
-                                  {hasWidth ? `${totalWidthFeet.toFixed(2)} ft × ${totalLengthFeet.toFixed(2)} ft = ${customTotalMeasurement} ${customUnitLabel}` : `${customTotalMeasurement} ${customUnitLabel}`}
-                                </strong>
-                              </div>
-
-                              <div className="d-flex justify-content-between align-items-center">
-                                <span>2. Applied Rate:</span>
-                                <strong style={{ color: "#DC2626" }}>
-                                  ₹{customRate.toFixed(2)} per {customUnitLabel}
-                                </strong>
-                              </div>
-
-                              <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1px dashed #E2E8F0", paddingTop: "4px", marginTop: "2px" }}>
-                                <span>3. Measured Cost ({customTotalMeasurement} × ₹{customRate.toFixed(2)}):</span>
-                                <strong>₹{rawCustomPrice.toFixed(2)}</strong>
-                              </div>
-
-                              {customMinPriceApplied && (
-                                <div
-                                  style={{
-                                    backgroundColor: "#FEF3C7",
-                                    color: "#92400E",
-                                    padding: "6px 8px",
-                                    borderRadius: "6px",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
-                                    marginTop: "4px",
-                                  }}
-                                >
-                                  ℹ️ Minimum base charge of <strong>₹{customMinPrice.toFixed(2)}</strong> applies for cuts under ₹{customMinPrice.toFixed(2)}.
+                            <button
+                              type="button"
+                              onClick={() => setShowPricingBreakdown((prev) => !prev)}
+                              aria-expanded={showPricingBreakdown}
+                              style={{
+                                width: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "10px 14px",
+                                backgroundColor: showPricingBreakdown ? "#F8FAFC" : "#FFFFFF",
+                                border: "none",
+                                borderBottom: showPricingBreakdown ? "1.5px solid #E2E8F0" : "none",
+                                cursor: "pointer",
+                                textAlign: "left",
+                                transition: "background-color 0.15s ease",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontSize: "1rem" }}>📐</span>
+                                <div>
+                                  <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0F172A", display: "block" }}>
+                                    Sizing &amp; Pricing Breakdown
+                                  </span>
+                                  <span style={{ fontSize: "0.74rem", color: "#64748B" }}>
+                                    {customTotalMeasurement} {customUnitLabel} @ ₹{customRate.toFixed(2)}/{customUnitLabel}
+                                  </span>
                                 </div>
-                              )}
-
-                              <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1.5px solid #CBD5E1", paddingTop: "6px", marginTop: "4px" }}>
-                                <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.9rem" }}>
-                                  Final Calculated Price:
-                                </span>
-                                <span style={{ fontSize: "1.15rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--theme, #FF4035)" }}>
                                   ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </span>
+                                <span
+                                  style={{
+                                    fontSize: "0.75rem",
+                                    color: "#64748B",
+                                    transform: showPricingBreakdown ? "rotate(180deg)" : "rotate(0deg)",
+                                    transition: "transform 0.2s ease",
+                                    display: "inline-block",
+                                  }}
+                                >
+                                  ▼
+                                </span>
                               </div>
-                            </div>
+                            </button>
+
+                            {/* Dropdown Opened: Transparent Math & Calculation Breakdown */}
+                            {showPricingBreakdown && (
+                              <div style={{ padding: "12px 14px", backgroundColor: "#FFFFFF" }}>
+                                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#64748B", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                  Price Calculation Breakdown:
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.82rem", color: "#334155" }}>
+                                  <div className="d-flex justify-content-between align-items-center">
+                                    <span>1. Total Area / Footage:</span>
+                                    <strong>
+                                      {hasWidth
+                                        ? `${totalWidthFeet.toFixed(2)} ft × ${totalLengthFeet.toFixed(2)} ft = ${customTotalMeasurement} ${customUnitLabel}`
+                                        : `${customTotalMeasurement} ${customUnitLabel}`}
+                                    </strong>
+                                  </div>
+
+                                  <div className="d-flex justify-content-between align-items-center">
+                                    <span>2. Applied Rate:</span>
+                                    <strong style={{ color: "#DC2626" }}>
+                                      ₹{customRate.toFixed(2)} per {customUnitLabel}
+                                    </strong>
+                                  </div>
+
+                                  <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1px dashed #E2E8F0", paddingTop: "5px", marginTop: "2px" }}>
+                                    <span>3. Measured Cost ({customTotalMeasurement} × ₹{customRate.toFixed(2)}):</span>
+                                    <strong>₹{rawCustomPrice.toFixed(2)}</strong>
+                                  </div>
+
+                                  {customMinPriceApplied && (
+                                    <div
+                                      style={{
+                                        backgroundColor: "#FEF3C7",
+                                        color: "#92400E",
+                                        padding: "6px 8px",
+                                        borderRadius: "6px",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        marginTop: "4px",
+                                      }}
+                                    >
+                                      ℹ️ Minimum base charge of <strong>₹{customMinPrice.toFixed(2)}</strong> applies for cuts under ₹{customMinPrice.toFixed(2)}.
+                                    </div>
+                                  )}
+
+                                  <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1.5px solid #CBD5E1", paddingTop: "6px", marginTop: "4px" }}>
+                                    <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.88rem" }}>
+                                      Final Calculated Price:
+                                    </span>
+                                    <span style={{ fontSize: "1.1rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
+                                      ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div style={{ fontSize: "0.73rem", color: "#059669", display: "flex", alignItems: "center", gap: "5px" }}>
