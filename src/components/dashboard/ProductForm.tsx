@@ -1301,6 +1301,35 @@ export default function ProductForm({
 
           {allowCustomSizing && (
             <div style={{ marginTop: "14px" }}>
+              {/* Guidance Info Card */}
+              <div
+                style={{
+                  backgroundColor: "#F0FDF4",
+                  border: "1px solid #BBF7D0",
+                  borderRadius: "10px",
+                  padding: "12px 16px",
+                  marginBottom: "16px",
+                  fontSize: "0.82rem",
+                  color: "#166534",
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>💡</span>
+                  <span>Storefront Sizing Architecture:</span>
+                </div>
+                <ul style={{ margin: "4px 0 0 18px", padding: 0, lineHeight: 1.5 }}>
+                  <li>
+                    <strong>Custom Made-to-Measure:</strong> With custom sizing enabled, customers can enter exact Width &amp; Height in feet and inches with real-time price calculation.
+                  </li>
+                  <li>
+                    <strong>Merged Selector:</strong> If you also add &quot;Size&quot; options in Product Options below, standard sizes and &quot;Made to Measure&quot; are seamlessly merged into one single selector.
+                  </li>
+                  <li>
+                    <strong>Purely Custom (e.g. Blinds):</strong> If no &quot;Size&quot; attribute is added below, the product page directly shows the clean Made-to-Measure dimensions input without unnecessary toggles.
+                  </li>
+                </ul>
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
                 {/* Rate per Unit */}
                 <div>

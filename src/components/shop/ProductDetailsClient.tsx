@@ -61,6 +61,54 @@ export default function ProductDetailsClient({
     return Array.from(attrMap.values());
   }, [variations, allAttributes]);
 
+  // Identify if a dedicated "Size" / "Dimensions" attribute exists in variations
+  const sizeAttribute = useMemo(() => {
+    return productAttributes.find((attr) => {
+      const n = attr.name.toLowerCase();
+      return n.includes("size") || n.includes("dimen") || n.includes("measurement");
+    });
+  }, [productAttributes]);
+
+  // Non-size attributes (e.g. Fabric Colour, Control Mechanism, Leg Finish, etc.)
+  const nonSizeAttributes = useMemo(() => {
+    return productAttributes.filter((attr) => {
+      const n = attr.name.toLowerCase();
+      return !n.includes("size") && !n.includes("dimen") && !n.includes("measurement");
+    });
+  }, [productAttributes]);
+
+  // Available standard sizes from sizeAttribute
+  const standardSizes = useMemo(() => {
+    if (!sizeAttribute) return [];
+    const map = new Map<number, string>();
+    (variations || []).forEach((v) => {
+      (v.values || []).forEach((val) => {
+        if (val.attribute_id === sizeAttribute.id) {
+          map.set(val.value_id, val.value_label);
+        }
+      });
+    });
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+  }, [sizeAttribute, variations]);
+
+  const hasStandardSizes = standardSizes.length > 0;
+
+  // Custom Sizing Availability & Sizing Mode
+  const isCustomSizingEnabled = Boolean(
+    product.allow_custom_sizing || (product.custom_size_rate && Number(product.custom_size_rate) > 0)
+  );
+
+  const [sizingMode, setSizingMode] = useState<"standard" | "custom">(() => {
+    if (hasStandardSizes) return "standard";
+    if (isCustomSizingEnabled) return "custom";
+    return "standard";
+  });
+
+  // If the product has NO standard sizes, always treat active mode as "custom"
+  const activeSizingMode: "standard" | "custom" =
+    !hasStandardSizes && isCustomSizingEnabled ? "custom" : sizingMode;
+  const isCustomMode = isCustomSizingEnabled && activeSizingMode === "custom";
+
   // Initial selection: first active variation or first available values
   const [selectedAttributeValues, setSelectedAttributeValues] = useState<Record<number, number>>(() => {
     if (variations && variations.length > 0 && variations[0].values) {
@@ -74,10 +122,18 @@ export default function ProductDetailsClient({
   });
 
   // Find currently matched variation
-  const currentVariation = (variations || []).find((v) => {
-    if (!v.values || v.values.length === 0) return false;
-    return v.values.every((val) => selectedAttributeValues[val.attribute_id] === val.value_id);
-  });
+  const currentVariation = useMemo(() => {
+    if (!variations || variations.length === 0) return null;
+    return variations.find((v) => {
+      if (!v.values || v.values.length === 0) return false;
+      return v.values.every((val) => {
+        if (isCustomMode && sizeAttribute && val.attribute_id === sizeAttribute.id) {
+          return true;
+        }
+        return selectedAttributeValues[val.attribute_id] === val.value_id;
+      });
+    });
+  }, [variations, selectedAttributeValues, isCustomMode, sizeAttribute]);
 
   // Active gallery image
   const [activeImage, setActiveImage] = useState<string>(product.image || "");
@@ -153,20 +209,23 @@ export default function ProductDetailsClient({
     }
   };
 
-  // Custom Sizing in Feet State
-  const isCustomSizingEnabled = Boolean(
-    product.allow_custom_sizing || (product.custom_size_rate && Number(product.custom_size_rate) > 0)
-  );
+  // Custom Sizing in Feet Measurement Settings
   const customRate = Number(product.custom_size_rate || 14);
   const customUnit = product.custom_size_unit || "sq_ft";
   const customMinPrice = Number(product.custom_size_min_price || 0);
   const customLinearMode = product.custom_size_linear_mode || "length_plus_width";
 
-  const [sizingMode, setSizingMode] = useState<"standard" | "custom">("standard");
-  const [lengthFeet, setLengthFeet] = useState<string>("6");
-  const [lengthInches, setLengthInches] = useState<string>("3");
-  const [widthFeet, setWidthFeet] = useState<string>("5");
+  const [lengthFeet, setLengthFeet] = useState<string>("5");
+  const [lengthInches, setLengthInches] = useState<string>("0");
+  const [widthFeet, setWidthFeet] = useState<string>("4");
   const [widthInches, setWidthInches] = useState<string>("0");
+
+  const quickPresets = [
+    { label: "Small (3 × 4 ft)", wFt: "3", wIn: "0", lFt: "4", lIn: "0" },
+    { label: "Standard (4 × 5 ft)", wFt: "4", wIn: "0", lFt: "5", lIn: "0" },
+    { label: "Large (5 × 6 ft)", wFt: "5", wIn: "0", lFt: "6", lIn: "0" },
+    { label: "Balcony (6 × 7 ft)", wFt: "6", wIn: "0", lFt: "7", lIn: "0" },
+  ];
 
   const lengthFtNum = parseFloat(lengthFeet) || 0;
   const lengthInNum = parseFloat(lengthInches) || 0;
@@ -205,7 +264,6 @@ export default function ProductDetailsClient({
   const customEstimatedPrice = customMinPriceApplied ? customMinPrice : rawCustomPrice;
 
   // Dynamic values
-  const isCustomMode = isCustomSizingEnabled && sizingMode === "custom";
   const displayPrice = isCustomMode
     ? customEstimatedPrice
     : currentVariation
@@ -742,211 +800,203 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     </div>
                   </div>
 
-                  {/* Custom Sizing Mode & Panel */}
-                  {isCustomSizingEnabled && (
+                  {/* ══════════════════════════════════════════════════════════════ */}
+                  {/* UNIFIED SIZING & OPTIONS SECTION                               */}
+                  {/* Merges Standard Pre-Set Sizes & Custom Made-to-Measure         */}
+                  {/* ══════════════════════════════════════════════════════════════ */}
+                  {(hasStandardSizes || isCustomSizingEnabled) && (
                     <div
                       style={{
                         marginBottom: "24px",
-                        padding: "18px 20px",
+                        padding: "20px 22px",
                         backgroundColor: isCustomMode ? "var(--bg-1, #FFF5F4)" : "#F8FAFC",
                         borderRadius: "14px",
                         border: isCustomMode ? "2px solid var(--theme, #FF4035)" : "1px solid #E2E8F0",
-                        boxShadow: isCustomMode ? "0 6px 20px rgba(255, 64, 53, 0.1)" : "none",
+                        boxShadow: isCustomMode ? "0 6px 20px rgba(255, 64, 53, 0.08)" : "none",
                         transition: "all 0.25s ease",
                       }}
                     >
-                      <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                        <div>
-                          <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.98rem", display: "block" }}>
-                            Sizing Options
-                          </span>
-                          <span style={{ fontSize: "0.78rem", color: "#64748B" }}>
-                            Choose from pre-set standard sizes or input custom feet dimensions
-                          </span>
+                      {/* Section Header */}
+                      <div style={{ marginBottom: "14px" }}>
+                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <div className="d-flex align-items-center gap-2">
+                            <span style={{ fontSize: "1.1rem" }}>📐</span>
+                            <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "1rem" }}>
+                              {hasStandardSizes && isCustomSizingEnabled
+                                ? "Select Size & Dimensions"
+                                : hasStandardSizes
+                                ? "Select Standard Size"
+                                : "Dimensions (Made to Measure)"}
+                            </span>
+                          </div>
+                          {isCustomMode && (
+                            <span
+                              style={{
+                                fontSize: "0.74rem",
+                                backgroundColor: "rgba(255, 64, 53, 0.1)",
+                                color: "var(--theme, #FF4035)",
+                                padding: "3px 10px",
+                                borderRadius: "20px",
+                                fontWeight: 700,
+                                border: "1px solid rgba(255, 64, 53, 0.2)",
+                              }}
+                            >
+                              Custom Cut • Ready to Install
+                            </span>
+                          )}
                         </div>
-                        <div className="d-flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setSizingMode("standard")}
-                            style={{
-                              padding: "7px 16px",
-                              borderRadius: "20px",
-                              border: sizingMode === "standard" ? "2px solid var(--theme, #FF4035)" : "1px solid #CBD5E1",
-                              backgroundColor: sizingMode === "standard" ? "var(--theme, #FF4035)" : "#FFFFFF",
-                              color: sizingMode === "standard" ? "#FFFFFF" : "#475569",
-                              fontWeight: 700,
-                              fontSize: "0.82rem",
-                              cursor: "pointer",
-                              transition: "all 0.15s ease",
-                              boxShadow: sizingMode === "standard" ? "0 2px 8px rgba(255, 64, 53, 0.25)" : "none",
-                            }}
-                          >
-                            Standard Sizes
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSizingMode("custom")}
-                            style={{
-                              padding: "7px 16px",
-                              borderRadius: "20px",
-                              border: sizingMode === "custom" ? "2px solid var(--theme, #FF4035)" : "1px solid #CBD5E1",
-                              backgroundColor: sizingMode === "custom" ? "var(--theme, #FF4035)" : "#FFFFFF",
-                              color: sizingMode === "custom" ? "#FFFFFF" : "#475569",
-                              fontWeight: 700,
-                              fontSize: "0.82rem",
-                              cursor: "pointer",
-                              transition: "all 0.15s ease",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              boxShadow: sizingMode === "custom" ? "0 2px 8px rgba(255, 64, 53, 0.25)" : "none",
-                            }}
-                          >
-                            <span>📐</span> Custom Sizing (in feet)
-                          </button>
-                        </div>
+                        <p style={{ fontSize: "0.78rem", color: "#64748B", margin: "4px 0 0 0" }}>
+                          {hasStandardSizes && isCustomSizingEnabled
+                            ? "Choose a pre-set standard size or select Made to Measure for custom room dimensions"
+                            : hasStandardSizes
+                            ? "Select your preferred pre-cut standard size below"
+                            : "Crafted to your exact window/room dimensions. Enter measurements in feet & inches below."}
+                        </p>
                       </div>
 
-                      {sizingMode === "custom" ? (
+                      {/* Unified Sizing Selection Cards (When standard sizes exist) */}
+                      {hasStandardSizes && (
+                        <div style={{ marginBottom: isCustomMode ? "18px" : "0" }}>
+                          <div className="d-flex flex-wrap gap-2">
+                            {standardSizes.map((sz) => {
+                              const isSelected = activeSizingMode === "standard" && sizeAttribute && selectedAttributeValues[sizeAttribute.id] === sz.id;
+                              return (
+                                <button
+                                  key={sz.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (sizeAttribute) {
+                                      handleSelectAttributeValue(sizeAttribute.id, sz.id);
+                                    }
+                                    setSizingMode("standard");
+                                  }}
+                                  style={{
+                                    border: isSelected ? "2px solid var(--theme, #FF4035)" : "1.5px solid #CBD5E1",
+                                    backgroundColor: isSelected ? "#FFFFFF" : "#FFFFFF",
+                                    color: isSelected ? "var(--theme, #FF4035)" : "#334155",
+                                    padding: "9px 18px",
+                                    borderRadius: "10px",
+                                    fontWeight: 700,
+                                    fontSize: "0.88rem",
+                                    cursor: "pointer",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    boxShadow: isSelected ? "0 3px 10px rgba(255, 64, 53, 0.18)" : "0 1px 2px rgba(0,0,0,0.03)",
+                                    transition: "all 0.15s ease",
+                                  }}
+                                >
+                                  <span>{sz.label}</span>
+                                  {isSelected && (
+                                    <span style={{ color: "var(--theme, #FF4035)", fontWeight: 800 }}>✓</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+
+                            {/* Unified Custom Size Button */}
+                            {isCustomSizingEnabled && (
+                              <button
+                                type="button"
+                                onClick={() => setSizingMode("custom")}
+                                style={{
+                                  border: activeSizingMode === "custom" ? "2px solid var(--theme, #FF4035)" : "1.5px dashed #94A3B8",
+                                  backgroundColor: activeSizingMode === "custom" ? "#FFFFFF" : "#F8FAFC",
+                                  color: activeSizingMode === "custom" ? "var(--theme, #FF4035)" : "#475569",
+                                  padding: "9px 18px",
+                                  borderRadius: "10px",
+                                  fontWeight: 700,
+                                  fontSize: "0.88rem",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  boxShadow: activeSizingMode === "custom" ? "0 3px 10px rgba(255, 64, 53, 0.18)" : "none",
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                <span>📐</span>
+                                <span>Made to Measure (Custom Size)</span>
+                                {activeSizingMode === "custom" && (
+                                  <span style={{ color: "var(--theme, #FF4035)", fontWeight: 800 }}>✓</span>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Custom Sizing Measurement Panel (Rendered when custom mode is active) */}
+                      {isCustomMode && (
                         <div
                           style={{
                             backgroundColor: "#FFFFFF",
-                            padding: "20px",
+                            padding: "18px 20px",
                             borderRadius: "12px",
                             border: "1.5px solid rgba(255, 64, 53, 0.22)",
                             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
                           }}
                         >
-                          {/* Calculator Header & Badges */}
-                          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                            <div className="d-flex align-items-center gap-2">
-                              <span style={{ fontWeight: 800, color: "var(--title, #0A111E)", fontSize: "0.95rem" }}>
-                                📐 {customUnit === "sq_ft" ? "Square Feet Calculator (Area)" : "Linear Feet Calculator"}
+                          {/* Quick 1-Click Presets */}
+                          <div style={{ marginBottom: "14px" }}>
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                Quick Window / Room Presets:
                               </span>
-                              <span
-                                style={{
-                                  fontSize: "0.72rem",
-                                  backgroundColor: "rgba(255, 64, 53, 0.08)",
-                                  color: "var(--theme, #FF4035)",
-                                  padding: "3px 10px",
-                                  borderRadius: "12px",
-                                  fontWeight: 700,
-                                  border: "1px solid rgba(255, 64, 53, 0.2)",
-                                }}
-                              >
-                                {customUnit === "sq_ft"
-                                  ? "Area: Length × Width"
-                                  : customLinearMode === "single_length"
-                                  ? "Running Length"
-                                  : "Length + Width"}
+                              <span style={{ fontSize: "0.74rem", color: "var(--theme, #FF4035)", fontWeight: 600 }}>
+                                Custom Rate: ₹{customRate.toFixed(2)} / {customUnitLabel}
                               </span>
                             </div>
-                            <div className="d-flex align-items-center gap-2">
-                              <span
-                                style={{
-                                  fontSize: "0.82rem",
-                                  color: "var(--theme, #FF4035)",
-                                  fontWeight: 700,
-                                  backgroundColor: "var(--bg-1, #FFF5F4)",
-                                  padding: "4px 12px",
-                                  borderRadius: "6px",
-                                  border: "1px solid rgba(255, 64, 53, 0.25)",
-                                }}
-                              >
-                                Admin Rate: ₹{customRate.toFixed(2)} / {customUnitLabel}
-                              </span>
-                              {customMinPrice > 0 && (
-                                <span
+                            <div className="d-flex flex-wrap gap-2">
+                              {quickPresets.map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => {
+                                    setWidthFeet(preset.wFt);
+                                    setWidthInches(preset.wIn);
+                                    setLengthFeet(preset.lFt);
+                                    setLengthInches(preset.lIn);
+                                  }}
                                   style={{
-                                    fontSize: "0.75rem",
-                                    color: "#B45309",
-                                    fontWeight: 700,
-                                    backgroundColor: "#FEF3C7",
-                                    padding: "4px 8px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #FDE68A",
+                                    padding: "5px 12px",
+                                    borderRadius: "20px",
+                                    fontSize: "0.76rem",
+                                    fontWeight: 600,
+                                    backgroundColor: "#F1F5F9",
+                                    border: "1px solid #CBD5E1",
+                                    color: "#334155",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s ease",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "var(--bg-1, #FFF5F4)";
+                                    e.currentTarget.style.borderColor = "var(--theme, #FF4035)";
+                                    e.currentTarget.style.color = "var(--theme, #FF4035)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#F1F5F9";
+                                    e.currentTarget.style.borderColor = "#CBD5E1";
+                                    e.currentTarget.style.color = "#334155";
                                   }}
                                 >
-                                  Min Charge: ₹{customMinPrice.toFixed(2)}
-                                </span>
-                              )}
+                                  + {preset.label}
+                                </button>
+                              ))}
                             </div>
                           </div>
 
-                          {/* Dimensions Input Row */}
+                          {/* Dimension Input Cards (Width & Height) */}
                           <div className="row g-3 mb-3">
-                            {/* Length Inputs (Feet & Inches) */}
-                            <div className={hasWidth ? "col-sm-6" : "col-12"}>
-                              <div className="d-flex justify-content-between align-items-center mb-1">
-                                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155", margin: 0 }}>
-                                  Length *
-                                </label>
-                                <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>
-                                  {lengthFtNum} ft {lengthInNum > 0 ? `${lengthInNum} in ` : ""}= <strong>{totalLengthFeet.toFixed(2)} ft</strong>
-                                </span>
-                              </div>
-                              <div className="d-flex gap-2">
-                                <div style={{ position: "relative", flex: 1 }}>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="any"
-                                    value={lengthFeet}
-                                    onChange={(e) => setLengthFeet(e.target.value)}
-                                    placeholder="Feet"
-                                    aria-label="Length feet"
-                                    style={{
-                                      width: "100%",
-                                      padding: "8px 32px 8px 10px",
-                                      borderRadius: "8px",
-                                      border: "1px solid #CBD5E1",
-                                      fontWeight: 700,
-                                      fontSize: "0.92rem",
-                                      color: "#0F172A",
-                                      outline: "none",
-                                    }}
-                                  />
-                                  <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 600 }}>
-                                    ft
-                                  </span>
-                                </div>
-                                <div style={{ position: "relative", flex: 1 }}>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="11"
-                                    step="1"
-                                    value={lengthInches}
-                                    onChange={(e) => setLengthInches(e.target.value)}
-                                    placeholder="Inches"
-                                    aria-label="Length inches"
-                                    style={{
-                                      width: "100%",
-                                      padding: "8px 32px 8px 10px",
-                                      borderRadius: "8px",
-                                      border: "1px solid #CBD5E1",
-                                      fontWeight: 700,
-                                      fontSize: "0.92rem",
-                                      color: "#0F172A",
-                                      outline: "none",
-                                    }}
-                                  />
-                                  <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 600 }}>
-                                    in
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Width Inputs (Feet & Inches) */}
+                            {/* Width Inputs */}
                             {hasWidth && (
                               <div className="col-sm-6">
                                 <div className="d-flex justify-content-between align-items-center mb-1">
-                                  <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155", margin: 0 }}>
-                                    Width / Height *
+                                  <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0F172A", margin: 0 }}>
+                                    Width (Across) *
                                   </label>
-                                  <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>
-                                    {widthFtNum} ft {widthInNum > 0 ? `${widthInNum} in ` : ""}= <strong>{totalWidthFeet.toFixed(2)} ft</strong>
+                                  <span style={{ fontSize: "0.75rem", color: "var(--theme, #FF4035)", fontWeight: 700 }}>
+                                    {totalWidthFeet.toFixed(2)} ft
                                   </span>
                                 </div>
                                 <div className="d-flex gap-2">
@@ -954,23 +1004,22 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                     <input
                                       type="number"
                                       min="0"
-                                      step="any"
+                                      step="1"
                                       value={widthFeet}
                                       onChange={(e) => setWidthFeet(e.target.value)}
                                       placeholder="Feet"
-                                      aria-label="Width feet"
                                       style={{
                                         width: "100%",
-                                        padding: "8px 32px 8px 10px",
+                                        padding: "8px 32px 8px 12px",
                                         borderRadius: "8px",
-                                        border: "1px solid #CBD5E1",
+                                        border: "1.5px solid #CBD5E1",
                                         fontWeight: 700,
                                         fontSize: "0.92rem",
                                         color: "#0F172A",
                                         outline: "none",
                                       }}
                                     />
-                                    <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 600 }}>
+                                    <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
                                       ft
                                     </span>
                                   </div>
@@ -983,301 +1032,144 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                       value={widthInches}
                                       onChange={(e) => setWidthInches(e.target.value)}
                                       placeholder="Inches"
-                                      aria-label="Width inches"
                                       style={{
                                         width: "100%",
-                                        padding: "8px 32px 8px 10px",
+                                        padding: "8px 32px 8px 12px",
                                         borderRadius: "8px",
-                                        border: "1px solid #CBD5E1",
+                                        border: "1.5px solid #CBD5E1",
                                         fontWeight: 700,
                                         fontSize: "0.92rem",
                                         color: "#0F172A",
                                         outline: "none",
                                       }}
                                     />
-                                    <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 600 }}>
+                                    <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
                                       in
                                     </span>
                                   </div>
                                 </div>
                               </div>
                             )}
-                          </div>
 
-                          {/* Quick Presets */}
-                          <div className="d-flex align-items-center gap-2 mb-3 flex-wrap">
-                            <span style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>Quick Presets:</span>
-                            {(customUnit === "sq_ft"
-                              ? [
-                                  { l: "6", lin: "3", w: "5", win: "0", label: "6'3\" × 5' (31.25 sq.ft)" },
-                                  { l: "4", lin: "0", w: "2", win: "0", label: "4' × 2' (8 sq.ft)" },
-                                  { l: "6", lin: "0", w: "3", win: "0", label: "6' × 3' (18 sq.ft)" },
-                                  { l: "8", lin: "0", w: "4", win: "0", label: "8' × 4' (32 sq.ft)" },
-                                  { l: "10", lin: "0", w: "5", win: "0", label: "10' × 5' (50 sq.ft)" },
-                                ]
-                              : customLinearMode === "length_plus_width"
-                              ? [
-                                  { l: "6", lin: "3", w: "5", win: "0", label: "6'3\" + 5' (11.25 linear ft)" },
-                                  { l: "4", lin: "0", w: "3", win: "0", label: "4' + 3' (7 linear ft)" },
-                                  { l: "8", lin: "0", w: "5", win: "0", label: "8' + 5' (13 linear ft)" },
-                                  { l: "10", lin: "0", w: "6", win: "0", label: "10' + 6' (16 linear ft)" },
-                                ]
-                              : [
-                                  { l: "6", lin: "3", w: "0", win: "0", label: "6'3\" (6.25 linear ft)" },
-                                  { l: "10", lin: "0", w: "0", win: "0", label: "10' running" },
-                                  { l: "15", lin: "0", w: "0", win: "0", label: "15' running" },
-                                  { l: "20", lin: "0", w: "0", win: "0", label: "20' running" },
-                                ]
-                            ).map((preset, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => {
-                                  setLengthFeet(preset.l);
-                                  setLengthInches(preset.lin);
-                                  setWidthFeet(preset.w);
-                                  setWidthInches(preset.win);
-                                }}
-                                style={{
-                                  background:
-                                    lengthFeet === preset.l && lengthInches === preset.lin && widthFeet === preset.w && widthInches === preset.win
-                                      ? "var(--bg-1, #FFF5F4)"
-                                      : "#F8FAFC",
-                                  border:
-                                    lengthFeet === preset.l && lengthInches === preset.lin && widthFeet === preset.w && widthInches === preset.win
-                                      ? "1.5px solid var(--theme, #FF4035)"
-                                      : "1px solid #E2E8F0",
-                                  color:
-                                    lengthFeet === preset.l && lengthInches === preset.lin && widthFeet === preset.w && widthInches === preset.win
-                                      ? "var(--theme, #FF4035)"
-                                      : "#475569",
-                                  borderRadius: "6px",
-                                  padding: "5px 12px",
-                                  fontSize: "0.76rem",
-                                  fontWeight:
-                                    lengthFeet === preset.l && lengthInches === preset.lin && widthFeet === preset.w && widthInches === preset.win
-                                      ? 700
-                                      : 500,
-                                  cursor: "pointer",
-                                  transition: "all 0.15s ease",
-                                }}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Live Calculation Display Box */}
-                          <div
-                            style={{
-                              padding: "16px 18px",
-                              backgroundColor: "var(--bg-1, #FFF5F4)",
-                              borderRadius: "10px",
-                              border: "1.5px solid rgba(255, 64, 53, 0.22)",
-                              boxShadow: "0 2px 8px rgba(255, 64, 53, 0.04)",
-                            }}
-                          >
-                            <div
-                              className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2"
-                              style={{ borderBottom: "1px dashed rgba(255, 64, 53, 0.25)" }}
-                            >
-                              <div>
-                                <span style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600, display: "block" }}>
-                                  Entered Dimensions:
-                                </span>
-                                <strong style={{ fontSize: "0.95rem", color: "#0F172A" }}>
-                                  {lengthFtNum} ft {lengthInNum > 0 ? `${lengthInNum} in` : "0 in"} ({totalLengthFeet.toFixed(2)} ft)
-                                  {hasWidth ? ` ${customUnit === "sq_ft" ? "×" : "+"} ${widthFtNum} ft ${widthInNum > 0 ? `${widthInNum} in` : "0 in"} (${totalWidthFeet.toFixed(2)} ft)` : ""}
-                                </strong>
-                              </div>
-                              <div className="text-end">
-                                <span style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600, display: "block" }}>
-                                  Billable {customUnit === "sq_ft" ? "Total Area" : "Measurement"}:
-                                </span>
-                                <strong style={{ fontSize: "1.15rem", color: "var(--theme, #FF4035)" }}>
-                                  {customTotalMeasurement} {customUnitLabel}
-                                </strong>
-                              </div>
-                            </div>
-
-                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                              <div>
-                                <div style={{ fontSize: "0.8rem", color: "#475569" }}>
-                                  <strong>Formula: </strong> {customFormulaText} × ₹{customRate.toFixed(2)}/{customUnitLabel}
-                                </div>
-                                {customMinPriceApplied && (
-                                  <div style={{ fontSize: "0.76rem", color: "#B45309", fontWeight: 700, marginTop: "2px" }}>
-                                    <i className="fa-solid fa-circle-info me-1"></i>
-                                    Minimum order charge of ₹{customMinPrice.toFixed(2)} applied (calculated raw total: ₹{rawCustomPrice.toFixed(2)})
-                                  </div>
-                                )}
-                              </div>
-                              <div style={{ textAlign: "right" }}>
-                                <span style={{ fontSize: "0.76rem", color: "#64748B", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", display: "block" }}>
-                                  Estimated Price
-                                </span>
-                                <span style={{ fontSize: "1.7rem", color: "var(--theme, #FF4035)", fontWeight: 900, lineHeight: 1.1 }}>
-                                  ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            {/* Height / Length Inputs */}
+                            <div className={hasWidth ? "col-sm-6" : "col-12"}>
+                              <div className="d-flex justify-content-between align-items-center mb-1">
+                                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0F172A", margin: 0 }}>
+                                  {hasWidth ? "Height / Drop (Top to Bottom) *" : "Length *"}
+                                </label>
+                                <span style={{ fontSize: "0.75rem", color: "var(--theme, #FF4035)", fontWeight: 700 }}>
+                                  {totalLengthFeet.toFixed(2)} ft
                                 </span>
                               </div>
-                            </div>
-                          </div>
-
-                          {/* WhatsApp Business Manager Requirements Dispatch Section */}
-                          <div
-                            style={{
-                              marginTop: "16px",
-                              padding: "16px 18px",
-                              backgroundColor: "#F0FDF4",
-                              border: "1.5px solid #86EFAC",
-                              borderRadius: "10px",
-                              boxShadow: "0 2px 10px rgba(34, 197, 94, 0.08)",
-                            }}
-                          >
-                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                              <div className="d-flex align-items-center gap-2">
-                                <div
-                                  style={{
-                                    width: "30px",
-                                    height: "30px",
-                                    borderRadius: "50%",
-                                    backgroundColor: "#25D366",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    color: "#FFFFFF",
-                                    flexShrink: 0,
-                                    boxShadow: "0 2px 6px rgba(37, 211, 102, 0.4)",
-                                  }}
-                                >
-                                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-                                  </svg>
-                                </div>
-                                <div>
-                                  <span style={{ fontWeight: 800, color: "#14532D", fontSize: "0.88rem", display: "block" }}>
-                                    Send Sizing Requirements to Business Manager
+                              <div className="d-flex gap-2">
+                                <div style={{ position: "relative", flex: 1 }}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={lengthFeet}
+                                    onChange={(e) => setLengthFeet(e.target.value)}
+                                    placeholder="Feet"
+                                    style={{
+                                      width: "100%",
+                                      padding: "8px 32px 8px 12px",
+                                      borderRadius: "8px",
+                                      border: "1.5px solid #CBD5E1",
+                                      fontWeight: 700,
+                                      fontSize: "0.92rem",
+                                      color: "#0F172A",
+                                      outline: "none",
+                                    }}
+                                  />
+                                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
+                                    ft
                                   </span>
-                                  <span style={{ fontSize: "0.75rem", color: "#166534" }}>
-                                    Official Business Desk: <strong>{displayWhatsAppNumber}</strong>
+                                </div>
+                                <div style={{ position: "relative", flex: 1 }}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="11"
+                                    step="1"
+                                    value={lengthInches}
+                                    onChange={(e) => setLengthInches(e.target.value)}
+                                    placeholder="Inches"
+                                    style={{
+                                      width: "100%",
+                                      padding: "8px 32px 8px 12px",
+                                      borderRadius: "8px",
+                                      border: "1.5px solid #CBD5E1",
+                                      fontWeight: 700,
+                                      fontSize: "0.92rem",
+                                      color: "#0F172A",
+                                      outline: "none",
+                                    }}
+                                  />
+                                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.78rem", fontWeight: 700 }}>
+                                    in
                                   </span>
                                 </div>
                               </div>
-                              <span
-                                style={{
-                                  fontSize: "0.72rem",
-                                  backgroundColor: "#DCFCE7",
-                                  color: "#15803D",
-                                  padding: "3px 9px",
-                                  borderRadius: "12px",
-                                  fontWeight: 700,
-                                  border: "1px solid #BBF7D0",
-                                }}
-                              >
-                                <i className="fa-solid fa-bolt me-1"></i> Instant Quote & Site Help
-                              </span>
-                            </div>
-
-                            {/* Optional Customer Note / Requirements */}
-                            <div className="mb-3">
-                              <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#166534", display: "block", marginBottom: "4px" }}>
-                                Specific Requirements or Room Notes (Optional):
-                              </label>
-                              <input
-                                type="text"
-                                value={customNotes}
-                                onChange={(e) => setCustomNotes(e.target.value)}
-                                placeholder="e.g. Master Bedroom accent wall, acoustic backing needed, request site visit..."
-                                style={{
-                                  width: "100%",
-                                  padding: "8px 12px",
-                                  borderRadius: "8px",
-                                  border: "1px solid #86EFAC",
-                                  backgroundColor: "#FFFFFF",
-                                  fontSize: "0.82rem",
-                                  color: "#0F172A",
-                                  outline: "none",
-                                }}
-                              />
-                            </div>
-
-                            <div className="d-flex gap-2 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={handleSendWhatsApp}
-                                style={{
-                                  flex: "1 1 220px",
-                                  backgroundColor: "#25D366",
-                                  color: "#FFFFFF",
-                                  border: "none",
-                                  padding: "10px 18px",
-                                  borderRadius: "8px",
-                                  fontWeight: 700,
-                                  fontSize: "0.85rem",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  gap: "8px",
-                                  cursor: "pointer",
-                                  boxShadow: "0 4px 12px rgba(37, 211, 102, 0.25)",
-                                  transition: "all 0.2s ease",
-                                }}
-                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#20BA59")}
-                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#25D366")}
-                              >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-                                </svg>
-                                <span>Send Requirements via WhatsApp</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleCopyWhatsAppText}
-                                style={{
-                                  backgroundColor: "#FFFFFF",
-                                  color: "#166534",
-                                  border: "1px solid #86EFAC",
-                                  padding: "10px 14px",
-                                  borderRadius: "8px",
-                                  fontWeight: 600,
-                                  fontSize: "0.82rem",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  gap: "6px",
-                                  cursor: "pointer",
-                                  transition: "all 0.2s ease",
-                                }}
-                                title="Copy requirement summary text to clipboard"
-                              >
-                                <i className={`fa-solid ${copiedWhatsAppText ? "fa-check text-success" : "fa-copy"}`}></i>
-                                <span>{copiedWhatsAppText ? "Copied!" : "Copy Details"}</span>
-                              </button>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: "0.82rem", color: "#64748B" }}>
-                          Showing pre-set standard sizes below. Need a specific room or wall fit? Switch to <strong>Custom Sizing (in feet)</strong>.
+
+                          {/* Calculation & Price Summary Box */}
+                          <div
+                            style={{
+                              backgroundColor: "#F8FAFC",
+                              borderRadius: "10px",
+                              padding: "12px 16px",
+                              border: "1px solid #E2E8F0",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              flexWrap: "wrap",
+                              gap: "10px",
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>
+                                Calculated {customUnit === "sq_ft" ? "Area" : "Footage"}:
+                              </div>
+                              <div style={{ fontSize: "0.98rem", fontWeight: 800, color: "#0F172A" }}>
+                                {customTotalMeasurement} {customUnitLabel}{" "}
+                                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748B" }}>
+                                  ({hasWidth ? `${widthFtNum}ft ${widthInNum}in × ${lengthFtNum}ft ${lengthInNum}in` : `${lengthFtNum}ft ${lengthInNum}in`})
+                                </span>
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>
+                                Estimated Custom Price:
+                              </div>
+                              <div style={{ fontSize: "1.15rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
+                                ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                              </div>
+                              {customMinPriceApplied && (
+                                <span style={{ fontSize: "0.7rem", color: "#B45309", fontWeight: 700 }}>
+                                  * Min order charge applied
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Friendly Reassurance Footer */}
+                          <div style={{ marginTop: "10px", fontSize: "0.74rem", color: "#059669", display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span>✓</span>
+                            <span>Precision-cut in Srinagar to your exact fit. Heavy-duty brackets & mounting hardware included.</span>
+                          </div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Dynamic Product Variations */}
-                  {product.has_variations && productAttributes.length > 0 && (
+                  {/* ══════════════════════════════════════════════════════════════ */}
+                  {/* OTHER PRODUCT OPTIONS (Color, Fabric, Mechanism, Finish...)    */}
+                  {/* ══════════════════════════════════════════════════════════════ */}
+                  {product.has_variations && nonSizeAttributes.length > 0 && (
                     <div className="product-details mb-4">
-                      {productAttributes
-                        .filter((attr) => {
-                          if (sizingMode === "custom") {
-                            return (
-                              !attr.name.toLowerCase().includes("size") &&
-                              !attr.name.toLowerCase().includes("dimen")
-                            );
-                          }
-                          return true;
-                        })
-                        .map((attr: { id: number; name: string; slug: string }) => {
+                      {nonSizeAttributes.map((attr: { id: number; name: string; slug: string }) => {
                         const attrValuesMap = new Map<number, string>();
                         (variations || []).forEach((v) => {
                           (v.values || []).forEach((val) => {
