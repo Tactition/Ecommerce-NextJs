@@ -688,8 +688,8 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     </h6>
                   </div>
 
-                  {/* Price */}
-                  <div className="d-flex align-items-baseline gap-3 mb-3 flex-wrap">
+                  {/* Price Area with Transparent Rate */}
+                  <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
                     <h3
                       className="product-price"
                       style={{
@@ -701,24 +701,46 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     >
                       ₹{Number(displayPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </h3>
-                    {isCustomMode && (
+
+                    {/* Highly Visible Rate Callout */}
+                    {isCustomSizingEnabled && (
                       <span
                         style={{
-                          backgroundColor: "#ECFDF5",
-                          color: "#059669",
-                          border: "1px solid #A7F3D0",
-                          borderRadius: "20px",
-                          padding: "4px 12px",
-                          fontSize: "0.82rem",
+                          backgroundColor: "#FFF5F4",
+                          color: "#DC2626",
+                          border: "1.5px solid #FECACA",
+                          borderRadius: "8px",
+                          padding: "5px 12px",
+                          fontSize: "0.88rem",
                           fontWeight: 700,
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "5px",
+                          gap: "6px",
                         }}
                       >
-                        <span>📐</span> Custom Size Estimate ({customTotalMeasurement} {customUnitLabel})
+                        <span>📐 Rate:</span>
+                        <strong style={{ fontSize: "1rem", color: "var(--theme, #FF4035)" }}>₹{customRate.toFixed(2)}</strong>
+                        <span style={{ color: "#7F1D1D", fontWeight: 600 }}>/ {customUnitLabel}</span>
                       </span>
                     )}
+
+                    {customMinPrice > 0 && isCustomSizingEnabled && (
+                      <span
+                        style={{
+                          backgroundColor: "#FEF3C7",
+                          color: "#B45309",
+                          border: "1px solid #FDE68A",
+                          borderRadius: "8px",
+                          padding: "5px 10px",
+                          fontSize: "0.78rem",
+                          fontWeight: 600,
+                        }}
+                        title="Minimum base charge for small custom cuts"
+                      >
+                        Min. Order Charge: ₹{customMinPrice.toFixed(2)}
+                      </span>
+                    )}
+
                     {displayOriginalPrice && Number(displayOriginalPrice) > Number(displayPrice) && (
                       <span
                         style={{
@@ -780,26 +802,19 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   </div>
 
                   {/* ══════════════════════════════════════════════════════════════ */}
-                  {/* MINIMAL SIZING & DIMENSIONS COMPONENT                          */}
-                  {/* Dropdown for standard sizes + compact inline custom drawer     */}
+                  {/* SIZING & TRANSPARENT CUSTOM PRICE CALCULATION                  */}
+                  {/* Shows exact rate, dimensions, and live math breakdown          */}
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {(hasStandardSizes || isCustomSizingEnabled) && (
-                    <div style={{ marginBottom: "20px" }}>
-                      {/* Case 1: When standard sizes exist (or both standard & custom) -> Sleek Dropdown */}
+                    <div style={{ marginBottom: "22px" }}>
+                      {/* Standard Sizes Dropdown (if standard sizes exist) */}
                       {hasStandardSizes ? (
                         <div className="mb-2">
-                          <div className="d-flex align-items-center justify-content-between mb-1">
-                            <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0F172A", margin: 0 }}>
-                              Size / Dimensions:
-                            </label>
-                            {isCustomMode && (
-                              <span style={{ fontSize: "0.75rem", color: "var(--theme, #FF4035)", fontWeight: 600 }}>
-                                Custom Rate: ₹{customRate.toFixed(2)}/{customUnitLabel}
-                              </span>
-                            )}
-                          </div>
+                          <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0F172A", display: "block", marginBottom: "6px" }}>
+                            Size Option:
+                          </label>
 
-                          <div style={{ position: "relative", maxWidth: "420px" }}>
+                          <div style={{ position: "relative", maxWidth: "440px" }}>
                             <select
                               value={
                                 activeSizingMode === "custom"
@@ -842,7 +857,7 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                               ))}
                               {isCustomSizingEnabled && (
                                 <option value="__custom__">
-                                  📐 Made to Measure (Custom Dimensions)
+                                  📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)}/{customUnitLabel})
                                 </option>
                               )}
                             </select>
@@ -850,128 +865,164 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                         </div>
                       ) : null}
 
-                      {/* Case 2 / Drawer: When in Custom Mode (or when only custom sizing exists) -> Compact Inline Dimensions */}
+                      {/* Custom Made-to-Measure Calculator Card */}
                       {isCustomMode && (
                         <div
                           style={{
-                            marginTop: hasStandardSizes ? "10px" : "0",
-                            padding: "12px 16px",
-                            backgroundColor: "#F8FAFC",
-                            borderRadius: "10px",
-                            border: "1px solid #E2E8F0",
-                            maxWidth: "520px",
+                            marginTop: hasStandardSizes ? "12px" : "0",
+                            padding: "16px 18px",
+                            backgroundColor: "#FFFBFB",
+                            borderRadius: "12px",
+                            border: "1.5px solid #FCA5A5",
+                            boxShadow: "0 2px 10px rgba(255, 64, 53, 0.06)",
+                            maxWidth: "540px",
                           }}
                         >
-                          <div className="d-flex align-items-center justify-content-between mb-2">
-                            <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0F172A" }}>
-                              {!hasStandardSizes ? "📐 Dimensions (Made to Measure):" : "Custom Window Measurements:"}
-                            </span>
-                            <span style={{ fontSize: "0.82rem", color: "var(--theme, #FF4035)", fontWeight: 800 }}>
-                              ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                              <span style={{ fontWeight: 500, color: "#64748B", fontSize: "0.72rem", marginLeft: "4px" }}>
-                                ({customTotalMeasurement} {customUnitLabel})
+                          {/* Header: Exact Rate Highlight */}
+                          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#0F172A", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span>📐</span> Made to Measure (Custom Fit)
                               </span>
-                            </span>
-                          </div>
-
-                          {/* Inline Dimension Inputs */}
-                          <div className="d-flex align-items-center gap-2 flex-wrap">
-                            {hasWidth && (
-                              <div className="d-flex align-items-center gap-1">
-                                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>Width:</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={widthFeet}
-                                  onChange={(e) => setWidthFeet(e.target.value)}
-                                  placeholder="0"
-                                  style={{
-                                    width: "48px",
-                                    padding: "5px 4px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #CBD5E1",
-                                    textAlign: "center",
-                                    fontWeight: 700,
-                                    fontSize: "0.88rem",
-                                    outline: "none",
-                                    color: "#0F172A",
-                                  }}
-                                />
-                                <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>ft</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="11"
-                                  value={widthInches}
-                                  onChange={(e) => setWidthInches(e.target.value)}
-                                  placeholder="0"
-                                  style={{
-                                    width: "48px",
-                                    padding: "5px 4px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #CBD5E1",
-                                    textAlign: "center",
-                                    fontWeight: 700,
-                                    fontSize: "0.88rem",
-                                    outline: "none",
-                                    color: "#0F172A",
-                                  }}
-                                />
-                                <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>in</span>
-                              </div>
-                            )}
-
-                            {hasWidth && <span style={{ color: "#94A3B8", fontWeight: 700, margin: "0 2px" }}>×</span>}
-
-                            <div className="d-flex align-items-center gap-1">
-                              <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>
-                                {hasWidth ? "Height:" : "Length:"}
+                              <span style={{ fontSize: "0.76rem", color: "#64748B" }}>
+                                Enter your exact window or wall measurements
                               </span>
-                              <input
-                                type="number"
-                                min="0"
-                                value={lengthFeet}
-                                onChange={(e) => setLengthFeet(e.target.value)}
-                                placeholder="0"
-                                style={{
-                                  width: "48px",
-                                  padding: "5px 4px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #CBD5E1",
-                                  textAlign: "center",
-                                  fontWeight: 700,
-                                  fontSize: "0.88rem",
-                                  outline: "none",
-                                  color: "#0F172A",
-                                }}
-                              />
-                              <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>ft</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="11"
-                                value={lengthInches}
-                                onChange={(e) => setLengthInches(e.target.value)}
-                                placeholder="0"
-                                style={{
-                                  width: "48px",
-                                  padding: "5px 4px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #CBD5E1",
-                                  textAlign: "center",
-                                  fontWeight: 700,
-                                  fontSize: "0.88rem",
-                                  outline: "none",
-                                  color: "#0F172A",
-                                }}
-                              />
-                              <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>in</span>
+                            </div>
+                            <div
+                              style={{
+                                backgroundColor: "var(--theme, #FF4035)",
+                                color: "#FFFFFF",
+                                padding: "4px 10px",
+                                borderRadius: "6px",
+                                fontSize: "0.82rem",
+                                fontWeight: 800,
+                                letterSpacing: "0.3px",
+                              }}
+                            >
+                              Rate: ₹{customRate.toFixed(2)} / {customUnitLabel}
                             </div>
                           </div>
 
-                          {/* Presets and Info in One Subtle Sub-Row */}
-                          <div className="d-flex align-items-center gap-2 mt-2 pt-2 flex-wrap" style={{ borderTop: "1px dashed #E2E8F0", fontSize: "0.74rem" }}>
-                            <span style={{ color: "#64748B", fontWeight: 600 }}>Presets:</span>
+                          {/* Dimension Inputs (Width & Height) */}
+                          <div className="row g-2 mb-3 align-items-center">
+                            {hasWidth && (
+                              <div className="col-sm-6 col-12">
+                                <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "4px" }}>
+                                  Width (Across) *
+                                </label>
+                                <div className="d-flex align-items-center gap-1">
+                                  <div style={{ position: "relative", flex: 1 }}>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={widthFeet}
+                                      onChange={(e) => setWidthFeet(e.target.value)}
+                                      placeholder="0"
+                                      style={{
+                                        width: "100%",
+                                        padding: "6px 28px 6px 8px",
+                                        borderRadius: "6px",
+                                        border: "1.5px solid #CBD5E1",
+                                        fontWeight: 700,
+                                        fontSize: "0.9rem",
+                                        color: "#0F172A",
+                                        outline: "none",
+                                      }}
+                                    />
+                                    <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                      ft
+                                    </span>
+                                  </div>
+                                  <div style={{ position: "relative", flex: 1 }}>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="11"
+                                      value={widthInches}
+                                      onChange={(e) => setWidthInches(e.target.value)}
+                                      placeholder="0"
+                                      style={{
+                                        width: "100%",
+                                        padding: "6px 28px 6px 8px",
+                                        borderRadius: "6px",
+                                        border: "1.5px solid #CBD5E1",
+                                        fontWeight: 700,
+                                        fontSize: "0.9rem",
+                                        color: "#0F172A",
+                                        outline: "none",
+                                      }}
+                                    />
+                                    <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                      in
+                                    </span>
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: "0.72rem", color: "#64748B", fontWeight: 600, display: "block", marginTop: "2px" }}>
+                                  = {totalWidthFeet.toFixed(2)} ft
+                                </span>
+                              </div>
+                            )}
+
+                            <div className={hasWidth ? "col-sm-6 col-12" : "col-12"}>
+                              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "4px" }}>
+                                {hasWidth ? "Height / Drop (Top to Bottom) *" : "Length *"}
+                              </label>
+                              <div className="d-flex align-items-center gap-1">
+                                <div style={{ position: "relative", flex: 1 }}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={lengthFeet}
+                                    onChange={(e) => setLengthFeet(e.target.value)}
+                                    placeholder="0"
+                                    style={{
+                                      width: "100%",
+                                      padding: "6px 28px 6px 8px",
+                                      borderRadius: "6px",
+                                      border: "1.5px solid #CBD5E1",
+                                      fontWeight: 700,
+                                      fontSize: "0.9rem",
+                                      color: "#0F172A",
+                                      outline: "none",
+                                    }}
+                                  />
+                                  <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                    ft
+                                  </span>
+                                </div>
+                                <div style={{ position: "relative", flex: 1 }}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="11"
+                                    value={lengthInches}
+                                    onChange={(e) => setLengthInches(e.target.value)}
+                                    placeholder="0"
+                                    style={{
+                                      width: "100%",
+                                      padding: "6px 28px 6px 8px",
+                                      borderRadius: "6px",
+                                      border: "1.5px solid #CBD5E1",
+                                      fontWeight: 700,
+                                      fontSize: "0.9rem",
+                                      color: "#0F172A",
+                                      outline: "none",
+                                    }}
+                                  />
+                                  <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                    in
+                                  </span>
+                                </div>
+                              </div>
+                              <span style={{ fontSize: "0.72rem", color: "#64748B", fontWeight: 600, display: "block", marginTop: "2px" }}>
+                                = {totalLengthFeet.toFixed(2)} ft
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Quick Presets */}
+                          <div className="d-flex align-items-center gap-2 mb-3 flex-wrap" style={{ fontSize: "0.75rem" }}>
+                            <span style={{ color: "#64748B", fontWeight: 700 }}>Quick Presets:</span>
                             {quickPresets.map((preset) => (
                               <button
                                 key={preset.label}
@@ -983,21 +1034,85 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                   setLengthInches(preset.lIn);
                                 }}
                                 style={{
-                                  border: "none",
-                                  background: "transparent",
-                                  color: "#2563EB",
-                                  cursor: "pointer",
-                                  padding: "0 2px",
+                                  border: "1px solid #CBD5E1",
+                                  backgroundColor: "#FFFFFF",
+                                  color: "#334155",
+                                  borderRadius: "4px",
+                                  padding: "2px 8px",
                                   fontSize: "0.74rem",
-                                  textDecoration: "underline",
+                                  cursor: "pointer",
+                                  fontWeight: 600,
                                 }}
                               >
-                                {preset.label.split(" ")[0]}
+                                {preset.label}
                               </button>
                             ))}
-                            <span style={{ marginLeft: "auto", color: "#059669", fontSize: "0.72rem" }}>
-                              ✓ Brackets &amp; Hardware Included
-                            </span>
+                          </div>
+
+                          {/* Live Transparent Math & Calculation Breakdown */}
+                          <div
+                            style={{
+                              backgroundColor: "#FFFFFF",
+                              border: "1.5px solid #E2E8F0",
+                              borderRadius: "8px",
+                              padding: "12px 14px",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748B", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                              Transparent Price Calculation:
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.82rem", color: "#334155" }}>
+                              <div className="d-flex justify-content-between align-items-center">
+                                <span>1. Total Area / Footage:</span>
+                                <strong>
+                                  {hasWidth ? `${totalWidthFeet.toFixed(2)} ft × ${totalLengthFeet.toFixed(2)} ft = ${customTotalMeasurement} ${customUnitLabel}` : `${customTotalMeasurement} ${customUnitLabel}`}
+                                </strong>
+                              </div>
+
+                              <div className="d-flex justify-content-between align-items-center">
+                                <span>2. Applied Rate:</span>
+                                <strong style={{ color: "#DC2626" }}>
+                                  ₹{customRate.toFixed(2)} per {customUnitLabel}
+                                </strong>
+                              </div>
+
+                              <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1px dashed #E2E8F0", paddingTop: "4px", marginTop: "2px" }}>
+                                <span>3. Measured Cost ({customTotalMeasurement} × ₹{customRate.toFixed(2)}):</span>
+                                <strong>₹{rawCustomPrice.toFixed(2)}</strong>
+                              </div>
+
+                              {customMinPriceApplied && (
+                                <div
+                                  style={{
+                                    backgroundColor: "#FEF3C7",
+                                    color: "#92400E",
+                                    padding: "6px 8px",
+                                    borderRadius: "6px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    marginTop: "4px",
+                                  }}
+                                >
+                                  ℹ️ Minimum base charge of <strong>₹{customMinPrice.toFixed(2)}</strong> applies for cuts under ₹{customMinPrice.toFixed(2)}.
+                                </div>
+                              )}
+
+                              <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1.5px solid #CBD5E1", paddingTop: "6px", marginTop: "4px" }}>
+                                <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.9rem" }}>
+                                  Final Calculated Price:
+                                </span>
+                                <span style={{ fontSize: "1.15rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
+                                  ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ fontSize: "0.73rem", color: "#059669", display: "flex", alignItems: "center", gap: "5px" }}>
+                            <span>✓</span>
+                            <span>Custom fabricated in Srinagar. Heavy-duty brackets &amp; hardware included.</span>
                           </div>
                         </div>
                       )}
