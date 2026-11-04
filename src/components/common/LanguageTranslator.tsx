@@ -50,6 +50,7 @@ export default function LanguageTranslator() {
   // Inject Google Translate script safely
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (selectedCode === "en" && !isOpen) return;
 
     if (!document.getElementById("google-translate-script")) {
       window.googleTranslateElementInit = () => {
@@ -71,7 +72,7 @@ export default function LanguageTranslator() {
       script.async = true;
       document.body.appendChild(script);
     }
-  }, []);
+  }, [selectedCode, isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

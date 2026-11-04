@@ -6,7 +6,7 @@ import { Product, ProductCategory } from "@/lib/actions/products";
 import { Testimonial } from "@/lib/actions/testimonials";
 import { BlogPost } from "@/lib/actions/blog";
 import BlogNewsSection from "@/components/home/BlogNewsSection";
-import HomeGallerySection from "@/components/home/HomeGallerySection";
+const HomeGallerySection = dynamic(() => import("@/components/home/HomeGallerySection"), { ssr: false });
 import TextType from "@/components/common/TextType";
 import { HomepageSettings, HomepagePromo, WorkGallery } from "@/types";
 import { addToCart } from "@/lib/cart";

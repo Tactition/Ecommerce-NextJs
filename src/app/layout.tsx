@@ -6,7 +6,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import LayoutShell from "@/components/layout/LayoutShell";
 import { getSiteSettings } from "@/lib/actions/settings";
-import { getCustomerSession } from "@/lib/auth/customer";
+
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import FloatingWhatsApp from "@/components/common/FloatingWhatsApp";
 
@@ -84,10 +84,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [settings, customerSession] = await Promise.all([
-    getSiteSettings(),
-    getCustomerSession(),
-  ]);
+  const settings = await getSiteSettings();
+
+
+
   const favicon = settings.site_favicon || "/assets/images/favicon.png";
 
   const localBusinessJsonLd = {
@@ -195,27 +195,12 @@ export default async function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
-        <link
-          rel="preload"
-          href="/assets/webfonts/fa-regular-400.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/assets/webfonts/fa-brands-400.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        {/* Core Layout & Theme Stylesheets (unused legacy sheets purged) */}
         <link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
         <link rel="stylesheet" href="/assets/css/all.min.css" />
         <link rel="stylesheet" href="/assets/css/main.css" />
       </head>
       <body suppressHydrationWarning>
-        <AuthProvider initialSession={customerSession}>
+        <AuthProvider>
           <LayoutShell header={<Header />} footer={<Footer />}>
             {children}
           </LayoutShell>

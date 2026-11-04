@@ -8741,6 +8741,7 @@ textarea.is-invalid {
   position: absolute;
   top: 17px;
   left: 20px;
+  z-index: 1;
   border-radius: 36px;
   color: var(--white);
   text-align: center;

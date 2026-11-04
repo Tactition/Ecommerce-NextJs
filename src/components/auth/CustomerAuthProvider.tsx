@@ -5,6 +5,7 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
   ReactNode,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -55,18 +56,34 @@ export function CustomerAuthProvider({
   initialSession,
 }: {
   children: ReactNode;
-  initialSession: CustomerSessionPayload | null;
+  initialSession?: CustomerSessionPayload | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [customer, setCustomer] = useState<CustomerSessionPayload | null>(initialSession);
+  const [customer, setCustomer] = useState<CustomerSessionPayload | null>(initialSession ?? null);
   const [modalState, setModalState] = useState<AuthModalState>({
     isOpen: false,
     reason: "general",
   });
 
   const isAuthenticated = !!customer;
+
+  useEffect(() => {
+    if (initialSession !== undefined && initialSession !== null) return;
+    let isMounted = true;
+    fetch("/api/auth/customer/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.authenticated && data?.customer) {
+          setCustomer(data.customer);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [initialSession]);
 
   const getCurrentUrl = useCallback(() => {
     if (typeof window === "undefined") return pathname || "/";

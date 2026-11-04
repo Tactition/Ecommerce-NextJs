@@ -1,3 +1,5 @@
+import pool from "@/lib/db";
+import { RowDataPacket } from "mysql2";
 import React from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -55,6 +57,17 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export const revalidate = 60;
+
+export async function generateStaticParams() {
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT slug FROM products WHERE status = 'active' LIMIT 50"
+    );
+    return rows.map((r) => ({ slug: r.slug }));
+  } catch {
+    return [];
+  }
+}
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;

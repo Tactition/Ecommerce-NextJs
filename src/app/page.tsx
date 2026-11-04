@@ -5,8 +5,6 @@ import {
   getProductCategories,
   getBestSellerProducts,
   getFeaturedProducts,
-  getPopularProducts,
-  getOnSaleProducts,
   getProductsByIds,
 } from "@/lib/actions/products";
 import { getPublishedTestimonials } from "@/lib/actions/testimonials";
@@ -17,34 +15,29 @@ import { getHomepagePromos } from "@/lib/actions/promos";
 export const revalidate = 60;
 
 export default async function HomePage() {
+  const homepageSettings = await getHomepageSettings();
+  const weeklyIds = (homepageSettings?.weekly_deal_product_ids?.match(/\d+/g) || []).map(Number);
+
   const [
     categories,
     bestSellerProducts,
     featuredProducts,
-    popularProducts,
-    onSaleProducts,
+    weeklyProducts,
     testimonials,
     blogPosts,
-    homepageSettings,
     promos,
   ] = await Promise.all([
     getProductCategories(),
     getBestSellerProducts(),
     getFeaturedProducts(),
-    getPopularProducts(),
-    getOnSaleProducts(),
+    weeklyIds.length > 0 ? getProductsByIds(weeklyIds) : Promise.resolve([]),
     getPublishedTestimonials(),
     getPublishedBlogPosts(),
-    getHomepageSettings(),
     getHomepagePromos(),
   ]);
 
-  const weeklyIds = (homepageSettings?.weekly_deal_product_ids?.match(/\d+/g) || []).map(Number);
-
   const weeklyDealProducts =
-    weeklyIds.length > 0
-      ? await getProductsByIds(weeklyIds)
-      : featuredProducts.slice(0, 4);
+    weeklyProducts.length > 0 ? weeklyProducts : featuredProducts.slice(0, 4);
 
   return (
     <main>
@@ -52,8 +45,6 @@ export default async function HomePage() {
         categories={categories}
         bestSellerProducts={bestSellerProducts}
         featuredProducts={featuredProducts}
-        popularProducts={popularProducts}
-        onSaleProducts={onSaleProducts}
         testimonials={testimonials}
         blogPosts={blogPosts}
         homepageSettings={homepageSettings}

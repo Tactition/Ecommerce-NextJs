@@ -9,7 +9,8 @@
     "lint": "next lint",
     "seed:categories": "npx tsx scripts/seed-categories.ts",
     "seed:categories:force": "npx tsx scripts/seed-categories.ts --force",
-    "seed:products": "npx tsx scripts/seed-blinds-products.ts"
+    "seed:products": "npx tsx scripts/seed-blinds-products.ts",
+    "postinstall": "node scripts/patch-next-font.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
