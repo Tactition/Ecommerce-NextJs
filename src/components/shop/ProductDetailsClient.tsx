@@ -805,113 +805,181 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {/* SIZING & TRANSPARENT CUSTOM PRICE CALCULATION                  */}
                   {/* Shows exact rate, dimensions, and live math breakdown          */}
+                                    {/* ══════════════════════════════════════════════════════════════ */}
+                  {/* 1. PRODUCT VARIATIONS ADDED FROM ADMIN (FIRST)                  */}
+                  {/* Color, Fabric, Size, Control Mechanism, Finish, etc.            */}
                   {/* ══════════════════════════════════════════════════════════════ */}
-                  {(hasStandardSizes || isCustomSizingEnabled) && (
-                    <div style={{ marginBottom: "22px" }}>
-                      {/* Sizing & Pricing Dropdown (ALWAYS visible whenever standard sizes or custom sizing exist) */}
-                      <div className="mb-3">
-                        <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0F172A", display: "block", marginBottom: "6px" }}>
-                          Sizing &amp; Pricing:
-                        </label>
-
-                        <div style={{ position: "relative", maxWidth: "480px" }}>
-                          <select
-                            value={
-                              activeSizingMode === "custom" || !hasStandardSizes
-                                ? "__custom__"
-                                : (sizeAttribute && selectedAttributeValues[sizeAttribute.id] ? selectedAttributeValues[sizeAttribute.id] : "")
+                  {product.has_variations && productAttributes.length > 0 && (
+                    <div className="product-details mb-3">
+                      {productAttributes.map((attr: { id: number; name: string; slug: string }) => {
+                        const isSizeAttr = sizeAttribute && attr.id === sizeAttribute.id;
+                        const attrValuesMap = new Map<number, string>();
+                        (variations || []).forEach((v) => {
+                          (v.values || []).forEach((val) => {
+                            if (val.attribute_id === attr.id) {
+                              attrValuesMap.set(val.value_id, val.value_label);
                             }
-                            onChange={(e) => {
-                              if (e.target.value === "__custom__") {
-                                setSizingMode("custom");
-                              } else {
-                                const valId = Number(e.target.value);
-                                if (sizeAttribute && valId) {
-                                  handleSelectAttributeValue(sizeAttribute.id, valId);
-                                }
-                                setSizingMode("standard");
-                              }
-                            }}
+                          });
+                        });
+                        const availableValues = Array.from(attrValuesMap.entries());
+
+                        return (
+                          <div key={attr.id} className="mb-3">
+                            <div className="d-flex align-items-center gap-2 mb-2">
+                              <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.92rem" }}>
+                                {attr.name}:
+                              </span>
+                              {selectedAttributeValues[attr.id] && (!isSizeAttr || !isCustomMode) && (
+                                <span style={{ fontSize: "0.88rem", color: "var(--theme, #FF4035)", fontWeight: 600 }}>
+                                  {attrValuesMap.get(selectedAttributeValues[attr.id])}
+                                </span>
+                              )}
+                              {isSizeAttr && isCustomMode && (
+                                <span style={{ fontSize: "0.82rem", color: "#DC2626", fontWeight: 700, backgroundColor: "#FEE2E2", padding: "1px 8px", borderRadius: "4px" }}>
+                                  Custom Fit Active
+                                </span>
+                              )}
+                            </div>
+                            <div className="d-flex gap-2 flex-wrap">
+                              {availableValues.map(([valId, valLabel]) => {
+                                const isSelected = (!isSizeAttr || !isCustomMode) && selectedAttributeValues[attr.id] === valId;
+                                return (
+                                  <button
+                                    key={valId}
+                                    type="button"
+                                    onClick={() => {
+                                      handleSelectAttributeValue(attr.id, valId);
+                                      if (isSizeAttr && isCustomMode) {
+                                        setSizingMode("standard");
+                                      }
+                                    }}
+                                    style={{
+                                      border: isSelected ? "2px solid var(--theme, #FF4035)" : "1.5px solid #CBD5E1",
+                                      background: isSelected ? "var(--theme, #FF4035)" : "#FFFFFF",
+                                      color: isSelected ? "#FFFFFF" : "#1E293B",
+                                      padding: "7px 16px",
+                                      borderRadius: "8px",
+                                      fontWeight: 600,
+                                      fontSize: "0.88rem",
+                                      cursor: "pointer",
+                                      transition: "all 0.15s ease",
+                                      boxShadow: isSelected ? "0 2px 6px rgba(255, 64, 53, 0.25)" : "none",
+                                    }}
+                                  >
+                                    {valLabel}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* ══════════════════════════════════════════════════════════════ */}
+                  {/* 2. CUSTOM SIZING DROPDOWN (Made to Measure / Custom Fit)        */}
+                  {/* Space-saving accordion: closed by default, expands on click     */}
+                  {/* ══════════════════════════════════════════════════════════════ */}
+                  {isCustomSizingEnabled && (
+                    <div style={{ marginBottom: "24px", maxWidth: "540px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setSizingMode((prev) => (prev === "custom" ? "standard" : "custom"))}
+                        aria-expanded={isCustomMode}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "12px 16px",
+                          backgroundColor: isCustomMode ? "#FFF7F7" : "#FFFFFF",
+                          border: isCustomMode ? "1.5px solid #FCA5A5" : "1.5px solid #CBD5E1",
+                          borderRadius: isCustomMode ? "10px 10px 0 0" : "10px",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "all 0.15s ease",
+                          boxShadow: isCustomMode ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span style={{ fontSize: "1.2rem" }}>📐</span>
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#0F172A" }}>
+                                Custom Size — Made to Measure
+                              </span>
+                              <span
+                                style={{
+                                  backgroundColor: isCustomMode ? "var(--theme, #FF4035)" : "#F1F5F9",
+                                  color: isCustomMode ? "#FFFFFF" : "#475569",
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                  padding: "2px 8px",
+                                  borderRadius: "4px",
+                                }}
+                              >
+                                ₹{customRate.toFixed(2)} / {customUnitLabel}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: "0.75rem", color: "#64748B" }}>
+                              {hasStandardSizes
+                                ? "No standard size fits? Enter your exact custom window fit"
+                                : "Need custom dimensions? Enter your exact window or wall fit"}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span
                             style={{
-                              width: "100%",
-                              padding: "10px 38px 10px 14px",
-                              borderRadius: "8px",
-                              border: "1.5px solid #CBD5E1",
-                              backgroundColor: "#FFFFFF",
-                              color: "#0F172A",
-                              fontSize: "0.92rem",
+                              backgroundColor: isCustomMode ? "#FEE2E2" : "#F1F5F9",
+                              color: isCustomMode ? "#DC2626" : "#475569",
+                              padding: "5px 12px",
+                              borderRadius: "6px",
+                              fontSize: "0.78rem",
                               fontWeight: 700,
-                              appearance: "none",
-                              cursor: "pointer",
-                              outline: "none",
-                              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230F172A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                              backgroundRepeat: "no-repeat",
-                              backgroundPosition: "right 14px center",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              border: isCustomMode ? "1px solid #FCA5A5" : "1px solid #E2E8F0",
                             }}
                           >
-                            {hasStandardSizes ? (
-                              <>
-                                <option value="" disabled>Select a size...</option>
-                                {standardSizes.map((sz) => (
-                                  <option key={sz.id} value={sz.id}>
-                                    {sz.label} (Standard Size)
-                                  </option>
-                                ))}
-                                {isCustomSizingEnabled && (
-                                  <option value="__custom__">
-                                    📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)}/{customUnitLabel})
-                                  </option>
-                                )}
-                              </>
-                            ) : (
-                              <option value="__custom__">
-                                📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)} / {customUnitLabel})
-                              </option>
-                            )}
-                          </select>
+                            <span>{isCustomMode ? "Close Custom Size ▲" : "Enter Custom Size ▼"}</span>
+                          </span>
                         </div>
-                      </div>
+                      </button>
 
-                      {/* Custom Made-to-Measure Calculator Card */}
+                      {/* Dropdown Expanded: Dimension Inputs, Presets & Calculation Table */}
                       {isCustomMode && (
                         <div
                           style={{
-                            marginTop: hasStandardSizes ? "12px" : "0",
                             padding: "16px 18px",
                             backgroundColor: "#FFFBFB",
-                            borderRadius: "12px",
+                            borderRadius: "0 0 10px 10px",
                             border: "1.5px solid #FCA5A5",
-                            boxShadow: "0 2px 10px rgba(255, 64, 53, 0.06)",
-                            maxWidth: "540px",
+                            borderTop: "none",
+                            boxShadow: "0 4px 12px rgba(255, 64, 53, 0.08)",
                           }}
                         >
-                          {/* Header: Exact Rate Highlight */}
                           <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                            <div>
-                              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#0F172A", display: "flex", alignItems: "center", gap: "6px" }}>
-                                <span>📐</span> Made to Measure (Custom Fit)
-                              </span>
-                              <span style={{ fontSize: "0.76rem", color: "#64748B" }}>
-                                Enter your exact window or wall measurements
-                              </span>
-                            </div>
+                            <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#475569" }}>
+                              Enter your exact window or wall measurements:
+                            </span>
                             <div
                               style={{
                                 backgroundColor: "var(--theme, #FF4035)",
                                 color: "#FFFFFF",
-                                padding: "4px 10px",
+                                padding: "3px 9px",
                                 borderRadius: "6px",
-                                fontSize: "0.82rem",
+                                fontSize: "0.78rem",
                                 fontWeight: 800,
-                                letterSpacing: "0.3px",
                               }}
                             >
                               Rate: ₹{customRate.toFixed(2)} / {customUnitLabel}
                             </div>
                           </div>
 
-                          {/* Dimension Inputs (Width & Height) */}
+                          {/* Inputs (Width & Height) */}
                           <div className="row g-2 mb-3 align-items-center">
                             {hasWidth && (
                               <div className="col-sm-6 col-12">
@@ -1064,8 +1132,8 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                               border: "1.5px solid #CBD5E1",
                               borderRadius: "10px",
                               overflow: "hidden",
-                              marginTop: "14px",
-                              marginBottom: "12px",
+                              marginTop: "12px",
+                              marginBottom: "10px",
                               boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                             }}
                           >
@@ -1172,66 +1240,6 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                           </div>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* ══════════════════════════════════════════════════════════════ */}
-                  {/* OTHER PRODUCT OPTIONS (Color, Fabric, Mechanism, Finish...)    */}
-                  {/* ══════════════════════════════════════════════════════════════ */}
-                  {product.has_variations && nonSizeAttributes.length > 0 && (
-                    <div className="product-details mb-4">
-                      {nonSizeAttributes.map((attr: { id: number; name: string; slug: string }) => {
-                        const attrValuesMap = new Map<number, string>();
-                        (variations || []).forEach((v) => {
-                          (v.values || []).forEach((val) => {
-                            if (val.attribute_id === attr.id) {
-                              attrValuesMap.set(val.value_id, val.value_label);
-                            }
-                          });
-                        });
-                        const availableValues = Array.from(attrValuesMap.entries());
-
-                        return (
-                          <div key={attr.id} className="mb-3">
-                            <div className="d-flex align-items-center gap-2 mb-2">
-                              <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.95rem" }}>
-                                {attr.name}:
-                              </span>
-                              {selectedAttributeValues[attr.id] && (
-                                <span style={{ fontSize: "0.88rem", color: "var(--theme)", fontWeight: 600 }}>
-                                  {attrValuesMap.get(selectedAttributeValues[attr.id])}
-                                </span>
-                              )}
-                            </div>
-                            <div className="d-flex gap-2 flex-wrap">
-                              {availableValues.map(([valId, valLabel]) => {
-                                const isSelected = selectedAttributeValues[attr.id] === valId;
-                                return (
-                                  <button
-                                    key={valId}
-                                    type="button"
-                                    onClick={() => handleSelectAttributeValue(attr.id, valId)}
-                                    style={{
-                                      border: isSelected ? "2px solid var(--theme)" : "1px solid #CBD5E1",
-                                      background: isSelected ? "var(--theme)" : "#FFFFFF",
-                                      color: isSelected ? "#FFFFFF" : "#1E293B",
-                                      padding: "7px 16px",
-                                      borderRadius: "8px",
-                                      fontWeight: 600,
-                                      fontSize: "0.88rem",
-                                      cursor: "pointer",
-                                      transition: "all 0.15s ease",
-                                      boxShadow: isSelected ? "0 2px 6px rgba(255, 64, 53, 0.25)" : "none",
-                                    }}
-                                  >
-                                    {valLabel}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
                     </div>
                   )}
 
