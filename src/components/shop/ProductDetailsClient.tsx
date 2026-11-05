@@ -99,15 +99,10 @@ export default function ProductDetailsClient({
   );
 
   const [sizingMode, setSizingMode] = useState<"standard" | "custom">(() => {
-    if (hasStandardSizes) return "standard";
-    if (isCustomSizingEnabled) return "custom";
+    if (!product.has_variations && !hasStandardSizes && isCustomSizingEnabled) return "custom";
     return "standard";
   });
-
-  // If the product has NO standard sizes, always treat active mode as "custom"
-  const activeSizingMode: "standard" | "custom" =
-    !hasStandardSizes && isCustomSizingEnabled ? "custom" : sizingMode;
-  const isCustomMode = isCustomSizingEnabled && activeSizingMode === "custom";
+  const isCustomMode = isCustomSizingEnabled && sizingMode === "custom";
 
   // Initial selection: first active variation or first available values
   const [selectedAttributeValues, setSelectedAttributeValues] = useState<Record<number, number>>(() => {
@@ -879,16 +874,17 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                             isCustomMode
                               ? "__custom__"
                               : sizeAttribute && selectedAttributeValues[sizeAttribute.id]
-                              ? selectedAttributeValues[sizeAttribute.id]
+                              ? String(selectedAttributeValues[sizeAttribute.id])
                               : "__standard__"
                           }
                           onChange={(e) => {
-                            if (e.target.value === "__custom__") {
+                            const val = e.target.value;
+                            if (val === "__custom__") {
                               setSizingMode("custom");
                             } else {
                               setSizingMode("standard");
-                              if (sizeAttribute && e.target.value !== "__standard__") {
-                                handleSelectAttributeValue(sizeAttribute.id, Number(e.target.value));
+                              if (sizeAttribute && val !== "__standard__") {
+                                handleSelectAttributeValue(sizeAttribute.id, Number(val));
                               }
                             }
                           }}
@@ -913,7 +909,7 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                           {hasStandardSizes ? (
                             <>
                               {standardSizes.map((sz) => (
-                                <option key={sz.id} value={sz.id}>
+                                <option key={sz.id} value={String(sz.id)}>
                                   {sz.label} (Standard Size)
                                 </option>
                               ))}
