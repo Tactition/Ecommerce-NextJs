@@ -664,89 +664,59 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
               {/* Product Information */}
               <div className="col-lg-6">
                 <div className="product-about">
-                  {/* Rating */}
-                  <div className="rating d-flex align-items-center gap-2 mb-2">
-                    <ul className="star d-flex" style={{ listStyle: "none", padding: 0, margin: 0, color: "#F59E0B" }}>
-                      {[...Array(5)].map((_, i) => (
-                        <li key={i} style={{ marginRight: "3px" }}>
-                          <i
-                            className={
-                              i < Math.floor(product.rating || 5)
-                                ? "fa-solid fa-star"
-                                : "fa-regular fa-star"
-                            }
-                          ></i>
-                        </li>
-                      ))}
-                    </ul>
-                    <h6 style={{ margin: 0, color: "#64748B", fontSize: "0.9rem", fontWeight: 600 }}>
-                      ({product.reviews_count || reviews.length} customer reviews)
-                    </h6>
-                  </div>
+                  {/* Rating & Stock Status Header */}
+                  <div className="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+                    <div className="d-flex align-items-center gap-2">
+                      <ul className="star d-flex" style={{ listStyle: "none", padding: 0, margin: 0, color: "#F59E0B" }}>
+                        {[...Array(5)].map((_, i) => (
+                          <li key={i} style={{ marginRight: "2px" }}>
+                            <i
+                              className={
+                                i < Math.floor(product.rating || 5)
+                                  ? "fa-solid fa-star"
+                                  : "fa-regular fa-star"
+                              }
+                              style={{ fontSize: "0.78rem" }}
+                            ></i>
+                          </li>
+                        ))}
+                      </ul>
+                      <span style={{ color: "#64748B", fontSize: "0.78rem", fontWeight: 500 }}>
+                        ({product.reviews_count || reviews.length} customer reviews)
+                      </span>
+                    </div>
 
-                  {/* Price Area with Transparent Rate */}
-                  <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
-                    <h3
-                      className="product-price"
-                      style={{
-                        fontSize: "2.2rem",
-                        fontWeight: 800,
-                        color: "var(--theme)",
-                        margin: 0,
-                      }}
-                    >
-                      ₹{Number(displayPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </h3>
-
-                    {/* Highly Visible Rate Callout */}
-                    {isCustomSizingEnabled && (
+                    {displayStock > 0 ? (
                       <span
                         style={{
-                          backgroundColor: "#FFF5F4",
-                          color: "#DC2626",
-                          border: "1.5px solid #FECACA",
-                          borderRadius: "8px",
-                          padding: "5px 12px",
-                          fontSize: "0.88rem",
-                          fontWeight: 700,
+                          backgroundColor: "#F0FDF4",
+                          color: "#16A34A",
+                          border: "1px solid #DCFCE7",
+                          borderRadius: "12px",
+                          padding: "2px 8px",
+                          fontSize: "0.72rem",
+                          fontWeight: 600,
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "6px",
+                          gap: "5px",
                         }}
                       >
-                        <span>📐 Rate:</span>
-                        <strong style={{ fontSize: "1rem", color: "var(--theme, #FF4035)" }}>₹{customRate.toFixed(2)}</strong>
-                        <span style={{ color: "#7F1D1D", fontWeight: 600 }}>/ {customUnitLabel}</span>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#16A34A", display: "inline-block" }}></span>
+                        In Stock
                       </span>
-                    )}
-
-                    {customMinPrice > 0 && isCustomSizingEnabled && (
+                    ) : (
                       <span
                         style={{
-                          backgroundColor: "#FEF3C7",
-                          color: "#B45309",
-                          border: "1px solid #FDE68A",
-                          borderRadius: "8px",
-                          padding: "5px 10px",
-                          fontSize: "0.78rem",
+                          backgroundColor: "#FEF2F2",
+                          color: "#DC2626",
+                          border: "1px solid #FEE2E2",
+                          borderRadius: "12px",
+                          padding: "2px 8px",
+                          fontSize: "0.72rem",
                           fontWeight: 600,
                         }}
-                        title="Minimum base charge for small custom cuts"
                       >
-                        Min. Order Charge: ₹{customMinPrice.toFixed(2)}
-                      </span>
-                    )}
-
-                    {displayOriginalPrice && Number(displayOriginalPrice) > Number(displayPrice) && (
-                      <span
-                        style={{
-                          fontSize: "1.3rem",
-                          color: "#94A3B8",
-                          textDecoration: "line-through",
-                          fontWeight: 500,
-                        }}
-                      >
-                        ₹{Number(displayOriginalPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                        Out of Stock
                       </span>
                     )}
                   </div>
@@ -755,24 +725,108 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   <h1
                     className="product-title"
                     style={{
-                      fontSize: "2rem",
-                      fontWeight: 800,
+                      fontSize: "1.5rem",
+                      fontWeight: 700,
                       color: "#0F172A",
-                      marginBottom: "16px",
-                      lineHeight: 1.25,
+                      marginBottom: "6px",
+                      lineHeight: 1.3,
+                      letterSpacing: "-0.015em",
                     }}
                   >
                     {product.name}
                   </h1>
 
+                  {/* Clean Minimal Metadata Line */}
+                  <div className="d-flex align-items-center gap-2 flex-wrap mb-3" style={{ fontSize: "0.76rem", color: "#64748B" }}>
+                    <span>SKU: <strong style={{ color: "#334155" }}>{displaySku}</strong></span>
+                    <span style={{ color: "#CBD5E1" }}>•</span>
+                    <span>Category: <strong style={{ color: "#334155" }}>{product.category_name}</strong></span>
+                    {product.brand && (
+                      <>
+                        <span style={{ color: "#CBD5E1" }}>•</span>
+                        <span>Brand: <strong style={{ color: "#334155" }}>{product.brand}</strong></span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Price Area with Transparent Rate */}
+                  <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                    <h2
+                      className="product-price"
+                      style={{
+                        fontSize: "1.65rem",
+                        fontWeight: 700,
+                        color: "#0F172A",
+                        margin: 0,
+                        letterSpacing: "-0.02em",
+                      }}
+                    >
+                      ₹{Number(displayPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </h2>
+
+                    {displayOriginalPrice && Number(displayOriginalPrice) > Number(displayPrice) && (
+                      <span
+                        style={{
+                          fontSize: "1.05rem",
+                          color: "#94A3B8",
+                          textDecoration: "line-through",
+                          fontWeight: 400,
+                        }}
+                      >
+                        ₹{Number(displayOriginalPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
+
+                    {/* Subtle Made-to-Measure Rate Callout */}
+                    {isCustomSizingEnabled && (
+                      <span
+                        style={{
+                          backgroundColor: "#F8FAFC",
+                          color: "#475569",
+                          border: "1px solid #E2E8F0",
+                          borderRadius: "6px",
+                          padding: "3px 9px",
+                          fontSize: "0.78rem",
+                          fontWeight: 500,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        <span>📐 Made to measure:</span>
+                        <strong style={{ color: "#0F172A", fontWeight: 700 }}>₹{customRate.toFixed(2)}</strong>
+                        <span style={{ color: "#64748B" }}>/ {customUnitLabel}</span>
+                      </span>
+                    )}
+
+                    {customMinPrice > 0 && isCustomSizingEnabled && (
+                      <span
+                        style={{
+                          backgroundColor: "#FEF9C3",
+                          color: "#854D0E",
+                          border: "1px solid #FEF08A",
+                          borderRadius: "4px",
+                          padding: "2px 6px",
+                          fontSize: "0.72rem",
+                          fontWeight: 600,
+                        }}
+                        title="Minimum base charge for small custom cuts"
+                      >
+                        Min. Order: ₹{customMinPrice.toFixed(0)}
+                      </span>
+                    )}
+                  </div>
+
                   {/* Short Description */}
                   <p
                     className="text"
                     style={{
-                      color: "#475569",
-                      fontSize: "1rem",
-                      lineHeight: 1.7,
-                      marginBottom: "24px",
+                      color: "#64748B",
+                      fontSize: "0.86rem",
+                      lineHeight: 1.6,
+                      marginBottom: "16px",
+                      paddingBottom: "12px",
+                      borderBottom: "1px solid #F1F5F9",
                     }}
                   >
                     {product.short_description ||
@@ -780,29 +834,11 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                       "Engineered with certified high-fidelity components, robust joinery, and precision architectural finishing to deliver exceptional luxury aesthetics and long-lasting durability."}
                   </p>
 
-                  {/* Clean Minimal Metadata Line */}
-                  <div className="d-flex align-items-center gap-2 flex-wrap mb-3" style={{ fontSize: "0.82rem", color: "#64748B" }}>
-                    <span>SKU: <strong style={{ color: "#0F172A" }}>{displaySku}</strong></span>
-                    <span style={{ color: "#CBD5E1" }}>•</span>
-                    <span>Category: <strong style={{ color: "#0F172A" }}>{product.category_name}</strong></span>
-                    <span style={{ color: "#CBD5E1" }}>•</span>
-                    <span>Brand: <strong style={{ color: "#0F172A" }}>{product.brand || "Wall Street Interiors"}</strong></span>
-                    <span style={{ color: "#CBD5E1" }}>•</span>
-                    {displayStock > 0 ? (
-                      <span style={{ color: "#10B981", fontWeight: 700 }}>
-                        <i className="fa-solid fa-circle-check me-1"></i> In Stock
-                      </span>
-                    ) : (
-                      <span style={{ color: "#EF4444", fontWeight: 700 }}>Out of Stock</span>
-                    )}
-                  </div>
-
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {/* SIZING & TRANSPARENT CUSTOM PRICE CALCULATION                  */}
                   {/* Shows exact rate, dimensions, and live math breakdown          */}
                                                       {/* ══════════════════════════════════════════════════════════════ */}
-                  {/* 1. ADMIN VARIATIONS (Color, Fabric, Control Mechanism...)       */}
-                  {/* ══════════════════════════════════════════════════════════════ */}
+                  {/* 1. ADMIN VARIATIONS (Color, Fabric, Control Mechanism...) */}
                   {product.has_variations && nonSizeAttributes.length > 0 && (
                     <div className="product-details mb-3">
                       {nonSizeAttributes.map((attr: { id: number; name: string; slug: string }) => {
@@ -817,13 +853,13 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                         const availableValues = Array.from(attrValuesMap.entries());
 
                         return (
-                          <div key={attr.id} className="mb-3">
-                            <div className="d-flex align-items-center gap-2 mb-2">
-                              <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.92rem" }}>
+                          <div key={attr.id} className="mb-2">
+                            <div className="d-flex align-items-center gap-2 mb-1">
+                              <span style={{ fontWeight: 700, color: "#64748B", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                                 {attr.name}:
                               </span>
                               {selectedAttributeValues[attr.id] && (
-                                <span style={{ fontSize: "0.88rem", color: "var(--theme, #FF4035)", fontWeight: 600 }}>
+                                <span style={{ fontSize: "0.78rem", color: "#0F172A", fontWeight: 600 }}>
                                   {attrValuesMap.get(selectedAttributeValues[attr.id])}
                                 </span>
                               )}
@@ -837,18 +873,22 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                     type="button"
                                     onClick={() => handleSelectAttributeValue(attr.id, valId)}
                                     style={{
-                                      border: isSelected ? "2px solid var(--theme, #FF4035)" : "1.5px solid #CBD5E1",
-                                      background: isSelected ? "var(--theme, #FF4035)" : "#FFFFFF",
-                                      color: isSelected ? "#FFFFFF" : "#1E293B",
-                                      padding: "7px 16px",
-                                      borderRadius: "8px",
-                                      fontWeight: 600,
-                                      fontSize: "0.88rem",
+                                      border: isSelected ? "1.5px solid #0F172A" : "1px solid #E2E8F0",
+                                      background: isSelected ? "#0F172A" : "#FFFFFF",
+                                      color: isSelected ? "#FFFFFF" : "#334155",
+                                      padding: "5px 12px",
+                                      borderRadius: "6px",
+                                      fontWeight: isSelected ? 600 : 500,
+                                      fontSize: "0.8rem",
                                       cursor: "pointer",
                                       transition: "all 0.15s ease",
-                                      boxShadow: isSelected ? "0 2px 6px rgba(255, 64, 53, 0.25)" : "none",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "5px",
+                                      boxShadow: isSelected ? "0 1px 3px rgba(15, 23, 42, 0.12)" : "none",
                                     }}
                                   >
+                                    {isSelected && <span style={{ fontSize: "0.7rem", color: "#93C5FD" }}>✓</span>}
                                     {valLabel}
                                   </button>
                                 );
@@ -864,9 +904,9 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   {/* 2. REAL SIZE DROPDOWN (Standard Sizes & Custom Sizing)          */}
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {(hasStandardSizes || isCustomSizingEnabled) && (
-                    <div className="mb-3" style={{ maxWidth: "480px" }}>
-                      <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1E293B", display: "block", marginBottom: "6px" }}>
-                        Size Option:
+                    <div className="mb-3" style={{ maxWidth: "420px" }}>
+                      <label style={{ fontSize: "0.74rem", fontWeight: 700, color: "#64748B", display: "block", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        Size / Dimensions:
                       </label>
                       <div style={{ position: "relative" }}>
                         <select
@@ -890,20 +930,21 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                           }}
                           style={{
                             width: "100%",
-                            padding: "10px 40px 10px 14px",
-                            borderRadius: "8px",
-                            border: isCustomMode ? "1.5px solid var(--theme, #FF4035)" : "1.5px solid #CBD5E1",
+                            padding: "6px 36px 6px 12px",
+                            borderRadius: "6px",
+                            border: isCustomMode ? "1.5px solid #0F172A" : "1px solid #CBD5E1",
                             backgroundColor: "#FFFFFF",
                             color: "#0F172A",
-                            fontSize: "0.92rem",
+                            fontSize: "0.82rem",
                             fontWeight: 600,
                             appearance: "none",
                             cursor: "pointer",
                             outline: "none",
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230F172A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                            height: "36px",
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                             backgroundRepeat: "no-repeat",
-                            backgroundPosition: "right 14px center",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                            backgroundPosition: "right 12px center",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                           }}
                         >
                           {hasStandardSizes ? (
@@ -921,47 +962,46 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                           )}
                           {isCustomSizingEnabled && (
                             <option value="__custom__">
-                              📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)} / {customUnitLabel})
+                              📐 Made to Measure — Custom Fit (₹{customRate.toFixed(2)} / {customUnitLabel})
                             </option>
                           )}
                         </select>
                       </div>
 
-                      {/* When Custom Sizing is Selected: Simple Clean Inputs */}
+                      {/* When Custom Sizing is Selected: Compact, Elegant Card */}
                       {isCustomMode && (
                         <div
                           style={{
-                            marginTop: "10px",
-                            padding: "14px 16px",
+                            marginTop: "8px",
+                            padding: "10px 12px",
                             backgroundColor: "#F8FAFC",
                             borderRadius: "8px",
-                            border: "1.5px solid #CBD5E1",
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                            border: "1px solid #E2E8F0",
                           }}
                         >
                           <div className="d-flex align-items-center justify-content-between mb-2">
-                            <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
-                              Enter Exact Dimensions:
+                            <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#334155" }}>
+                              Exact Dimensions:
                             </span>
                             <span
                               style={{
-                                fontSize: "0.76rem",
-                                fontWeight: 700,
-                                color: "var(--theme, #FF4035)",
-                                backgroundColor: "#FFF1F2",
-                                padding: "2px 8px",
+                                fontSize: "0.72rem",
+                                fontWeight: 600,
+                                color: "#0F172A",
+                                backgroundColor: "#E2E8F0",
+                                padding: "2px 7px",
                                 borderRadius: "4px",
                               }}
                             >
-                              Rate: ₹{customRate.toFixed(2)} / {customUnitLabel}
+                              ₹{customRate.toFixed(2)} / {customUnitLabel}
                             </span>
                           </div>
 
                           <div className="row g-2 align-items-center mb-2">
                             {hasWidth && (
                               <div className="col-6">
-                                <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#64748B", display: "block", marginBottom: "3px" }}>
-                                  Width (Across) *
+                                <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "#64748B", display: "block", marginBottom: "2px" }}>
+                                  Width (Across)
                                 </label>
                                 <div className="d-flex align-items-center gap-1">
                                   <div style={{ position: "relative", flex: 1 }}>
@@ -973,16 +1013,18 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                       placeholder="0"
                                       style={{
                                         width: "100%",
-                                        padding: "6px 26px 6px 8px",
-                                        borderRadius: "6px",
+                                        padding: "4px 22px 4px 6px",
+                                        borderRadius: "4px",
                                         border: "1px solid #CBD5E1",
-                                        fontSize: "0.88rem",
-                                        fontWeight: 700,
+                                        fontSize: "0.8rem",
+                                        fontWeight: 600,
                                         color: "#0F172A",
                                         outline: "none",
+                                        height: "28px",
+                                        background: "#FFFFFF",
                                       }}
                                     />
-                                    <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
+                                    <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.68rem", fontWeight: 600 }}>
                                       ft
                                     </span>
                                   </div>
@@ -996,16 +1038,18 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                       placeholder="0"
                                       style={{
                                         width: "100%",
-                                        padding: "6px 26px 6px 8px",
-                                        borderRadius: "6px",
+                                        padding: "4px 22px 4px 6px",
+                                        borderRadius: "4px",
                                         border: "1px solid #CBD5E1",
-                                        fontSize: "0.88rem",
-                                        fontWeight: 700,
+                                        fontSize: "0.8rem",
+                                        fontWeight: 600,
                                         color: "#0F172A",
                                         outline: "none",
+                                        height: "28px",
+                                        background: "#FFFFFF",
                                       }}
                                     />
-                                    <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
+                                    <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.68rem", fontWeight: 600 }}>
                                       in
                                     </span>
                                   </div>
@@ -1014,8 +1058,8 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                             )}
 
                             <div className={hasWidth ? "col-6" : "col-12"}>
-                              <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#64748B", display: "block", marginBottom: "3px" }}>
-                                {hasWidth ? "Height / Drop *" : "Length *"}
+                              <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "#64748B", display: "block", marginBottom: "2px" }}>
+                                {hasWidth ? "Height / Drop" : "Length"}
                               </label>
                               <div className="d-flex align-items-center gap-1">
                                 <div style={{ position: "relative", flex: 1 }}>
@@ -1027,16 +1071,18 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                     placeholder="0"
                                     style={{
                                       width: "100%",
-                                      padding: "6px 26px 6px 8px",
-                                      borderRadius: "6px",
+                                      padding: "4px 22px 4px 6px",
+                                      borderRadius: "4px",
                                       border: "1px solid #CBD5E1",
-                                      fontSize: "0.88rem",
-                                      fontWeight: 700,
+                                      fontSize: "0.8rem",
+                                      fontWeight: 600,
                                       color: "#0F172A",
                                       outline: "none",
+                                      height: "28px",
+                                      background: "#FFFFFF",
                                     }}
                                   />
-                                  <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
+                                  <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.68rem", fontWeight: 600 }}>
                                     ft
                                   </span>
                                 </div>
@@ -1050,16 +1096,18 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                     placeholder="0"
                                     style={{
                                       width: "100%",
-                                      padding: "6px 26px 6px 8px",
-                                      borderRadius: "6px",
+                                      padding: "4px 22px 4px 6px",
+                                      borderRadius: "4px",
                                       border: "1px solid #CBD5E1",
-                                      fontSize: "0.88rem",
-                                      fontWeight: 700,
+                                      fontSize: "0.8rem",
+                                      fontWeight: 600,
                                       color: "#0F172A",
                                       outline: "none",
+                                      height: "28px",
+                                      background: "#FFFFFF",
                                     }}
                                   />
-                                  <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
+                                  <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.68rem", fontWeight: 600 }}>
                                     in
                                   </span>
                                 </div>
@@ -1067,13 +1115,47 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                             </div>
                           </div>
 
+                          {/* Quick Presets */}
+                          <div className="d-flex align-items-center gap-1 flex-wrap mb-2">
+                            <span style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 500 }}>Presets:</span>
+                            {[
+                              { label: "3×4 ft", wF: "3", wI: "0", lF: "4", lI: "0" },
+                              { label: "4×5 ft", wF: "4", wI: "0", lF: "5", lI: "0" },
+                              { label: "5×6 ft", wF: "5", wI: "0", lF: "6", lI: "0" },
+                              { label: "6×7 ft", wF: "6", wI: "0", lF: "7", lI: "0" },
+                            ].map((preset) => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => {
+                                  setWidthFeet(preset.wF);
+                                  setWidthInches(preset.wI);
+                                  setLengthFeet(preset.lF);
+                                  setLengthInches(preset.lI);
+                                }}
+                                style={{
+                                  background: "#FFFFFF",
+                                  border: "1px solid #CBD5E1",
+                                  borderRadius: "4px",
+                                  padding: "1px 6px",
+                                  fontSize: "0.68rem",
+                                  color: "#475569",
+                                  cursor: "pointer",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+
                           {/* Live Calculated Price Summary */}
-                          <div className="d-flex align-items-center justify-content-between pt-2" style={{ borderTop: "1px solid #E2E8F0", fontSize: "0.82rem" }}>
+                          <div className="d-flex align-items-center justify-content-between pt-2" style={{ borderTop: "1px solid #E2E8F0", fontSize: "0.78rem" }}>
                             <span style={{ color: "#64748B" }}>
-                              Total Area: <strong>{customTotalMeasurement} {customUnitLabel}</strong>
+                              Area: <strong style={{ color: "#0F172A" }}>{customTotalMeasurement} {customUnitLabel}</strong>
                             </span>
-                            <span style={{ fontWeight: 800, color: "var(--theme, #FF4035)", fontSize: "0.95rem" }}>
-                              Calculated: ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            <span style={{ fontWeight: 700, color: "#0F172A", fontSize: "0.88rem" }}>
+                              Calculated: <strong style={{ color: "var(--theme, #FF4035)" }}>₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
                             </span>
                           </div>
                         </div>
@@ -1081,223 +1163,212 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     </div>
                   )}
 
-{/* Quantity and Actions */}
-                  <div className="actions mb-4 d-flex align-items-center gap-4 flex-wrap">
-                    <div className="quantity">
-                      <p style={{ margin: "0 0 6px 0", fontWeight: 600, fontSize: "0.88rem", color: "#64748B" }}>
-                        Quantity
-                      </p>
-                      <div
-                        className="qty-wrapper d-flex align-items-center"
-                        style={{
-                          border: "1px solid #CBD5E1",
-                          borderRadius: "10px",
-                          overflow: "hidden",
-                          width: "130px",
-                          background: "#F8FAFC",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className="qty-btn"
-                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            width: "38px",
-                            height: "44px",
-                            cursor: "pointer",
-                            fontSize: "1rem",
-                            color: "#475569",
-                          }}
-                          aria-label="Decrease quantity"
-                        >
-                          <i className="fa-solid fa-minus"></i>
-                        </button>
-                        <input
-                          type="number"
-                          className="qty-input text-center"
-                          value={quantity}
-                          min={1}
-                          max={displayStock || 99}
-                          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            width: "54px",
-                            height: "44px",
-                            fontWeight: 700,
-                            color: "#0F172A",
-                          }}
-                        />
-                        <button
-                          type="button"
-                          className="qty-btn"
-                          onClick={() => setQuantity((q) => Math.min(displayStock || 99, q + 1))}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            width: "38px",
-                            height: "44px",
-                            cursor: "pointer",
-                            fontSize: "1rem",
-                            color: "#475569",
-                          }}
-                          aria-label="Increase quantity"
-                        >
-                          <i className="fa-solid fa-plus"></i>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="d-flex align-items-end gap-3 flex-wrap" style={{ marginTop: "24px" }}>
+                  {/* Quantity and Actions */}
+                  <div className="actions mb-3 d-flex align-items-center gap-2 flex-wrap">
+                    {/* Compact Quantity */}
+                    <div
+                      className="d-flex align-items-center"
+                      style={{
+                        border: "1px solid #CBD5E1",
+                        borderRadius: "6px",
+                        overflow: "hidden",
+                        height: "38px",
+                        background: "#F8FAFC",
+                      }}
+                    >
                       <button
                         type="button"
-                        onClick={handleAddToCart}
-                        disabled={isOutOfStock}
-                        className={`theme-btn ${isOutOfStock ? "disabled" : ""}`}
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                         style={{
-                          cursor: isOutOfStock ? "not-allowed" : "pointer",
-                          opacity: isOutOfStock ? 0.6 : 1,
-                          padding: "14px 30px",
-                          fontSize: "0.95rem",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "10px",
-                        }}
-                      >
-                        <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
-                        <i className="fa-regular fa-cart-shopping bg-transparent text-white"></i>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleBuyNow}
-                        disabled={isOutOfStock}
-                        className={`theme-btn ${isOutOfStock ? "disabled" : ""}`}
-                        style={{
-                          cursor: isOutOfStock ? "not-allowed" : "pointer",
-                          opacity: isOutOfStock ? 0.6 : 1,
-                          padding: "14px 32px",
-                          fontSize: "0.95rem",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          backgroundColor: "#0F172A",
-                          borderColor: "#0F172A",
-                          color: "#FFFFFF",
-                          boxShadow: "0 6px 18px rgba(15, 23, 42, 0.22)",
-                        }}
-                      >
-                        <span>Buy Now</span>
-                        <i className="fa-solid fa-bolt bg-transparent text-warning"></i>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleToggleWishlist}
-                        className={`theme-btn ${inWishlist ? "" : "style7 border-0"}`}
-                        style={{
+                          border: "none",
+                          background: "transparent",
+                          width: "30px",
+                          height: "38px",
                           cursor: "pointer",
-                          padding: "14px 24px",
-                          fontSize: "0.95rem",
-                          display: "inline-flex",
+                          fontSize: "0.85rem",
+                          color: "#475569",
+                          display: "flex",
                           alignItems: "center",
-                          gap: "8px",
-                          backgroundColor: inWishlist ? "#ECFDF5" : undefined,
-                          color: inWishlist ? "#065F46" : undefined,
+                          justifyContent: "center",
                         }}
+                        aria-label="Decrease quantity"
                       >
-                        <span>{inWishlist ? "SAVED IN WISHLIST" : "ADD TO WISHLIST"}</span>
-                        <i
-                          className={`fa-sharp fa-solid fa-heart ${
-                            inWishlist ? "text-danger" : ""
-                          }`}
-                        ></i>
+                        <i className="fa-solid fa-minus"></i>
                       </button>
-
-                      {isCustomMode ? (
-                        <button
-                          type="button"
-                          onClick={handleSendWhatsApp}
-                          className="theme-btn"
-                          style={{
-                            cursor: "pointer",
-                            padding: "14px 24px",
-                            fontSize: "0.95rem",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            backgroundColor: "#25D366",
-                            borderColor: "#25D366",
-                            color: "#FFFFFF",
-                            boxShadow: "0 4px 14px rgba(37, 211, 102, 0.3)",
-                          }}
-                          title="Send custom sizing requirements directly to Business Manager on WhatsApp"
-                        >
-                          <i className="fa-brands fa-whatsapp fs-5" />
-                          <span>Send Specs to WhatsApp</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleStandardWhatsAppQuote}
-                          className="theme-btn"
-                          style={{
-                            cursor: "pointer",
-                            padding: "14px 24px",
-                            fontSize: "0.95rem",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            backgroundColor: "#25D366",
-                            borderColor: "#25D366",
-                            color: "#FFFFFF",
-                            boxShadow: "0 4px 14px rgba(37, 211, 102, 0.3)",
-                          }}
-                          title="Get direct quote and showroom details on WhatsApp"
-                        >
-                          <i className="fa-brands fa-whatsapp fs-5" />
-                          <span>Get Quote on WhatsApp</span>
-                        </button>
-                      )}
+                      <input
+                        type="number"
+                        value={quantity}
+                        min={1}
+                        max={displayStock || 99}
+                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          width: "36px",
+                          height: "38px",
+                          textAlign: "center",
+                          fontWeight: 700,
+                          fontSize: "0.85rem",
+                          color: "#0F172A",
+                          outline: "none",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => Math.min(displayStock || 99, q + 1))}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          width: "30px",
+                          height: "38px",
+                          cursor: "pointer",
+                          fontSize: "0.85rem",
+                          color: "#475569",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        aria-label="Increase quantity"
+                      >
+                        <i className="fa-solid fa-plus"></i>
+                      </button>
                     </div>
+
+                    {/* Add to Cart */}
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      disabled={isOutOfStock}
+                      style={{
+                        cursor: isOutOfStock ? "not-allowed" : "pointer",
+                        opacity: isOutOfStock ? 0.6 : 1,
+                        height: "38px",
+                        padding: "0 18px",
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "7px",
+                        backgroundColor: "var(--theme, #FF4035)",
+                        color: "#FFFFFF",
+                        border: "none",
+                        borderRadius: "6px",
+                        boxShadow: "0 1px 3px rgba(255, 64, 53, 0.2)",
+                      }}
+                    >
+                      <i className="fa-regular fa-cart-shopping"></i>
+                      <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+                    </button>
+
+                    {/* Buy Now */}
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
+                      disabled={isOutOfStock}
+                      style={{
+                        cursor: isOutOfStock ? "not-allowed" : "pointer",
+                        opacity: isOutOfStock ? 0.6 : 1,
+                        height: "38px",
+                        padding: "0 18px",
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "7px",
+                        backgroundColor: "#0F172A",
+                        border: "1px solid #0F172A",
+                        color: "#FFFFFF",
+                        borderRadius: "6px",
+                        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.15)",
+                      }}
+                    >
+                      <i className="fa-solid fa-bolt" style={{ color: "#FBBF24" }}></i>
+                      <span>Buy Now</span>
+                    </button>
+
+                    {/* Compact Wishlist Icon Button */}
+                    <button
+                      type="button"
+                      onClick={handleToggleWishlist}
+                      title={inWishlist ? "Saved in Wishlist" : "Add to Wishlist"}
+                      style={{
+                        cursor: "pointer",
+                        width: "38px",
+                        height: "38px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: inWishlist ? "#FEF2F2" : "#FFFFFF",
+                        border: inWishlist ? "1px solid #FECACA" : "1px solid #CBD5E1",
+                        borderRadius: "6px",
+                        color: inWishlist ? "#DC2626" : "#64748B",
+                        transition: "all 0.15s ease",
+                      }}
+                      aria-label="Wishlist"
+                    >
+                      <i
+                        className={`fa-heart ${inWishlist ? "fa-solid text-danger" : "fa-regular"}`}
+                        style={{ fontSize: "0.95rem" }}
+                      ></i>
+                    </button>
+
+                    {/* Compact WhatsApp Button */}
+                    <button
+                      type="button"
+                      onClick={isCustomMode ? handleSendWhatsApp : handleStandardWhatsAppQuote}
+                      title="Chat with Srinagar Showroom on WhatsApp"
+                      style={{
+                        cursor: "pointer",
+                        height: "38px",
+                        padding: "0 14px",
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        backgroundColor: "#22C55E",
+                        border: "none",
+                        color: "#FFFFFF",
+                        borderRadius: "6px",
+                        boxShadow: "0 1px 3px rgba(34, 197, 94, 0.2)",
+                      }}
+                    >
+                      <i className="fa-brands fa-whatsapp" style={{ fontSize: "1rem" }} />
+                      <span>Room Quote</span>
+                    </button>
                   </div>
 
-                  {/* Srinagar & Kashmir Importer-Direct Trust Box */}
+                  {/* Srinagar & Kashmir Importer-Direct Trust Strip */}
                   <div
                     style={{
-                      marginTop: "20px",
-                      marginBottom: "10px",
-                      padding: "16px 20px",
-                      borderRadius: "14px",
+                      marginTop: "16px",
+                      marginBottom: "8px",
+                      padding: "10px 14px",
+                      borderRadius: "8px",
                       backgroundColor: "#F8FAFC",
                       border: "1px solid #E2E8F0",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 700, color: "#0F172A", fontSize: "0.92rem" }}>
-                      <i className="fa-solid fa-certificate text-danger" />
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700, color: "#0F172A", fontSize: "0.78rem", marginBottom: "6px" }}>
+                      <i className="fa-solid fa-certificate text-danger" style={{ fontSize: "0.8rem" }} />
                       <span>Wall Street Interiors — Importer-Direct Kashmir Advantage</span>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "10px", fontSize: "0.83rem", color: "#475569" }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                        <i className="fa-solid fa-store" style={{ color: "#D4AF37", marginTop: "3px" }} />
-                        <span><strong>Live Showroom:</strong> Near New Habba Kadal Bridge, Srinagar</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "6px", fontSize: "0.74rem", color: "#475569" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <i className="fa-solid fa-store" style={{ color: "#D4AF37", fontSize: "0.75rem" }} />
+                        <span><strong>Showroom:</strong> New Habba Kadal Bridge, Srinagar</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                        <i className="fa-solid fa-warehouse" style={{ color: "#D4AF37", marginTop: "3px" }} />
-                        <span><strong>Central Godown:</strong> Near Syed Ali Akbar Mosque, Fateh Kadal</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <i className="fa-solid fa-warehouse" style={{ color: "#D4AF37", fontSize: "0.75rem" }} />
+                        <span><strong>Godown:</strong> Fateh Kadal, Srinagar</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                        <i className="fa-solid fa-snowflake" style={{ color: "#2563EB", marginTop: "3px" }} />
-                        <span><strong>Built for Kashmir:</strong> Sub-zero insulation & moisture tested</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <i className="fa-solid fa-snowflake" style={{ color: "#2563EB", fontSize: "0.75rem" }} />
+                        <span><strong>Sub-zero Tested:</strong> Kashmir winter proof</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                        <i className="fa-brands fa-whatsapp" style={{ color: "#22C55E", marginTop: "3px" }} />
-                        <span><strong>WhatsApp Desk:</strong> Instant room quotes (+91 9018454526)</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <i className="fa-brands fa-whatsapp" style={{ color: "#22C55E", fontSize: "0.78rem" }} />
+                        <span><strong>Direct Desk:</strong> +91 9018454526</span>
                       </div>
                     </div>
                   </div>
@@ -1377,15 +1448,15 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     style={{
                       background: "none",
                       border: "none",
-                      padding: "14px 24px",
-                      fontSize: "1.1rem",
-                      fontWeight: 700,
-                      color: activeTab === "desc" ? "var(--theme)" : "#64748B",
-                      borderBottom: activeTab === "desc" ? "3px solid var(--theme)" : "none",
+                      padding: "10px 18px",
+                      fontSize: "0.88rem",
+                      fontWeight: 600,
+                      color: activeTab === "desc" ? "#0F172A" : "#64748B",
+                      borderBottom: activeTab === "desc" ? "2px solid #0F172A" : "none",
                       marginBottom: "-2px",
                       cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
+                      letterSpacing: "0.01em",
+                      transition: "all 0.15s ease",
                     }}
                   >
                     Product Description
@@ -1397,15 +1468,15 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     style={{
                       background: "none",
                       border: "none",
-                      padding: "14px 24px",
-                      fontSize: "1.1rem",
-                      fontWeight: 700,
-                      color: activeTab === "specs" ? "var(--theme)" : "#64748B",
-                      borderBottom: activeTab === "specs" ? "3px solid var(--theme)" : "none",
+                      padding: "10px 18px",
+                      fontSize: "0.88rem",
+                      fontWeight: 600,
+                      color: activeTab === "specs" ? "#0F172A" : "#64748B",
+                      borderBottom: activeTab === "specs" ? "2px solid #0F172A" : "none",
                       marginBottom: "-2px",
                       cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
+                      letterSpacing: "0.01em",
+                      transition: "all 0.15s ease",
                     }}
                   >
                     Specifications
@@ -1417,15 +1488,15 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     style={{
                       background: "none",
                       border: "none",
-                      padding: "14px 24px",
-                      fontSize: "1.1rem",
-                      fontWeight: 700,
-                      color: activeTab === "reviews" ? "var(--theme)" : "#64748B",
-                      borderBottom: activeTab === "reviews" ? "3px solid var(--theme)" : "none",
+                      padding: "10px 18px",
+                      fontSize: "0.88rem",
+                      fontWeight: 600,
+                      color: activeTab === "reviews" ? "#0F172A" : "#64748B",
+                      borderBottom: activeTab === "reviews" ? "2px solid #0F172A" : "none",
                       marginBottom: "-2px",
                       cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
+                      letterSpacing: "0.01em",
+                      transition: "all 0.15s ease",
                     }}
                   >
                     Reviews ({reviews.length})
