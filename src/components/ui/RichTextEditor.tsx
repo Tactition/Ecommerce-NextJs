@@ -19,6 +19,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  CheckCircle2,
+  Image as ImageIcon,
 } from "lucide-react";
 
 interface RichTextEditorProps {
@@ -79,6 +81,41 @@ export default function RichTextEditor({
     onChange(val);
     if (editorRef.current) {
       editorRef.current.innerHTML = val;
+    }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const insertGreenTick = () => {
+    if (isSourceMode) {
+      setInternalHtml((prev) => prev + "✅ ");
+      onChange(internalHtml + "✅ ");
+      return;
+    }
+    executeCommand("insertHTML", "✅ ");
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/uploads", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) {
+        const imgTag = `<img src="${data.url}" alt="${file.name}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0;" />`;
+        if (isSourceMode) {
+          setInternalHtml((prev) => prev + imgTag);
+          onChange(internalHtml + imgTag);
+        } else {
+          executeCommand("insertHTML", imgTag);
+        }
+      }
+    } catch (err) {
+      console.error("Editor image upload failed:", err);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -261,6 +298,51 @@ export default function RichTextEditor({
           >
             <LinkIcon size={15} />
           </button>
+
+          {/* Green Tick Button */}
+          <button
+            type="button"
+            title="Insert Green Tick Icon (✅)"
+            onClick={insertGreenTick}
+            style={{
+              ...toolbarBtnStyle,
+              backgroundColor: "#ECFDF5",
+              color: "#059669",
+              border: "1px solid #A7F3D0",
+              fontWeight: 700,
+              padding: "4px 8px",
+              gap: "4px",
+            }}
+          >
+            <CheckCircle2 size={14} style={{ color: "#10B981" }} />
+            <span style={{ fontSize: "0.74rem" }}>Tick</span>
+          </button>
+
+          {/* Upload Image Button */}
+          <button
+            type="button"
+            title="Upload and insert image"
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              ...toolbarBtnStyle,
+              backgroundColor: "#F1F5F9",
+              color: "#334155",
+              fontWeight: 600,
+              padding: "4px 8px",
+              gap: "4px",
+            }}
+          >
+            <ImageIcon size={14} />
+            <span style={{ fontSize: "0.74rem" }}>Image</span>
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleImageUpload}
+          />
+
           <button
             type="button"
             title="Remove formatting"
@@ -401,3 +483,4 @@ const dividerStyle: React.CSSProperties = {
   backgroundColor: "#E2E8F0",
   margin: "0 3px",
 };
+

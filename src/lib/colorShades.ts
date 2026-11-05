@@ -147,71 +147,133 @@ export function getColorHex(colorName: string, fallbackColorCode?: string | null
 }
 
 /**
- * Format raw markdown or HTML from the database into clean, beautiful HTML paragraphs and headings.
+ * Green tick icon badge (styled emerald tick in subtle mint circular pill)
+ */
+export const GREEN_TICK_BADGE =
+  '<span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background-color: #ECFDF5; border: 1.5px solid #10B981; color: #059669; border-radius: 50%; font-size: 11px; font-weight: 900; margin-right: 8px; vertical-align: middle; flex-shrink: 0;">✓</span>';
+
+/**
+ * Format raw markdown or HTML from the database into clean, beautiful HTML paragraphs and headings,
+ * preserving green ticks, headings, lists, bold text, and images.
  */
 export function formatDescriptionHtml(raw: string | null | undefined): string {
   if (!raw || !raw.trim()) return "";
 
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
 
-  // If already contains HTML tags like <p>, <h3>, <ul>, etc., return as is
+  // If already contains structural HTML tags like <p>, <h3>, <ul>, etc.
   if (/<(p|div|h[1-6]|ul|ol|table|blockquote|br)[^>]*>/i.test(trimmed)) {
-    return trimmed;
+    // Replace any raw ✅, ✔, ☑ with the visual green tick badge
+    let html = trimmed.replace(
+      /[✅✔☑]/g,
+      GREEN_TICK_BADGE
+    );
+
+    // If markdown headings or bold are nested inside <p> or <div> from rich text paste, parse them
+    html = html.replace(
+      /(?:<p[^>]*>)?###\s+([^<\n\r]+)(?:<\/p>)?/gi,
+      '<h3 style="font-size: 1.15rem; font-weight: 700; color: #0F172A; margin: 20px 0 8px 0; letter-spacing: -0.01em;">$1</h3>'
+    );
+    html = html.replace(
+      /(?:<p[^>]*>)?##\s+([^<\n\r]+)(?:<\/p>)?/gi,
+      '<h2 style="font-size: 1.3rem; font-weight: 700; color: #0F172A; margin: 24px 0 10px 0; letter-spacing: -0.015em;">$1</h2>'
+    );
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+    return html;
   }
 
-  // Convert markdown to clean HTML
+  // Convert pure markdown or mixed text to clean HTML
   let formatted = trimmed;
 
   // Headings: ### Heading
-  formatted = formatted.replace(/^###\s+(.+)$/gm, '<h3 style="font-size: 1.15rem; font-weight: 700; color: #0F172A; margin: 16px 0 8px 0;">$1</h3>');
-  formatted = formatted.replace(/^##\s+(.+)$/gm, '<h2 style="font-size: 1.3rem; font-weight: 700; color: #0F172A; margin: 18px 0 10px 0;">$1</h2>');
+  formatted = formatted.replace(
+    /^###\s+(.+)$/gm,
+    '<h3 style="font-size: 1.15rem; font-weight: 700; color: #0F172A; margin: 18px 0 8px 0; letter-spacing: -0.01em;">$1</h3>'
+  );
+  formatted = formatted.replace(
+    /^##\s+(.+)$/gm,
+    '<h2 style="font-size: 1.3rem; font-weight: 700; color: #0F172A; margin: 22px 0 10px 0; letter-spacing: -0.015em;">$1</h2>'
+  );
 
   // Bold text: **text**
-  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 
   // Italic text: *text*
-  formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  formatted = formatted.replace(/\*(.+?)\*/g, "<em>$1</em>");
 
-  // Checkmark lists / Bullet points
+  // Line-by-line processing for lists, green ticks, and paragraphs
   const lines = formatted.split(/\r?\n/);
   const result: string[] = [];
-  let inList = false;
+  let inBulletList = false;
+  let inCheckList = false;
 
   for (const line of lines) {
     const trimmedLine = line.trim();
     if (!trimmedLine) {
-      if (inList) {
+      if (inBulletList || inCheckList) {
         result.push("</ul>");
-        inList = false;
+        inBulletList = false;
+        inCheckList = false;
       }
       continue;
     }
 
-    if (trimmedLine.startsWith("✅") || trimmedLine.startsWith("•") || trimmedLine.startsWith("-") || trimmedLine.startsWith("*")) {
-      if (!inList) {
-        result.push('<ul style="padding-left: 20px; margin: 10px 0; color: #475569;">');
-        inList = true;
-      }
-      const itemText = trimmedLine.replace(/^[✅•\-\*]\s*/, "");
-      result.push(`<li style="margin-bottom: 6px;">${itemText}</li>`);
-    } else if (trimmedLine.startsWith("<h2") || trimmedLine.startsWith("<h3")) {
-      if (inList) {
+    // Check if line starts with a green tick icon: ✅, ✔, ✓, ☑
+    const isCheckLine = /^[✅✔✓☑]/.test(trimmedLine);
+    // Check if line starts with standard bullets: •, -, *
+    const isBulletLine = !isCheckLine && /^[•\-\*]\s+/.test(trimmedLine);
+
+    if (isCheckLine) {
+      if (inBulletList) {
         result.push("</ul>");
-        inList = false;
+        inBulletList = false;
+      }
+      if (!inCheckList) {
+        result.push('<ul style="padding: 0; margin: 12px 0; list-style: none;">');
+        inCheckList = true;
+      }
+      const itemText = trimmedLine.replace(/^[✅✔✓☑]\s*/, "");
+      result.push(
+        `<li style="list-style: none; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;">` +
+          `<span style="display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; background-color: #ECFDF5; border: 1.5px solid #10B981; color: #059669; border-radius: 50%; font-size: 11px; font-weight: 900; flex-shrink: 0; margin-top: 2px;">✓</span>` +
+          `<span style="color: #334155; line-height: 1.6; font-size: 0.88rem;">${itemText}</span>` +
+        `</li>`
+      );
+    } else if (isBulletLine) {
+      if (inCheckList) {
+        result.push("</ul>");
+        inCheckList = false;
+      }
+      if (!inBulletList) {
+        result.push('<ul style="padding-left: 20px; margin: 10px 0; color: #475569;">');
+        inBulletList = true;
+      }
+      const itemText = trimmedLine.replace(/^[•\-\*]\s*/, "");
+      result.push(`<li style="margin-bottom: 6px; font-size: 0.88rem; line-height: 1.6;">${itemText}</li>`);
+    } else if (trimmedLine.startsWith("<h2") || trimmedLine.startsWith("<h3")) {
+      if (inBulletList || inCheckList) {
+        result.push("</ul>");
+        inBulletList = false;
+        inCheckList = false;
       }
       result.push(trimmedLine);
     } else {
-      if (inList) {
+      if (inBulletList || inCheckList) {
         result.push("</ul>");
-        inList = false;
+        inBulletList = false;
+        inCheckList = false;
       }
-      result.push(`<p style="margin-bottom: 12px; line-height: 1.7; color: #475569;">${trimmedLine}</p>`);
+      // Replace inline ✅ if anywhere inside paragraph
+      const styledParagraph = trimmedLine.replace(/[✅✔☑]/g, GREEN_TICK_BADGE);
+      result.push(`<p style="margin-bottom: 12px; line-height: 1.7; color: #475569; font-size: 0.88rem;">${styledParagraph}</p>`);
     }
   }
 
-  if (inList) {
+  if (inBulletList || inCheckList) {
     result.push("</ul>");
   }
 
   return result.join("\n");
 }
+

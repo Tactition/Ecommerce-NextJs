@@ -840,7 +840,7 @@ export default function ProductForm({
           if (hasVariations) {
             const varPayload = finalVariations.map((v) => {
               const cleanVarImg = (v.image || "").trim();
-              const finalImg = (cleanVarImg && cleanVarImg !== image && !cleanVarImg.startsWith("/images/products/")) ? cleanVarImg : null;
+              const finalImg = cleanVarImg || null;
               return {
                 id: v.id,
                 sku: (v.sku || "").trim() || `${(slug || name || "PROD").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
