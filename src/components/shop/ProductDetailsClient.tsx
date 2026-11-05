@@ -9,6 +9,7 @@ import { addToCart } from "@/lib/cart";
 import { toggleWishlist, isInWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
 import ProductImageGallery from "@/components/shop/ProductImageGallery";
+import { isColorAttribute, getColorHex, formatDescriptionHtml } from "@/lib/colorShades";
 
 interface ReviewItem {
   id: number;
@@ -134,10 +135,10 @@ export default function ProductDetailsClient({
   const [activeImage, setActiveImage] = useState<string>(product.image || "");
   const [userSelectedGalleryImage, setUserSelectedGalleryImage] = useState<boolean>(false);
 
-  // When variation changes, update image ONLY if variation has a custom image distinctly different from product.image
+  // When variation changes, instantly shift active image to that variation's photo
   React.useEffect(() => {
     const varImg = currentVariation?.image?.trim();
-    if (varImg && varImg !== product.image && !varImg.startsWith("/images/products/")) {
+    if (varImg && varImg !== "") {
       setActiveImage(varImg);
       setUserSelectedGalleryImage(false);
     } else if (!userSelectedGalleryImage && product.image && product.image.trim() !== "") {
@@ -177,7 +178,7 @@ export default function ProductDetailsClient({
 
     const customVarImages = (variations || [])
       .map((v) => v.image?.trim())
-      .filter((img): img is string => Boolean(img && img !== product.image && !img.startsWith("/images/products/")));
+      .filter((img): img is string => Boolean(img && img !== ""));
 
     return Array.from(
       new Set(
@@ -292,10 +293,27 @@ export default function ProductDetailsClient({
   };
 
   const handleSelectAttributeValue = (attrId: number, valId: number) => {
-    setSelectedAttributeValues((prev) => ({
-      ...prev,
-      [attrId]: valId,
-    }));
+    setSelectedAttributeValues((prev) => {
+      const updated = {
+        ...prev,
+        [attrId]: valId,
+      };
+
+      // Find matching variation with an image to shift the gallery immediately
+      const matchedWithImg = (variations || []).find((v) => {
+        if (!v.image || !v.image.trim()) return false;
+        if (!v.values) return false;
+        // Direct match for this specific attribute value
+        return v.values.some((val) => val.attribute_id === attrId && val.value_id === valId);
+      });
+
+      if (matchedWithImg?.image) {
+        setActiveImage(matchedWithImg.image.trim());
+        setUserSelectedGalleryImage(false);
+      }
+
+      return updated;
+    });
   };
 
   const handleAddToCart = (): boolean => {
@@ -749,9 +767,9 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     <h2
                       className="product-price"
                       style={{
-                        fontSize: "1.65rem",
-                        fontWeight: 700,
-                        color: "#0F172A",
+                        fontSize: "1.75rem",
+                        fontWeight: 800,
+                        color: "var(--theme, #FF4035)",
                         margin: 0,
                         letterSpacing: "-0.02em",
                       }}
@@ -795,22 +813,23 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     )}
                   </div>
 
-                  {/* Short Description */}
-                  <p
-                    className="text"
+                  {/* Short Description formatted cleanly as per entered in admin */}
+                  <div
+                    className="text mb-3 pb-2"
                     style={{
                       color: "#64748B",
                       fontSize: "0.86rem",
                       lineHeight: 1.6,
-                      marginBottom: "16px",
-                      paddingBottom: "12px",
                       borderBottom: "1px solid #F1F5F9",
                     }}
-                  >
-                    {product.short_description ||
-                      product.description ||
-                      "Engineered with certified high-fidelity components, robust joinery, and precision architectural finishing to deliver exceptional luxury aesthetics and long-lasting durability."}
-                  </p>
+                    dangerouslySetInnerHTML={{
+                      __html: formatDescriptionHtml(
+                        product.short_description ||
+                        product.description ||
+                        "Engineered with certified high-fidelity components, robust joinery, and precision architectural finishing to deliver exceptional luxury aesthetics and long-lasting durability."
+                      ),
+                    }}
+                  />
 
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {/* SIZING & TRANSPARENT CUSTOM PRICE CALCULATION                  */}
@@ -829,6 +848,7 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                           });
                         });
                         const availableValues = Array.from(attrValuesMap.entries());
+                        const isColor = isColorAttribute(attr.name);
 
                         return (
                           <div key={attr.id} className="mb-2">
@@ -837,7 +857,7 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                 {attr.name}:
                               </span>
                               {selectedAttributeValues[attr.id] && (
-                                <span style={{ fontSize: "0.78rem", color: "#0F172A", fontWeight: 600 }}>
+                                <span style={{ fontSize: "0.78rem", color: isColor ? "var(--theme, #FF4035)" : "#0F172A", fontWeight: 700 }}>
                                   {attrValuesMap.get(selectedAttributeValues[attr.id])}
                                 </span>
                               )}
@@ -845,6 +865,62 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                             <div className="d-flex gap-2 flex-wrap">
                               {availableValues.map(([valId, valLabel]) => {
                                 const isSelected = selectedAttributeValues[attr.id] === valId;
+                                const valColorCode = (() => {
+                                  for (const v of variations || []) {
+                                    for (const val of v.values || []) {
+                                      if (val.value_id === valId && val.color_code) return val.color_code;
+                                    }
+                                  }
+                                  const fromAll = (allAttributes || []).find((a) => a.id === attr.id);
+                                  const foundVal = fromAll?.values?.find((v) => v.id === valId);
+                                  return getColorHex(valLabel, foundVal?.color_code);
+                                })();
+
+                                if (isColor) {
+                                  return (
+                                    <button
+                                      key={valId}
+                                      type="button"
+                                      onClick={() => handleSelectAttributeValue(attr.id, valId)}
+                                      title={`Select shade: ${valLabel}`}
+                                      style={{
+                                        border: isSelected ? "2px solid var(--theme, #FF4035)" : "1.5px solid #E2E8F0",
+                                        background: isSelected ? "#FFF5F4" : "#FFFFFF",
+                                        color: isSelected ? "var(--theme, #FF4035)" : "#334155",
+                                        padding: "5px 12px 5px 7px",
+                                        borderRadius: "20px",
+                                        fontWeight: isSelected ? 700 : 500,
+                                        fontSize: "0.8rem",
+                                        cursor: "pointer",
+                                        transition: "all 0.15s ease",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "7px",
+                                        boxShadow: isSelected ? "0 2px 6px rgba(255, 64, 53, 0.2)" : "none",
+                                      }}
+                                    >
+                                      {/* Round Visual Color Swatch Dot */}
+                                      <span
+                                        style={{
+                                          width: "16px",
+                                          height: "16px",
+                                          borderRadius: "50%",
+                                          backgroundColor: valColorCode,
+                                          display: "inline-block",
+                                          border:
+                                            valColorCode === "#FFFFFF" || valColorCode === "#FAF7F2" || valColorCode === "#F8FAFC"
+                                              ? "1.5px solid #CBD5E1"
+                                              : "1px solid rgba(0,0,0,0.15)",
+                                          boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12)",
+                                          flexShrink: 0,
+                                        }}
+                                      />
+                                      <span>{valLabel}</span>
+                                      {isSelected && <span style={{ fontSize: "0.75rem", fontWeight: 900 }}>✓</span>}
+                                    </button>
+                                  );
+                                }
+
                                 return (
                                   <button
                                     key={valId}
@@ -1466,20 +1542,19 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   </button>
                 </div>
 
-                {/* Tab: Description */}
+                {/* Tab: Description rendered exactly as added in description boxes */}
                 {activeTab === "desc" && (
-                  <div className="product-description" style={{ color: "#475569", lineHeight: 1.8 }}>
-                    <h3 style={{ fontSize: "1.4rem", fontWeight: 700, color: "#0F172A", marginBottom: "16px" }}>
-                      Detailed Product Overview
-                    </h3>
-                    <p style={{ marginBottom: "16px" }}>
-                      {product.description ||
-                        "Every bespoke furniture piece and architectural finish from Wall Street Interiors is crafted to exacting standards using premium grade timbers, precision acoustic damping, and European hardware. Designed for high-end residential, boutique hospitality, and modern commercial interiors."}
-                    </p>
-                    <p>
-                      Each architectural surface and furniture module is inspected under rigorous quality controls and protected in transit-grade protective wrapping to safeguard fine wood veneers, soft-close hinges, and luxury upholstery.
-                    </p>
-                  </div>
+                  <div
+                    className="product-description"
+                    style={{ color: "#475569", lineHeight: 1.8, fontSize: "0.92rem" }}
+                    dangerouslySetInnerHTML={{
+                      __html: formatDescriptionHtml(
+                        product.description ||
+                        product.short_description ||
+                        "Detailed product overview and material specifications coming soon."
+                      ),
+                    }}
+                  />
                 )}
 
                 {/* Tab: Specs */}

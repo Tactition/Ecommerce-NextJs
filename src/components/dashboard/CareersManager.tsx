@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Career, CareerApplication } from "@/types";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import ConfirmDialog from "@/components/dashboard/ConfirmDialog";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import {
   getAllCareers,
   saveCareerAction,
@@ -48,6 +49,8 @@ export default function CareersManager({
   const [applications, setApplications] = useState<CareerApplication[]>(initialApplications);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCareer, setEditingCareer] = useState<Career | null>(null);
+  const [description, setDescription] = useState("");
+  const [requirements, setRequirements] = useState("");
   const [deleteTargetJobId, setDeleteTargetJobId] = useState<number | null>(null);
   const [deleteTargetAppId, setDeleteTargetAppId] = useState<number | null>(null);
   const [viewingApp, setViewingApp] = useState<CareerApplication | null>(null);
@@ -69,12 +72,16 @@ export default function CareersManager({
 
   const openCreateModal = () => {
     setEditingCareer(null);
+    setDescription("");
+    setRequirements("");
     setIsModalOpen(true);
     setFeedback(null);
   };
 
   const openEditModal = (c: Career) => {
     setEditingCareer(c);
+    setDescription(c.description || "");
+    setRequirements(c.requirements || "");
     setIsModalOpen(true);
     setFeedback(null);
   };
@@ -714,32 +721,25 @@ export default function CareersManager({
                 </div>
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
-                <label className="dashboard-label">
-                  Role Description &amp; Responsibilities <span style={{ color: "red" }}>*</span>
-                </label>
-                <textarea
-                  name="description"
-                  required
-                  rows={4}
-                  defaultValue={editingCareer?.description || ""}
-                  placeholder="Outline core responsibilities, project scope, and daily craftsmanship goals..."
-                  className="dashboard-input"
-                  style={{ resize: "vertical" }}
-                />
-              </div>
+              <input type="hidden" name="description" value={description} />
+              <input type="hidden" name="requirements" value={requirements} />
 
-              <div style={{ marginBottom: "16px" }}>
-                <label className="dashboard-label">Key Requirements / Qualifications (Optional)</label>
-                <textarea
-                  name="requirements"
-                  rows={3}
-                  defaultValue={editingCareer?.requirements || ""}
-                  placeholder="e.g. 4+ years in luxury residential design, proficiency with AutoCAD, 3ds Max..."
-                  className="dashboard-input"
-                  style={{ resize: "vertical" }}
-                />
-              </div>
+              <RichTextEditor
+                label="Role Description & Responsibilities"
+                value={description}
+                onChange={setDescription}
+                placeholder="Outline core responsibilities, project scope, and daily craftsmanship goals..."
+                minHeight={140}
+                required
+              />
+
+              <RichTextEditor
+                label="Key Requirements / Qualifications"
+                value={requirements}
+                onChange={setRequirements}
+                placeholder="e.g. 4+ years in luxury residential design, proficiency with AutoCAD, 3ds Max..."
+                minHeight={110}
+              />
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
                 <div>

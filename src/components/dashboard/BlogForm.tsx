@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BlogPost } from "@/types";
 import { saveBlogPostAction } from "@/lib/actions/blog";
 import ImageUploader from "@/components/dashboard/ImageUploader";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import {
   ArrowLeft,
   CheckCircle,
@@ -360,34 +361,23 @@ export default function BlogForm({ initialData }: BlogFormProps) {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: "16px" }}>
-                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
-                  Excerpt Summary <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <textarea
-                  value={excerpt}
-                  onChange={(e) => setExcerpt(e.target.value)}
-                  rows={3}
-                  placeholder="Short introductory summary displayed on listing cards and social previews..."
-                  className="form-textarea"
-                  required
-                />
-              </div>
+              <RichTextEditor
+                label="Excerpt Summary"
+                value={excerpt}
+                onChange={setExcerpt}
+                placeholder="Short introductory summary displayed on listing cards and social previews..."
+                minHeight={90}
+                required
+              />
 
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
-                  Full Content (HTML or Markdown Paragraphs) <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={14}
-                  placeholder="<h2>Subheading</h2><p>Article paragraph text...</p>"
-                  className="form-textarea"
-                  style={{ fontFamily: "monospace", fontSize: "0.88rem", lineHeight: "1.6" }}
-                  required
-                />
-              </div>
+              <RichTextEditor
+                label="Full Article Content"
+                value={content}
+                onChange={setContent}
+                placeholder="Write full blog article with formatted headings, images, bullet lists, and paragraphs..."
+                minHeight={280}
+                required
+              />
             </div>
 
             {/* Card 2: SEO Settings */}

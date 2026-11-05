@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { WorkGallery } from "@/types";
 import ImageUploader from "@/components/dashboard/ImageUploader";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import { saveGalleryAction } from "@/lib/actions/gallery";
 import { ArrowLeft, CheckCircle2, AlertCircle, Sparkles, Eye, Save } from "lucide-react";
 
@@ -213,17 +214,13 @@ export default function GalleryForm({ initialData }: GalleryFormProps) {
               <label className="form-label" htmlFor="description" style={{ fontWeight: 600 }}>
                 Short Description *
               </label>
-              <textarea
-                id="description"
-                name="description"
-                required
-                rows={4}
+              <RichTextEditor
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={setDescription}
                 placeholder="Describe the interior transformation, craftsmanship, or architectural setup..."
-                className="form-textarea"
-                style={{ fontSize: "0.95rem", lineHeight: 1.6 }}
+                minHeight={150}
               />
+              <input type="hidden" name="description" value={description} />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>

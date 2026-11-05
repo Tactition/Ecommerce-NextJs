@@ -11,6 +11,7 @@ import {
 } from "@/lib/actions/variations";
 import ImageUploader from "@/components/dashboard/ImageUploader";
 import ProductGalleryManager from "@/components/dashboard/ProductGalleryManager";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import {
   ArrowLeft,
   Save,
@@ -2596,6 +2597,10 @@ export default function ProductForm({
                                         position: "relative",
                                         marginBottom: "6px",
                                       }}
+                                      onClick={() => {
+                                        document.getElementById(`var_img_file_${idx}`)?.click();
+                                      }}
+                                      title="Click to upload/set color shade image"
                                     >
                                       {row.image ? (
                                         <img
@@ -2605,16 +2610,37 @@ export default function ProductForm({
                                         />
                                       ) : (
                                         <div style={{ textAlign: "center", color: "#8C8F94" }}>
-                                          <ImageIcon size={24} />
-                                          <div style={{ fontSize: "0.68rem", marginTop: "4px" }}>Set image</div>
+                                          <ImageIcon size={22} />
+                                          <div style={{ fontSize: "0.68rem", marginTop: "2px", fontWeight: 600 }}>Set image</div>
                                         </div>
                                       )}
                                     </div>
                                     <input
+                                      id={`var_img_file_${idx}`}
+                                      type="file"
+                                      accept="image/*"
+                                      style={{ display: "none" }}
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        try {
+                                          const fd = new FormData();
+                                          fd.append("file", file);
+                                          const res = await fetch("/api/uploads", { method: "POST", body: fd });
+                                          const data = await res.json();
+                                          if (data.url) {
+                                            updateVariationRow(idx, "image", data.url);
+                                          }
+                                        } catch (err) {
+                                          console.error("Variation image upload error:", err);
+                                        }
+                                      }}
+                                    />
+                                    <input
                                       type="text"
                                       value={row.image}
                                       onChange={(e) => updateVariationRow(idx, "image", e.target.value)}
-                                      placeholder="/assets/..."
+                                      placeholder="/uploads/..."
                                       style={{
                                         width: "100%",
                                         padding: "4px 6px",
@@ -2977,67 +3003,21 @@ export default function ProductForm({
             </h3>
           </div>
 
-          <div style={{ marginBottom: "14px" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                color: "#334155",
-                marginBottom: "5px",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-              }}
-            >
-              Short Summary Description
-            </label>
-            <textarea
-              rows={2}
-              value={shortDescription}
-              onChange={(e) => setShortDescription(e.target.value)}
-              placeholder="Brief 1-2 sentence overview for product card tooltips and quick view..."
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "7px",
-                border: "1px solid #CBD5E1",
-                fontSize: "0.86rem",
-                outline: "none",
-                resize: "vertical",
-              }}
-            />
-          </div>
+          <RichTextEditor
+            label="Short Summary Description"
+            value={shortDescription}
+            onChange={setShortDescription}
+            placeholder="Brief 1-2 sentence overview for product card tooltips and quick view..."
+            minHeight={90}
+          />
 
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                color: "#334155",
-                marginBottom: "5px",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-              }}
-            >
-              Full Product Description & Material Specs
-            </label>
-            <textarea
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detailed specifications, dimensions, finish options, installation instructions..."
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "7px",
-                border: "1px solid #CBD5E1",
-                fontSize: "0.86rem",
-                outline: "none",
-                resize: "vertical",
-              }}
-            />
-          </div>
+          <RichTextEditor
+            label="Full Product Description & Material Specs"
+            value={description}
+            onChange={setDescription}
+            placeholder="Detailed specifications, dimensions, finish options, installation instructions..."
+            minHeight={200}
+          />
         </div>
 
         {/* Card 6: Active Status Checkbox */}

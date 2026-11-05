@@ -28,6 +28,7 @@ export interface ProductVariationValueItem {
   value_label: string;
   slug?: string;
   attribute_slug?: string;
+  color_code?: string | null;
 }
 
 export interface ProductVariation {
@@ -114,7 +115,7 @@ const fetchProductVariationsUncached = async (
 
     const varIds = varRows.map((r) => r.id);
     const [pivotRows] = await pool.query<RowDataPacket[]>(
-      `SELECT pvv.variation_id, pvv.attribute_id, pvv.value_id, pa.slug as attr_slug, pa.name as attr_name, pav.slug as val_slug, pav.value as val_name
+      `SELECT pvv.variation_id, pvv.attribute_id, pvv.value_id, pa.slug as attr_slug, pa.name as attr_name, pav.slug as val_slug, pav.value as val_name, pav.color_code
        FROM product_variation_values pvv
        JOIN product_attributes pa ON pvv.attribute_id = pa.id
        JOIN product_attribute_values pav ON pvv.value_id = pav.id
@@ -141,6 +142,7 @@ const fetchProductVariationsUncached = async (
         value_label: p.val_name,
         slug: p.val_slug,
         attribute_slug: p.attr_slug,
+        color_code: p.color_code || null,
       });
     }
 

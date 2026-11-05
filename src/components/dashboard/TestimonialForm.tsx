@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Testimonial } from "@/types";
 import { saveTestimonialAction } from "@/lib/actions/testimonials";
 import ImageUploader from "@/components/dashboard/ImageUploader";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import {
   ArrowLeft,
   CheckCircle,
@@ -279,19 +280,14 @@ export default function TestimonialForm({ initialData }: TestimonialFormProps) {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: 600, fontSize: "0.88rem" }}>
-                  Testimonial Review Text <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={6}
-                  placeholder="Client feedback praising Wall Street Interiors' craftsmanship, acoustic paneling, or custom furniture..."
-                  className="form-textarea"
-                  required
-                />
-              </div>
+              <RichTextEditor
+                label="Testimonial Review Text"
+                value={content}
+                onChange={setContent}
+                placeholder="Client feedback praising Wall Street Interiors' craftsmanship, acoustic paneling, or custom furniture..."
+                minHeight={140}
+                required
+              />
             </div>
           </div>
 

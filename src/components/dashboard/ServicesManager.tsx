@@ -5,6 +5,7 @@ import { Service } from "@/types";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import ConfirmDialog from "@/components/dashboard/ConfirmDialog";
 import ImageUploader from "@/components/dashboard/ImageUploader";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import { getAllServices, saveServiceAction, deleteServiceAction } from "@/lib/actions/services";
 import { Plus, Edit2, Trash2, X, Search, CheckCircle2, AlertCircle } from "lucide-react";
 
@@ -18,6 +19,8 @@ export default function ServicesManager({ initialServices }: ServicesManagerProp
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [imageUrl, setImageUrl] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [description, setDescription] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ success?: boolean; message?: string } | null>(null);
@@ -33,6 +36,8 @@ export default function ServicesManager({ initialServices }: ServicesManagerProp
   const openCreateModal = () => {
     setEditingService(null);
     setImageUrl("/assets/images/best-seller/bestSellerProductThumb2_1.png");
+    setShortDescription("");
+    setDescription("");
     setIsModalOpen(true);
     setFeedback(null);
   };
@@ -40,6 +45,8 @@ export default function ServicesManager({ initialServices }: ServicesManagerProp
   const openEditModal = (s: Service) => {
     setEditingService(s);
     setImageUrl(s.image || "");
+    setShortDescription(s.short_description || "");
+    setDescription(s.description || "");
     setIsModalOpen(true);
     setFeedback(null);
   };
@@ -328,31 +335,26 @@ export default function ServicesManager({ initialServices }: ServicesManagerProp
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="short_description">Short Overview *</label>
-                <textarea
-                  id="short_description"
-                  name="short_description"
-                  required
-                  rows={2}
-                  defaultValue={editingService?.short_description || ""}
-                  placeholder="Brief 1-2 sentence description for homepage cards..."
-                  className="form-textarea"
-                />
-              </div>
+              <input type="hidden" name="short_description" value={shortDescription} />
+              <input type="hidden" name="description" value={description} />
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="description">Detailed Description (HTML/Text) *</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  required
-                  rows={6}
-                  defaultValue={editingService?.description || ""}
-                  placeholder="Comprehensive service details, process steps, diagnostic capabilities..."
-                  className="form-textarea"
-                />
-              </div>
+              <RichTextEditor
+                label="Short Overview"
+                value={shortDescription}
+                onChange={setShortDescription}
+                placeholder="Brief 1-2 sentence description for homepage cards..."
+                minHeight={80}
+                required
+              />
+
+              <RichTextEditor
+                label="Detailed Description"
+                value={description}
+                onChange={setDescription}
+                placeholder="Comprehensive service details, process steps, diagnostic capabilities..."
+                minHeight={180}
+                required
+              />
 
               {/* Image Uploader */}
               <ImageUploader

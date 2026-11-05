@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FAQ } from "@/types";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import ConfirmDialog from "@/components/dashboard/ConfirmDialog";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import { getAllFAQs, saveFAQAction, deleteFAQAction } from "@/lib/actions/faqs";
 import { Plus, Edit2, Trash2, X, CheckCircle2, AlertCircle } from "lucide-react";
 
@@ -16,6 +17,7 @@ export default function FaqsManager({ initialFaqs }: FaqsManagerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
+  const [answer, setAnswer] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ success?: boolean; message?: string } | null>(null);
@@ -29,12 +31,14 @@ export default function FaqsManager({ initialFaqs }: FaqsManagerProps) {
 
   const openCreateModal = () => {
     setEditingFAQ(null);
+    setAnswer("");
     setIsModalOpen(true);
     setFeedback(null);
   };
 
   const openEditModal = (f: FAQ) => {
     setEditingFAQ(f);
+    setAnswer(f.answer || "");
     setIsModalOpen(true);
     setFeedback(null);
   };
@@ -244,18 +248,15 @@ export default function FaqsManager({ initialFaqs }: FaqsManagerProps) {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="answer">Answer *</label>
-                <textarea
-                  id="answer"
-                  name="answer"
-                  required
-                  rows={4}
-                  defaultValue={editingFAQ?.answer || ""}
-                  placeholder="Comprehensive clear answer detailing policies, warranty, and technician procedures..."
-                  className="form-textarea"
-                />
-              </div>
+              <input type="hidden" name="answer" value={answer} />
+              <RichTextEditor
+                label="Answer"
+                value={answer}
+                onChange={setAnswer}
+                placeholder="Comprehensive clear answer detailing policies, warranty, and technician procedures..."
+                minHeight={120}
+                required
+              />
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div className="form-group">
