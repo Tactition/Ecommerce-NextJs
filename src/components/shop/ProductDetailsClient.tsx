@@ -808,63 +808,70 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {(hasStandardSizes || isCustomSizingEnabled) && (
                     <div style={{ marginBottom: "22px" }}>
-                      {/* Standard Sizes Dropdown (if standard sizes exist) */}
-                      {hasStandardSizes ? (
-                        <div className="mb-2">
-                          <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0F172A", display: "block", marginBottom: "6px" }}>
-                            Size Option:
-                          </label>
+                      {/* Sizing & Pricing Dropdown (ALWAYS visible whenever standard sizes or custom sizing exist) */}
+                      <div className="mb-3">
+                        <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0F172A", display: "block", marginBottom: "6px" }}>
+                          Sizing &amp; Pricing:
+                        </label>
 
-                          <div style={{ position: "relative", maxWidth: "440px" }}>
-                            <select
-                              value={
-                                activeSizingMode === "custom"
-                                  ? "__custom__"
-                                  : (sizeAttribute && selectedAttributeValues[sizeAttribute.id] ? selectedAttributeValues[sizeAttribute.id] : "")
-                              }
-                              onChange={(e) => {
-                                if (e.target.value === "__custom__") {
-                                  setSizingMode("custom");
-                                } else {
-                                  const valId = Number(e.target.value);
-                                  if (sizeAttribute && valId) {
-                                    handleSelectAttributeValue(sizeAttribute.id, valId);
-                                  }
-                                  setSizingMode("standard");
+                        <div style={{ position: "relative", maxWidth: "480px" }}>
+                          <select
+                            value={
+                              activeSizingMode === "custom" || !hasStandardSizes
+                                ? "__custom__"
+                                : (sizeAttribute && selectedAttributeValues[sizeAttribute.id] ? selectedAttributeValues[sizeAttribute.id] : "")
+                            }
+                            onChange={(e) => {
+                              if (e.target.value === "__custom__") {
+                                setSizingMode("custom");
+                              } else {
+                                const valId = Number(e.target.value);
+                                if (sizeAttribute && valId) {
+                                  handleSelectAttributeValue(sizeAttribute.id, valId);
                                 }
-                              }}
-                              style={{
-                                width: "100%",
-                                padding: "9px 36px 9px 12px",
-                                borderRadius: "8px",
-                                border: "1.5px solid #CBD5E1",
-                                backgroundColor: "#FFFFFF",
-                                color: "#0F172A",
-                                fontSize: "0.9rem",
-                                fontWeight: 600,
-                                appearance: "none",
-                                cursor: "pointer",
-                                outline: "none",
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                                backgroundRepeat: "no-repeat",
-                                backgroundPosition: "right 12px center",
-                              }}
-                            >
-                              <option value="" disabled>Select a size...</option>
-                              {standardSizes.map((sz) => (
-                                <option key={sz.id} value={sz.id}>
-                                  {sz.label} (Standard Size)
-                                </option>
-                              ))}
-                              {isCustomSizingEnabled && (
-                                <option value="__custom__">
-                                  📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)}/{customUnitLabel})
-                                </option>
-                              )}
-                            </select>
-                          </div>
+                                setSizingMode("standard");
+                              }
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "10px 38px 10px 14px",
+                              borderRadius: "8px",
+                              border: "1.5px solid #CBD5E1",
+                              backgroundColor: "#FFFFFF",
+                              color: "#0F172A",
+                              fontSize: "0.92rem",
+                              fontWeight: 700,
+                              appearance: "none",
+                              cursor: "pointer",
+                              outline: "none",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230F172A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "right 14px center",
+                            }}
+                          >
+                            {hasStandardSizes ? (
+                              <>
+                                <option value="" disabled>Select a size...</option>
+                                {standardSizes.map((sz) => (
+                                  <option key={sz.id} value={sz.id}>
+                                    {sz.label} (Standard Size)
+                                  </option>
+                                ))}
+                                {isCustomSizingEnabled && (
+                                  <option value="__custom__">
+                                    📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)}/{customUnitLabel})
+                                  </option>
+                                )}
+                              </>
+                            ) : (
+                              <option value="__custom__">
+                                📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)} / {customUnitLabel})
+                              </option>
+                            )}
+                          </select>
                         </div>
-                      ) : null}
+                      </div>
 
                       {/* Custom Made-to-Measure Calculator Card */}
                       {isCustomMode && (
@@ -1054,12 +1061,12 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                           <div
                             style={{
                               backgroundColor: "#FFFFFF",
-                              border: "1.5px solid #E2E8F0",
+                              border: "1.5px solid #CBD5E1",
                               borderRadius: "10px",
                               overflow: "hidden",
-                              marginBottom: "10px",
-                              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                              transition: "all 0.2s ease",
+                              marginTop: "14px",
+                              marginBottom: "12px",
+                              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                             }}
                           >
                             <button
@@ -1071,98 +1078,90 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                padding: "10px 14px",
-                                backgroundColor: showPricingBreakdown ? "#F8FAFC" : "#FFFFFF",
+                                padding: "11px 14px",
+                                backgroundColor: showPricingBreakdown ? "#F1F5F9" : "#FFFFFF",
                                 border: "none",
-                                borderBottom: showPricingBreakdown ? "1.5px solid #E2E8F0" : "none",
+                                borderBottom: showPricingBreakdown ? "1.5px solid #CBD5E1" : "none",
                                 cursor: "pointer",
                                 textAlign: "left",
-                                transition: "background-color 0.15s ease",
+                                transition: "all 0.15s ease",
                               }}
                             >
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span style={{ fontSize: "1rem" }}>📐</span>
+                                <span style={{ fontSize: "1.1rem" }}>📊</span>
                                 <div>
-                                  <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0F172A", display: "block" }}>
-                                    Sizing &amp; Pricing Breakdown
+                                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#0F172A", display: "block" }}>
+                                    Sizing &amp; Pricing Calculation
                                   </span>
                                   <span style={{ fontSize: "0.74rem", color: "#64748B" }}>
-                                    {customTotalMeasurement} {customUnitLabel} @ ₹{customRate.toFixed(2)}/{customUnitLabel}
+                                    Rate: ₹{customRate.toFixed(2)} / {customUnitLabel} • Total: {customTotalMeasurement} {customUnitLabel}
                                   </span>
                                 </div>
                               </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--theme, #FF4035)" }}>
-                                  ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span
                                   style={{
-                                    fontSize: "0.75rem",
-                                    color: "#64748B",
-                                    transform: showPricingBreakdown ? "rotate(180deg)" : "rotate(0deg)",
-                                    transition: "transform 0.2s ease",
-                                    display: "inline-block",
+                                    backgroundColor: showPricingBreakdown ? "var(--theme, #FF4035)" : "#F1F5F9",
+                                    color: showPricingBreakdown ? "#FFFFFF" : "#0F172A",
+                                    padding: "5px 10px",
+                                    borderRadius: "6px",
+                                    fontSize: "0.76rem",
+                                    fontWeight: 700,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    border: showPricingBreakdown ? "none" : "1px solid #CBD5E1",
                                   }}
                                 >
-                                  ▼
+                                  <span>{showPricingBreakdown ? "Hide Table ▲" : "View Table ▼"}</span>
                                 </span>
                               </div>
                             </button>
 
                             {/* Dropdown Opened: Transparent Math & Calculation Breakdown */}
                             {showPricingBreakdown && (
-                              <div style={{ padding: "12px 14px", backgroundColor: "#FFFFFF" }}>
-                                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#64748B", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                              <div style={{ padding: "14px 16px", backgroundColor: "#FFFFFF" }}>
+                                <div style={{ fontSize: "0.76rem", fontWeight: 800, color: "#64748B", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                                   Price Calculation Breakdown:
                                 </div>
 
-                                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.82rem", color: "#334155" }}>
-                                  <div className="d-flex justify-content-between align-items-center">
-                                    <span>1. Total Area / Footage:</span>
-                                    <strong>
-                                      {hasWidth
-                                        ? `${totalWidthFeet.toFixed(2)} ft × ${totalLengthFeet.toFixed(2)} ft = ${customTotalMeasurement} ${customUnitLabel}`
-                                        : `${customTotalMeasurement} ${customUnitLabel}`}
-                                    </strong>
-                                  </div>
-
-                                  <div className="d-flex justify-content-between align-items-center">
-                                    <span>2. Applied Rate:</span>
-                                    <strong style={{ color: "#DC2626" }}>
-                                      ₹{customRate.toFixed(2)} per {customUnitLabel}
-                                    </strong>
-                                  </div>
-
-                                  <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1px dashed #E2E8F0", paddingTop: "5px", marginTop: "2px" }}>
-                                    <span>3. Measured Cost ({customTotalMeasurement} × ₹{customRate.toFixed(2)}):</span>
-                                    <strong>₹{rawCustomPrice.toFixed(2)}</strong>
-                                  </div>
-
-                                  {customMinPriceApplied && (
-                                    <div
-                                      style={{
-                                        backgroundColor: "#FEF3C7",
-                                        color: "#92400E",
-                                        padding: "6px 8px",
-                                        borderRadius: "6px",
-                                        fontSize: "0.75rem",
-                                        fontWeight: 600,
-                                        marginTop: "4px",
-                                      }}
-                                    >
-                                      ℹ️ Minimum base charge of <strong>₹{customMinPrice.toFixed(2)}</strong> applies for cuts under ₹{customMinPrice.toFixed(2)}.
-                                    </div>
-                                  )}
-
-                                  <div className="d-flex justify-content-between align-items-center" style={{ borderTop: "1.5px solid #CBD5E1", paddingTop: "6px", marginTop: "4px" }}>
-                                    <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.88rem" }}>
-                                      Final Calculated Price:
-                                    </span>
-                                    <span style={{ fontSize: "1.1rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
-                                      ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                    </span>
-                                  </div>
-                                </div>
+                                <table style={{ width: "100%", fontSize: "0.84rem", borderCollapse: "collapse", color: "#334155" }}>
+                                  <tbody>
+                                    <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
+                                      <td style={{ padding: "7px 0", color: "#64748B" }}>1. Total Area / Footage:</td>
+                                      <td style={{ padding: "7px 0", textAlign: "right", fontWeight: 700, color: "#0F172A" }}>
+                                        {hasWidth
+                                          ? `${totalWidthFeet.toFixed(2)} ft × ${totalLengthFeet.toFixed(2)} ft = ${customTotalMeasurement} ${customUnitLabel}`
+                                          : `${customTotalMeasurement} ${customUnitLabel}`}
+                                      </td>
+                                    </tr>
+                                    <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
+                                      <td style={{ padding: "7px 0", color: "#64748B" }}>2. Applied Rate:</td>
+                                      <td style={{ padding: "7px 0", textAlign: "right", fontWeight: 700, color: "#DC2626" }}>
+                                        ₹{customRate.toFixed(2)} per {customUnitLabel}
+                                      </td>
+                                    </tr>
+                                    <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
+                                      <td style={{ padding: "7px 0", color: "#64748B" }}>3. Measured Cost ({customTotalMeasurement} × ₹{customRate.toFixed(2)}):</td>
+                                      <td style={{ padding: "7px 0", textAlign: "right", fontWeight: 700, color: "#0F172A" }}>
+                                        ₹{rawCustomPrice.toFixed(2)}
+                                      </td>
+                                    </tr>
+                                    {customMinPriceApplied && (
+                                      <tr>
+                                        <td colSpan={2} style={{ padding: "6px 8px", backgroundColor: "#FEF3C7", color: "#92400E", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>
+                                          ℹ️ Minimum order base charge of <strong>₹{customMinPrice.toFixed(2)}</strong> applies for cuts under ₹{customMinPrice.toFixed(2)}.
+                                        </td>
+                                      </tr>
+                                    )}
+                                    <tr style={{ borderTop: "2px solid #CBD5E1" }}>
+                                      <td style={{ padding: "10px 0 0 0", fontWeight: 800, fontSize: "0.9rem", color: "#0F172A" }}>Final Calculated Price:</td>
+                                      <td style={{ padding: "10px 0 0 0", textAlign: "right", fontWeight: 900, fontSize: "1.2rem", color: "var(--theme, #FF4035)" }}>
+                                        ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
                               </div>
                             )}
                           </div>
