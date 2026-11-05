@@ -43,7 +43,11 @@ export interface DynamicCustomAttribute {
   id: string;
   name: string;
   values: string[];
+  rawPipedValue?: string;
   inputVal?: string;
+  isVisible?: boolean;
+  usedForVariations?: boolean;
+  isExpanded?: boolean;
 }
 
 export interface DynamicVariationRow {
@@ -55,7 +59,18 @@ export interface DynamicVariationRow {
   image: string;
   is_active: boolean;
   combination: Record<string, string>;
+  isExpanded?: boolean;
 }
+
+export const parseAttributeValues = (raw: string): string[] => {
+  if (!raw || !raw.trim()) return [];
+  const delimiter = raw.includes("|") ? "|" : ",";
+  const parts = raw
+    .split(delimiter)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return Array.from(new Set(parts));
+};
 
 export const VARIATION_TEMPLATES = [
   {
@@ -306,12 +321,19 @@ export default function ProductForm({
       });
 
       if (attrMap.size > 0) {
-        return Array.from(attrMap.entries()).map(([name, vals], idx) => ({
-          id: `attr_${idx + 1}_${Date.now()}`,
-          name,
-          values: Array.from(vals),
-          inputVal: "",
-        }));
+        return Array.from(attrMap.entries()).map(([name, vals], idx) => {
+          const valArray = Array.from(vals);
+          return {
+            id: `attr_${idx + 1}_${Date.now()}`,
+            name,
+            values: valArray,
+            rawPipedValue: valArray.join(" | "),
+            inputVal: "",
+            isVisible: true,
+            usedForVariations: true,
+            isExpanded: true,
+          };
+        });
       }
     }
     return [];
@@ -338,22 +360,26 @@ export default function ProductForm({
           image: v.image && v.image !== initialProduct?.image && !v.image.startsWith("/images/products/") ? v.image : "",
           is_active: Boolean(v.is_active),
           combination: combo,
+          isExpanded: false,
         };
       });
     }
     return [];
   });
 
-  const [bulkPriceInput, setBulkPriceInput] = useState("");
-  const [bulkStockInput, setBulkStockInput] = useState("");
-  const [bulkStatusMsg, setBulkStatusMsg] = useState("");
+  // WooCommerce-style Tab & Action States
+  const [wooActiveTab, setWooActiveTab] = useState<"attributes" | "variations">("attributes");
+  const [wooVariationAction, setWooVariationAction] = useState<"generate" | "add_manual">("generate");
+  const [wooBulkAction, setWooBulkAction] = useState<string>("");
+  const [wooNoticeMsg, setWooNoticeMsg] = useState<string>("");
 
   const buildCombinations = (
     attrs: DynamicCustomAttribute[],
     currentVariations: DynamicVariationRow[] = []
   ): DynamicVariationRow[] => {
+    // Only use attributes marked "usedForVariations" (WooCommerce standard)
     const activeAttrs = attrs.filter(
-      (a) => a.name.trim() !== "" && a.values.length > 0
+      (a) => a.name.trim() !== "" && a.values.length > 0 && a.usedForVariations !== false
     );
 
     if (activeAttrs.length === 0) return [];
@@ -406,6 +432,7 @@ export default function ProductForm({
         image: image || "",
         is_active: true,
         combination: combo,
+        isExpanded: false,
       };
     });
   };
@@ -415,22 +442,17 @@ export default function ProductForm({
       id: `attr_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       name: initialName,
       values: [],
+      rawPipedValue: "",
       inputVal: "",
+      isVisible: true,
+      usedForVariations: true,
+      isExpanded: true,
     };
     setCustomAttributes((prev) => [...prev, newAttr]);
   };
 
   const removeCustomAttribute = (attrId: string) => {
-    setCustomAttributes((prev) => {
-      const remaining = prev.filter((a) => a.id !== attrId);
-      const active = remaining.filter((a) => a.name.trim() !== "" && a.values.length > 0);
-      if (active.length > 0) {
-        setVariationsList((currentRows) => buildCombinations(remaining, currentRows));
-      } else {
-        setVariationsList([]);
-      }
-      return remaining;
-    });
+    setCustomAttributes((prev) => prev.filter((a) => a.id !== attrId));
   };
 
   const updateAttributeName = (attrId: string, newName: string) => {
@@ -439,51 +461,156 @@ export default function ProductForm({
     );
   };
 
-  const updateAttributeInputVal = (attrId: string, text: string) => {
+  const updateAttributePipedValue = (attrId: string, text: string) => {
     setCustomAttributes((prev) =>
-      prev.map((a) => (a.id === attrId ? { ...a, inputVal: text } : a))
+      prev.map((a) => {
+        if (a.id !== attrId) return a;
+        const parsed = parseAttributeValues(text);
+        return {
+          ...a,
+          rawPipedValue: text,
+          values: parsed,
+        };
+      })
     );
   };
 
-  const addAttributeValue = (attrId: string, val: string) => {
-    const trimmed = val.trim();
-    if (!trimmed) return;
-    const valsToAdd = trimmed
-      .split(",")
-      .map((v) => v.trim())
-      .filter((v) => Boolean(v));
-
-    setCustomAttributes((prev) => {
-      const nextAttrs = prev.map((attr) => {
-        if (attr.id !== attrId) return attr;
-        const set = new Set(attr.values);
-        valsToAdd.forEach((v) => set.add(v));
-        return { ...attr, values: Array.from(set), inputVal: "" };
-      });
-
-      // Auto-sync variations so the client doesn't need to manually hunt for a matrix button
-      const active = nextAttrs.filter((a) => a.name.trim() !== "" && a.values.length > 0);
-      if (active.length > 0) {
-        setVariationsList((currentRows) => buildCombinations(nextAttrs, currentRows));
-      }
-      return nextAttrs;
-    });
+  const appendSuggestedValueToAttr = (attrId: string, term: string) => {
+    setCustomAttributes((prev) =>
+      prev.map((a) => {
+        if (a.id !== attrId) return a;
+        const currentVals = a.values || [];
+        if (currentVals.includes(term)) return a;
+        const newVals = [...currentVals, term];
+        return {
+          ...a,
+          values: newVals,
+          rawPipedValue: newVals.join(" | "),
+        };
+      })
+    );
   };
 
-  const removeAttributeValue = (attrId: string, valToRemove: string) => {
-    setCustomAttributes((prev) => {
-      const nextAttrs = prev.map((attr) => {
-        if (attr.id !== attrId) return attr;
-        return { ...attr, values: attr.values.filter((v) => v !== valToRemove) };
-      });
+  const updateAttributeField = (
+    attrId: string,
+    field: "usedForVariations" | "isVisible" | "isExpanded",
+    value: boolean
+  ) => {
+    setCustomAttributes((prev) =>
+      prev.map((a) => (a.id === attrId ? { ...a, [field]: value } : a))
+    );
+  };
 
-      const active = nextAttrs.filter((a) => a.name.trim() !== "" && a.values.length > 0);
-      if (active.length > 0) {
-        setVariationsList((currentRows) => buildCombinations(nextAttrs, currentRows));
-      } else {
-        setVariationsList([]);
+  const handleSaveAttributes = () => {
+    const committed = customAttributes.map((attr) => {
+      let vals = attr.values;
+      if (attr.rawPipedValue) {
+        const parsed = parseAttributeValues(attr.rawPipedValue);
+        if (parsed.length > 0) vals = parsed;
       }
-      return nextAttrs;
+      return { ...attr, values: vals };
+    });
+    setCustomAttributes(committed);
+    setWooNoticeMsg("✅ Attributes saved successfully.");
+    setTimeout(() => setWooNoticeMsg(""), 3500);
+  };
+
+  const handleExecuteVariationAction = () => {
+    if (wooVariationAction === "generate") {
+      const committed = customAttributes.map((attr) => {
+        let vals = attr.values;
+        if (attr.rawPipedValue) {
+          const parsed = parseAttributeValues(attr.rawPipedValue);
+          if (parsed.length > 0) vals = parsed;
+        }
+        return { ...attr, values: vals };
+      });
+      setCustomAttributes(committed);
+
+      const activeAttrs = committed.filter(
+        (a) => a.name.trim() !== "" && a.values.length > 0 && a.usedForVariations !== false
+      );
+
+      if (activeAttrs.length === 0) {
+        alert("Before generating variations, please add at least one attribute with values and check 'Used for variations'.");
+        return;
+      }
+
+      if (variationsList.length > 0) {
+        const confirmGen = confirm(
+          `Are you sure you want to link all variations? This will generate a new variation for each and every possible combination of variation attributes (${activeAttrs.map((a) => a.name).join(", ")}).`
+        );
+        if (!confirmGen) return;
+      }
+
+      const newRows = buildCombinations(committed, variationsList);
+      setVariationsList(newRows);
+      setWooNoticeMsg(`⚡ ${newRows.length} variations generated from attributes.`);
+      setTimeout(() => setWooNoticeMsg(""), 4000);
+    } else if (wooVariationAction === "add_manual") {
+      addManualVariationRow();
+      setWooNoticeMsg("Added a new variation row.");
+      setTimeout(() => setWooNoticeMsg(""), 3500);
+    }
+  };
+
+  const handleExecuteBulkAction = () => {
+    if (!wooBulkAction) return;
+
+    if (wooBulkAction === "set_regular_price") {
+      const val = prompt("Enter regular price for all variations (₹):", price || "2499");
+      if (val !== null && val.trim() !== "" && !isNaN(parseFloat(val))) {
+        setVariationsList((prev) => prev.map((r) => ({ ...r, price: val.trim() })));
+        setWooNoticeMsg(`Updated regular price for all variations to ₹${val.trim()}`);
+      }
+    } else if (wooBulkAction === "set_sale_price") {
+      const val = prompt("Enter sale / original price for all variations (₹) [Leave blank to clear]:", originalPrice || "");
+      if (val !== null) {
+        setVariationsList((prev) => prev.map((r) => ({ ...r, original_price: val.trim() })));
+        setWooNoticeMsg(`Updated sale price for all variations`);
+      }
+    } else if (wooBulkAction === "copy_base_price") {
+      const targetPrice = price && parseFloat(price) > 0 ? price : "0";
+      setVariationsList((prev) => prev.map((r) => ({ ...r, price: targetPrice })));
+      setWooNoticeMsg(`Copied base product price (₹${targetPrice}) to all variations`);
+    } else if (wooBulkAction === "set_stock") {
+      const val = prompt("Enter stock quantity for all variations:", stock || "50");
+      if (val !== null && val.trim() !== "" && !isNaN(parseInt(val, 10))) {
+        setVariationsList((prev) => prev.map((r) => ({ ...r, stock: val.trim() })));
+        setWooNoticeMsg(`Updated stock quantity for all variations to ${val.trim()}`);
+      }
+    } else if (wooBulkAction === "set_in_stock") {
+      setVariationsList((prev) => prev.map((r) => ({ ...r, is_active: true })));
+      setWooNoticeMsg(`Set status to 'In stock' for all variations`);
+    } else if (wooBulkAction === "set_out_of_stock") {
+      setVariationsList((prev) => prev.map((r) => ({ ...r, is_active: false })));
+      setWooNoticeMsg(`Set status to 'Out of stock' for all variations`);
+    } else if (wooBulkAction === "toggle_enabled") {
+      setVariationsList((prev) => prev.map((r) => ({ ...r, is_active: !r.is_active })));
+      setWooNoticeMsg(`Toggled 'Enabled' status for all variations`);
+    } else if (wooBulkAction === "auto_skus") {
+      handleAutoGenerateSkus();
+    } else if (wooBulkAction === "delete_all") {
+      const confirmed = confirm("Are you sure you want to delete all variations? This cannot be undone.");
+      if (confirmed) {
+        setVariationsList([]);
+        setWooNoticeMsg(`Deleted all variations.`);
+      }
+    }
+
+    setWooBulkAction("");
+    setTimeout(() => setWooNoticeMsg(""), 4000);
+  };
+
+  const setAllExpanded = (expanded: boolean) => {
+    setVariationsList((prev) => prev.map((r) => ({ ...r, isExpanded: expanded })));
+  };
+
+  const toggleRowExpanded = (idx: number) => {
+    setVariationsList((prev) => {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], isExpanded: !copy[idx].isExpanded };
+      return copy;
     });
   };
 
@@ -492,61 +619,19 @@ export default function ProductForm({
       id: `attr_${Date.now()}_${idx}`,
       name: a.name,
       values: [...a.values],
+      rawPipedValue: a.values.join(" | "),
       inputVal: "",
+      isVisible: true,
+      usedForVariations: true,
+      isExpanded: true,
     }));
     setCustomAttributes(newAttrs);
     const newCombos = buildCombinations(newAttrs, []);
     setVariationsList(newCombos);
     setHasVariations(true);
-    setBulkStatusMsg(`✨ Loaded "${tpl.title}" template with ${newCombos.length} variations generated!`);
-    setTimeout(() => setBulkStatusMsg(""), 4500);
-  };
-
-  const handleApplyBasePriceToAll = () => {
-    const targetPrice = price && parseFloat(price) > 0 ? price : "0";
-    setVariationsList((prev) =>
-      prev.map((row) => ({
-        ...row,
-        price: targetPrice,
-        original_price: originalPrice || row.original_price,
-      }))
-    );
-    setBulkStatusMsg(`✅ Set price for all variations to product base price (₹${targetPrice})`);
-    setTimeout(() => setBulkStatusMsg(""), 3500);
-  };
-
-  const handleApplyBulkPrice = () => {
-    const clean = bulkPriceInput.trim();
-    if (!clean || isNaN(parseFloat(clean))) {
-      alert("Please enter a valid price (e.g. 2499).");
-      return;
-    }
-    setVariationsList((prev) =>
-      prev.map((row) => ({
-        ...row,
-        price: clean,
-      }))
-    );
-    setBulkStatusMsg(`✅ Updated price for all ${variationsList.length} variations to ₹${clean}`);
-    setBulkPriceInput("");
-    setTimeout(() => setBulkStatusMsg(""), 3500);
-  };
-
-  const handleApplyBulkStock = () => {
-    const clean = bulkStockInput.trim();
-    if (!clean || isNaN(parseInt(clean, 10))) {
-      alert("Please enter a valid stock quantity (e.g. 50).");
-      return;
-    }
-    setVariationsList((prev) =>
-      prev.map((row) => ({
-        ...row,
-        stock: clean,
-      }))
-    );
-    setBulkStatusMsg(`✅ Updated stock for all ${variationsList.length} variations to ${clean} units`);
-    setBulkStockInput("");
-    setTimeout(() => setBulkStatusMsg(""), 3500);
+    setWooActiveTab("variations");
+    setWooNoticeMsg(`✨ Loaded "${tpl.title}" template with ${newCombos.length} variations generated!`);
+    setTimeout(() => setWooNoticeMsg(""), 4500);
   };
 
   const handleAutoGenerateSkus = () => {
@@ -566,44 +651,14 @@ export default function ProductForm({
         };
       })
     );
-    setBulkStatusMsg(`✅ Auto-generated clean SKUs for all variations!`);
-    setTimeout(() => setBulkStatusMsg(""), 3500);
-  };
-
-  const generateCombinationsMatrix = () => {
-    // Commit any uncommitted inputs first
-    const committed = customAttributes.map((attr) => {
-      if (attr.inputVal && attr.inputVal.trim()) {
-        const vals = attr.inputVal
-          .split(",")
-          .map((v) => v.trim())
-          .filter(Boolean);
-        const set = new Set([...attr.values, ...vals]);
-        return { ...attr, values: Array.from(set), inputVal: "" };
-      }
-      return attr;
-    });
-    setCustomAttributes(committed);
-
-    const activeAttrs = committed.filter(
-      (a) => a.name.trim() !== "" && a.values.length > 0
-    );
-
-    if (activeAttrs.length === 0) {
-      alert("Please add at least one attribute with at least one value before generating combinations.");
-      return;
-    }
-
-    const newRows = buildCombinations(committed, variationsList);
-    setVariationsList(newRows);
-    setBulkStatusMsg(`⚡ Refreshed combinations: ${newRows.length} variations ready!`);
-    setTimeout(() => setBulkStatusMsg(""), 3500);
+    setWooNoticeMsg(`✅ Auto-generated clean SKUs for all variations!`);
+    setTimeout(() => setWooNoticeMsg(""), 3500);
   };
 
   const addManualVariationRow = () => {
     const combo: Record<string, string> = {};
     customAttributes.forEach((attr) => {
-      if (attr.name.trim()) {
+      if (attr.name.trim() && attr.usedForVariations !== false) {
         combo[attr.name.trim()] = attr.values[0] || "Standard";
       }
     });
@@ -622,6 +677,7 @@ export default function ProductForm({
         image: image || "",
         is_active: true,
         combination: combo,
+        isExpanded: true,
       },
     ]);
   };
@@ -745,23 +801,27 @@ export default function ProductForm({
 
     // Ensure uncommitted attribute text is committed
     const committedAttrs = customAttributes.map((attr) => {
-      if (attr.inputVal && attr.inputVal.trim()) {
+      let vals = attr.values;
+      if (attr.rawPipedValue) {
+        const parsed = parseAttributeValues(attr.rawPipedValue);
+        if (parsed.length > 0) vals = parsed;
+      } else if (attr.inputVal && attr.inputVal.trim()) {
         const extraVals = attr.inputVal
           .split(",")
           .map((v) => v.trim())
           .filter(Boolean);
         const set = new Set([...attr.values, ...extraVals]);
-        return { ...attr, values: Array.from(set), inputVal: "" };
+        vals = Array.from(set);
       }
-      return attr;
+      return { ...attr, values: vals };
     });
 
     const activeAttrs = committedAttrs.filter(
-      (a) => a.name.trim() !== "" && a.values.length > 0
+      (a) => a.name.trim() !== "" && a.values.length > 0 && a.usedForVariations !== false
     );
 
     if (hasVariations && activeAttrs.length === 0) {
-      setFormError("Product Variations is enabled, but no variation options or values (e.g. Size, Color) were configured. Please add options or uncheck 'Variations Active'.");
+      setFormError("Variable Product is enabled, but no attributes with 'Used for variations' checked were configured. Please add attributes on the Attributes tab or uncheck 'Variable Product'.");
       return;
     }
 
@@ -1708,54 +1768,65 @@ export default function ProductForm({
           )}
         </div>
 
-        {/* Card: Product Variations System */}
+        {/* Card: WooCommerce Variable Product System */}
         <div
           style={{
             background: "#FFFFFF",
-            border: hasVariations ? "2px solid #FF4035" : "1px solid #E2E8F0",
-            borderRadius: "14px",
-            padding: "24px",
-            boxShadow: hasVariations
-              ? "0 4px 20px rgba(255, 64, 53, 0.08)"
-              : "0 1px 3px rgba(0, 0, 0, 0.04)",
+            border: hasVariations ? "2px solid #2271B1" : "1px solid #CBD5E1",
+            borderRadius: "10px",
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+            overflow: "hidden",
             transition: "all 0.2s ease",
           }}
         >
-          {/* Card Header & Toggle */}
+          {/* WooCommerce Postbox Header */}
           <div
             style={{
+              padding: "16px 20px",
+              backgroundColor: "#F0F0F1",
+              borderBottom: "1px solid #DCDCDE",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: hasVariations ? "20px" : "0",
-              borderBottom: hasVariations ? "1px solid #F1F5F9" : "none",
-              paddingBottom: hasVariations ? "14px" : "0",
               flexWrap: "wrap",
               gap: "12px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
                 style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "10px",
-                  backgroundColor: hasVariations ? "#FEF2F2" : "#F1F5F9",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "6px",
+                  backgroundColor: hasVariations ? "#2271B1" : "#8C8F94",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: hasVariations ? "#FF4035" : "#64748B",
+                  color: "#FFFFFF",
                 }}
               >
-                <Sliders size={20} />
+                <Sliders size={18} />
               </div>
-              <div>
-                <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", margin: 0 }}>
-                  Product Variations &amp; Options (Colour, Mechanism, Sizes)
-                </h3>
-                <p style={{ fontSize: "0.8rem", color: "#64748B", margin: "2px 0 0 0" }}>
-                  Turn this on if your product comes with multiple options (e.g. Fabric Colour, Control Mechanism, Standard Sizes).
-                </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#1D2327" }}>
+                  Product data —
+                </span>
+                <span
+                  style={{
+                    backgroundColor: hasVariations ? "#2271B1" : "#FFFFFF",
+                    color: hasVariations ? "#FFFFFF" : "#50575E",
+                    padding: "3px 10px",
+                    borderRadius: "4px",
+                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    border: hasVariations ? "none" : "1px solid #CBD5E1",
+                  }}
+                >
+                  {hasVariations ? "Variable product" : "Simple product"}
+                </span>
+                <span style={{ fontSize: "0.78rem", color: "#64748B" }}>
+                  (WooCommerce Style Variations Manager)
+                </span>
               </div>
             </div>
 
@@ -1765,901 +1836,938 @@ export default function ProductForm({
                 alignItems: "center",
                 gap: "8px",
                 cursor: "pointer",
-                padding: "8px 16px",
-                borderRadius: "30px",
-                backgroundColor: hasVariations ? "#FF4035" : "#F1F5F9",
-                color: hasVariations ? "#FFFFFF" : "#475569",
-                border: hasVariations ? "1.5px solid #FF4035" : "1px solid #CBD5E1",
-                fontSize: "0.84rem",
+                padding: "6px 14px",
+                borderRadius: "4px",
+                backgroundColor: hasVariations ? "#2271B1" : "#FFFFFF",
+                color: hasVariations ? "#FFFFFF" : "#1D2327",
+                border: hasVariations ? "1px solid #2271B1" : "1px solid #8C8F94",
+                fontSize: "0.82rem",
                 fontWeight: 700,
-                transition: "all 0.2s ease",
-                boxShadow: hasVariations ? "0 2px 8px rgba(255, 64, 53, 0.3)" : "none",
+                transition: "all 0.15s ease",
               }}
             >
               <input
                 type="checkbox"
                 checked={hasVariations}
                 onChange={(e) => setHasVariations(e.target.checked)}
-                style={{ accentColor: "#FFFFFF", width: "16px", height: "16px", cursor: "pointer" }}
+                style={{ accentColor: "#2271B1", width: "16px", height: "16px", cursor: "pointer" }}
               />
-              <span>{hasVariations ? "Variations Active" : "Enable Variations"}</span>
+              <span>{hasVariations ? "Variable Product Active" : "Enable Variable Product"}</span>
             </label>
           </div>
 
           {hasVariations && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-              {/* 1-Click Popular Templates Bar */}
+            <div>
+              {/* WooCommerce Tabs Navigation: Attributes | Variations */}
               <div
                 style={{
-                  backgroundColor: "#F0FDF4",
-                  border: "1.5px solid #86EFAC",
-                  borderRadius: "12px",
-                  padding: "16px 18px",
+                  display: "flex",
+                  backgroundColor: "#F0F0F1",
+                  borderBottom: "1px solid #DCDCDE",
+                  padding: "0 14px",
+                  gap: "4px",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
-                  <Sparkles size={16} style={{ color: "#16A34A" }} />
-                  <span style={{ fontSize: "0.86rem", fontWeight: 700, color: "#166534" }}>
-                    ✨ 1-Click Ready Templates for Wall Street Interiors:
-                  </span>
-                  <span style={{ fontSize: "0.76rem", color: "#15803D" }}>
-                    (Click any template to auto-fill options &amp; generate variations instantly)
-                  </span>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px" }}>
-                  {VARIATION_TEMPLATES.map((tpl) => (
-                    <button
-                      key={tpl.title}
-                      type="button"
-                      onClick={() => applyTemplate(tpl)}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        textAlign: "left",
-                        padding: "10px 12px",
-                        backgroundColor: "#FFFFFF",
-                        border: "1px solid #BBF7D0",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "#16A34A";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                        e.currentTarget.style.boxShadow = "0 3px 10px rgba(22, 163, 74, 0.12)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "#BBF7D0";
-                        e.currentTarget.style.transform = "none";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                        <span style={{ fontSize: "1.1rem" }}>{tpl.icon}</span>
-                        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#0F172A" }}>
-                          {tpl.title}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: "0.72rem", color: "#64748B" }}>
-                        {tpl.description}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Step 1: Define Options & Values */}
-              <div
-                style={{
-                  padding: "20px",
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: "12px",
-                  border: "1px solid #E2E8F0",
-                }}
-              >
-                <div
+                <button
+                  type="button"
+                  onClick={() => setWooActiveTab("attributes")}
                   style={{
-                    display: "flex",
+                    padding: "10px 18px",
+                    fontSize: "0.84rem",
+                    fontWeight: 700,
+                    color: wooActiveTab === "attributes" ? "#1D2327" : "#50575E",
+                    backgroundColor: wooActiveTab === "attributes" ? "#FFFFFF" : "transparent",
+                    border: wooActiveTab === "attributes" ? "1px solid #DCDCDE" : "1px solid transparent",
+                    borderBottom: wooActiveTab === "attributes" ? "1px solid #FFFFFF" : "none",
+                    borderTop: wooActiveTab === "attributes" ? "3px solid #2271B1" : "3px solid transparent",
+                    marginBottom: wooActiveTab === "attributes" ? "-1px" : "0",
+                    borderTopLeftRadius: "4px",
+                    borderTopRightRadius: "4px",
+                    cursor: "pointer",
+                    display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: "16px",
-                    flexWrap: "wrap",
-                    gap: "10px",
+                    gap: "6px",
                   }}
                 >
-                  <div>
-                    <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0F172A", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span
-                        style={{
-                          width: "22px",
-                          height: "22px",
-                          borderRadius: "50%",
-                          backgroundColor: "#FF4035",
-                          color: "#FFFFFF",
-                          fontSize: "0.75rem",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 800,
-                        }}
-                      >
-                        1
-                      </span>
-                      <span>Define Product Options (e.g. Fabric Colour, Control Mechanism, Size)</span>
-                    </h4>
-                    <p style={{ fontSize: "0.78rem", color: "#64748B", margin: "4px 0 0 30px" }}>
-                      Click suggested values or type custom ones. Variations below update automatically in real-time.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => addCustomAttribute()}
+                  <span>🏷️ Attributes</span>
+                  <span
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 16px",
-                      backgroundColor: "#FFFFFF",
-                      color: "#0F172A",
-                      border: "1px solid #CBD5E1",
-                      borderRadius: "8px",
-                      fontSize: "0.82rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                    }}
-                  >
-                    <Plus size={15} style={{ color: "#FF4035" }} />
-                    <span>Add Another Option</span>
-                  </button>
-                </div>
-
-                {/* Custom Attributes List */}
-                {customAttributes.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "28px",
-                      textAlign: "center",
-                      backgroundColor: "#FFFFFF",
+                      backgroundColor: wooActiveTab === "attributes" ? "#2271B1" : "#DCDCDE",
+                      color: wooActiveTab === "attributes" ? "#FFFFFF" : "#50575E",
+                      fontSize: "0.72rem",
+                      padding: "1px 6px",
                       borderRadius: "10px",
-                      border: "1.5px dashed #CBD5E1",
-                      color: "#64748B",
-                      fontSize: "0.85rem",
                     }}
                   >
-                    <p style={{ margin: "0 0 10px 0", fontWeight: 600, color: "#334155" }}>
-                      No options added yet.
-                    </p>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748B" }}>
-                      Click one of the <strong>1-Click Templates</strong> above, or click{" "}
-                      <strong>&quot;Add Another Option&quot;</strong> to create your own (e.g. Fabric Colour, Drop Length).
-                    </p>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                    {customAttributes.map((attr, attrIdx) => {
-                      const suggestions = getSuggestedValuesForAttr(attr.name).filter(
-                        (s) => !attr.values.includes(s)
-                      );
+                    {customAttributes.length}
+                  </span>
+                </button>
 
-                      return (
-                        <div
-                          key={attr.id}
-                          style={{
-                            background: "#FFFFFF",
-                            padding: "16px 18px",
-                            borderRadius: "10px",
-                            border: "1px solid #CBD5E1",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-                          }}
-                        >
-                          {/* Option Name & Delete */}
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              marginBottom: "12px",
-                              gap: "12px",
-                            }}
-                          >
-                            <div style={{ flex: 1, maxWidth: "420px" }}>
-                              <label
-                                style={{
-                                  fontSize: "0.76rem",
-                                  fontWeight: 700,
-                                  color: "#334155",
-                                  display: "block",
-                                  marginBottom: "5px",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.03em",
-                                }}
-                              >
-                                Option {attrIdx + 1} Name:
-                              </label>
-                              <input
-                                type="text"
-                                value={attr.name}
-                                onChange={(e) => updateAttributeName(attr.id, e.target.value)}
-                                placeholder="e.g. Fabric Colour, Control Mechanism, Wood Finish, Size..."
-                                style={{
-                                  width: "100%",
-                                  padding: "8px 12px",
-                                  borderRadius: "7px",
-                                  border: "1.5px solid #CBD5E1",
-                                  fontSize: "0.86rem",
-                                  fontWeight: 700,
-                                  color: "#0F172A",
-                                  backgroundColor: "#F8FAFC",
-                                }}
-                              />
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => removeCustomAttribute(attr.id)}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "5px",
-                                padding: "7px 12px",
-                                backgroundColor: "#FEE2E2",
-                                color: "#DC2626",
-                                border: "1px solid #FECACA",
-                                borderRadius: "7px",
-                                fontSize: "0.78rem",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                                alignSelf: "flex-end",
-                                marginBottom: "2px",
-                              }}
-                            >
-                              <Trash2 size={13} />
-                              <span>Remove Option</span>
-                            </button>
-                          </div>
-
-                          {/* Quick Suggested Chips for this option */}
-                          {suggestions.length > 0 && (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                marginBottom: "12px",
-                                flexWrap: "wrap",
-                                backgroundColor: "#F8FAFC",
-                                padding: "8px 12px",
-                                borderRadius: "8px",
-                                border: "1px solid #F1F5F9",
-                              }}
-                            >
-                              <span style={{ fontSize: "0.72rem", color: "#64748B", fontWeight: 700 }}>
-                                💡 Suggested:
-                              </span>
-                              {suggestions.slice(0, 7).map((sug) => (
-                                <button
-                                  key={sug}
-                                  type="button"
-                                  onClick={() => addAttributeValue(attr.id, sug)}
-                                  style={{
-                                    fontSize: "0.74rem",
-                                    fontWeight: 600,
-                                    padding: "3px 10px",
-                                    backgroundColor: "#FFFFFF",
-                                    color: "#1E293B",
-                                    border: "1px solid #CBD5E1",
-                                    borderRadius: "14px",
-                                    cursor: "pointer",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = "#EFF6FF";
-                                    e.currentTarget.style.borderColor = "#93C5FD";
-                                    e.currentTarget.style.color = "#1D4ED8";
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = "#FFFFFF";
-                                    e.currentTarget.style.borderColor = "#CBD5E1";
-                                    e.currentTarget.style.color = "#1E293B";
-                                  }}
-                                >
-                                  <Plus size={11} />
-                                  <span>{sug}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Custom Value Input */}
-                          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                            <input
-                              type="text"
-                              value={attr.inputVal || ""}
-                              onChange={(e) => updateAttributeInputVal(attr.id, e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === ",") {
-                                  e.preventDefault();
-                                  addAttributeValue(attr.id, attr.inputVal || "");
-                                }
-                              }}
-                              placeholder='Type a value (e.g. Navy Blue, 5x7 ft) and press Enter or comma...'
-                              style={{
-                                flex: 1,
-                                padding: "8px 12px",
-                                borderRadius: "7px",
-                                border: "1px solid #CBD5E1",
-                                fontSize: "0.84rem",
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => addAttributeValue(attr.id, attr.inputVal || "")}
-                              style={{
-                                padding: "8px 16px",
-                                backgroundColor: "#0F172A",
-                                color: "#FFFFFF",
-                                border: "none",
-                                borderRadius: "7px",
-                                fontSize: "0.82rem",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              + Add Value
-                            </button>
-                          </div>
-
-                          {/* Added Values Chips */}
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-                            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748B" }}>
-                              Active Values ({attr.values.length}):
-                            </span>
-                            {attr.values.length === 0 ? (
-                              <span style={{ fontSize: "0.78rem", color: "#94A3B8", fontStyle: "italic" }}>
-                                No values added yet. Click a suggestion above or type one.
-                              </span>
-                            ) : (
-                              attr.values.map((v) => (
-                                <span
-                                  key={v}
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    backgroundColor: "#EFF6FF",
-                                    color: "#1D4ED8",
-                                    border: "1px solid #BFDBFE",
-                                    padding: "4px 10px",
-                                    borderRadius: "100px",
-                                    fontSize: "0.8rem",
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  <span>{v}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeAttributeValue(attr.id, v)}
-                                    style={{
-                                      background: "none",
-                                      border: "none",
-                                      color: "#1D4ED8",
-                                      cursor: "pointer",
-                                      padding: "0",
-                                      display: "flex",
-                                      alignItems: "center",
-                                    }}
-                                    title={`Remove ${v}`}
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </span>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Step 2: Variations Table & Quick Bulk Tools */}
-              <div>
-                <div
+                <button
+                  type="button"
+                  onClick={() => setWooActiveTab("variations")}
                   style={{
-                    display: "flex",
+                    padding: "10px 18px",
+                    fontSize: "0.84rem",
+                    fontWeight: 700,
+                    color: wooActiveTab === "variations" ? "#1D2327" : "#50575E",
+                    backgroundColor: wooActiveTab === "variations" ? "#FFFFFF" : "transparent",
+                    border: wooActiveTab === "variations" ? "1px solid #DCDCDE" : "1px solid transparent",
+                    borderBottom: wooActiveTab === "variations" ? "1px solid #FFFFFF" : "none",
+                    borderTop: wooActiveTab === "variations" ? "3px solid #2271B1" : "3px solid transparent",
+                    marginBottom: wooActiveTab === "variations" ? "-1px" : "0",
+                    borderTopLeftRadius: "4px",
+                    borderTopRightRadius: "4px",
+                    cursor: "pointer",
+                    display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: "14px",
-                    flexWrap: "wrap",
-                    gap: "10px",
+                    gap: "6px",
                   }}
                 >
-                  <div>
-                    <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0F172A", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span
-                        style={{
-                          width: "22px",
-                          height: "22px",
-                          borderRadius: "50%",
-                          backgroundColor: "#FF4035",
-                          color: "#FFFFFF",
-                          fontSize: "0.75rem",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 800,
-                        }}
-                      >
-                        2
-                      </span>
-                      <span>Configured Variations ({variationsList.length}) &amp; Bulk Pricing</span>
-                    </h4>
-                    <p style={{ fontSize: "0.78rem", color: "#64748B", margin: "4px 0 0 30px" }}>
-                      Manage variation-specific prices, stock, and photos. Use the bulk tools below to set prices in 1 second!
-                    </p>
-                  </div>
+                  <span>🔀 Variations</span>
+                  <span
+                    style={{
+                      backgroundColor: wooActiveTab === "variations" ? "#2271B1" : "#DCDCDE",
+                      color: wooActiveTab === "variations" ? "#FFFFFF" : "#50575E",
+                      fontSize: "0.72rem",
+                      padding: "1px 6px",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    {variationsList.length}
+                  </span>
+                </button>
+              </div>
 
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={generateCombinationsMatrix}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "7px 14px",
-                        backgroundColor: "#F1F5F9",
-                        color: "#334155",
-                        border: "1px solid #CBD5E1",
-                        borderRadius: "8px",
-                        fontSize: "0.8rem",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                      title="Sync and re-generate all combinations"
-                    >
-                      <RefreshCw size={14} />
-                      <span>Sync Combinations</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={addManualVariationRow}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "7px 14px",
-                        backgroundColor: "#FFFFFF",
-                        color: "#0F172A",
-                        border: "1px solid #CBD5E1",
-                        borderRadius: "8px",
-                        fontSize: "0.8rem",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Plus size={14} />
-                      <span>Add Row Manually</span>
-                    </button>
-                  </div>
+              {/* Status Notice Banner (WooCommerce Toast) */}
+              {wooNoticeMsg && (
+                <div
+                  style={{
+                    margin: "14px 20px 0 20px",
+                    padding: "10px 14px",
+                    backgroundColor: "#F0FDF4",
+                    borderLeft: "4px solid #16A34A",
+                    borderTop: "1px solid #BBF7D0",
+                    borderRight: "1px solid #BBF7D0",
+                    borderBottom: "1px solid #BBF7D0",
+                    color: "#166534",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <CheckCircle size={15} style={{ color: "#16A34A" }} />
+                  <span>{wooNoticeMsg}</span>
                 </div>
+              )}
 
-                {/* Bulk Status Toast / Banner */}
-                {bulkStatusMsg && (
+              {/* TAB 1: ATTRIBUTES */}
+              {wooActiveTab === "attributes" && (
+                <div style={{ padding: "20px" }}>
+                  {/* Attributes Toolbar */}
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "8px",
-                      backgroundColor: "#ECFDF5",
-                      border: "1px solid #A7F3D0",
-                      color: "#065F46",
-                      padding: "10px 14px",
-                      borderRadius: "8px",
-                      fontSize: "0.82rem",
-                      fontWeight: 700,
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <CheckCircle size={16} style={{ color: "#059669" }} />
-                    <span>{bulkStatusMsg}</span>
-                  </div>
-                )}
-
-                {/* Quick Bulk Pricing & Stock Tools Bar */}
-                {variationsList.length > 0 && (
-                  <div
-                    style={{
-                      backgroundColor: "#F8FAFC",
-                      border: "1.5px solid #E2E8F0",
-                      borderRadius: "10px",
-                      padding: "14px 16px",
+                      justifyContent: "space-between",
                       marginBottom: "16px",
+                      flexWrap: "wrap",
+                      gap: "10px",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
-                      <Zap size={15} style={{ color: "#D97706" }} />
-                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B" }}>
-                        ⚡ Quick Bulk Actions (Apply to all {variationsList.length} variations at once):
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-                      {/* Shortcut 1: Base Price */}
-                      <button
-                        type="button"
-                        onClick={handleApplyBasePriceToAll}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <select
                         style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
                           padding: "6px 12px",
+                          fontSize: "0.84rem",
+                          border: "1px solid #8C8F94",
+                          borderRadius: "4px",
                           backgroundColor: "#FFFFFF",
-                          border: "1px solid #CBD5E1",
-                          borderRadius: "6px",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                          color: "#334155",
-                          cursor: "pointer",
+                          color: "#2C3338",
                         }}
                       >
-                        <Copy size={13} style={{ color: "#FF4035" }} />
-                        <span>Copy Base Price (₹{price || 0}) to All</span>
-                      </button>
-
-                      {/* Shortcut 2: Custom Bulk Price */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Set Price:</span>
-                        <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
-                          <span style={{ position: "absolute", left: "8px", fontSize: "0.78rem", color: "#64748B" }}>₹</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={bulkPriceInput}
-                            onChange={(e) => setBulkPriceInput(e.target.value)}
-                            placeholder="e.g. 2499"
-                            style={{
-                              width: "100px",
-                              padding: "5px 8px 5px 20px",
-                              borderRadius: "6px",
-                              border: "1px solid #CBD5E1",
-                              fontSize: "0.78rem",
-                            }}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleApplyBulkPrice}
-                          style={{
-                            padding: "5px 10px",
-                            backgroundColor: "#0F172A",
-                            color: "#FFFFFF",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontSize: "0.76rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Apply Price
-                        </button>
-                      </div>
-
-                      {/* Shortcut 3: Bulk Stock */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Set Stock:</span>
-                        <input
-                          type="number"
-                          value={bulkStockInput}
-                          onChange={(e) => setBulkStockInput(e.target.value)}
-                          placeholder="e.g. 50"
-                          style={{
-                            width: "75px",
-                            padding: "5px 8px",
-                            borderRadius: "6px",
-                            border: "1px solid #CBD5E1",
-                            fontSize: "0.78rem",
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleApplyBulkStock}
-                          style={{
-                            padding: "5px 10px",
-                            backgroundColor: "#0F172A",
-                            color: "#FFFFFF",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontSize: "0.76rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Apply Stock
-                        </button>
-                      </div>
-
-                      {/* Shortcut 4: Auto-Generate Clean SKUs */}
+                        <option value="custom">Custom product attribute</option>
+                      </select>
                       <button
                         type="button"
-                        onClick={handleAutoGenerateSkus}
+                        onClick={() => addCustomAttribute()}
                         style={{
+                          padding: "6px 14px",
+                          fontSize: "0.82rem",
+                          fontWeight: 700,
+                          backgroundColor: "#F6F7F7",
+                          color: "#2271B1",
+                          border: "1px solid #2271B1",
+                          borderRadius: "4px",
+                          cursor: "pointer",
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "5px",
-                          padding: "6px 12px",
-                          backgroundColor: "#FEF2F2",
-                          border: "1px solid #FECACA",
-                          borderRadius: "6px",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                          color: "#DC2626",
-                          cursor: "pointer",
+                          gap: "4px",
                         }}
                       >
-                        <Wand2 size={13} />
-                        <span>Auto-Format Clean SKUs</span>
+                        <Plus size={13} />
+                        <span>Add attribute</span>
                       </button>
                     </div>
-                  </div>
-                )}
 
-                {/* Variations Table */}
-                {variationsList.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "32px",
-                      textAlign: "center",
-                      backgroundColor: "#F8FAFC",
-                      borderRadius: "10px",
-                      border: "1.5px dashed #CBD5E1",
-                      color: "#64748B",
-                      fontSize: "0.85rem",
-                    }}
-                  >
-                    No variations generated yet. Add options and values above or click one of the{" "}
-                    <strong>1-Click Templates</strong> to create combinations automatically.
+                    {/* Quick Presets */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 700 }}>Quick Presets:</span>
+                      {["Fabric Colour", "Control Mechanism", "Wood Finish", "Size", "Dimensions"].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            const exists = customAttributes.some(
+                              (a) => a.name.trim().toLowerCase() === preset.toLowerCase()
+                            );
+                            if (!exists) {
+                              addCustomAttribute(preset);
+                            } else {
+                              alert(`Attribute "${preset}" already added.`);
+                            }
+                          }}
+                          style={{
+                            fontSize: "0.74rem",
+                            padding: "3px 10px",
+                            backgroundColor: "#FFFFFF",
+                            color: "#1E293B",
+                            border: "1px solid #CBD5E1",
+                            borderRadius: "14px",
+                            cursor: "pointer",
+                            fontWeight: 600,
+                          }}
+                        >
+                          + {preset}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ overflowX: "auto", border: "1px solid #E2E8F0", borderRadius: "10px" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-                      <thead>
-                        <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1.5px solid #E2E8F0", textAlign: "left" }}>
-                          <th style={{ padding: "10px 14px", fontWeight: 700, color: "#334155" }}>
-                            Option Combination
-                          </th>
-                          <th style={{ padding: "10px 12px", fontWeight: 700, color: "#334155", width: "120px" }}>
-                            Price (₹)
-                          </th>
-                          <th style={{ padding: "10px 12px", fontWeight: 700, color: "#334155", width: "115px" }}>
-                            Orig. Price
-                          </th>
-                          <th style={{ padding: "10px 12px", fontWeight: 700, color: "#334155", width: "85px" }}>
-                            Stock
-                          </th>
-                          <th style={{ padding: "10px 12px", fontWeight: 700, color: "#334155", width: "140px" }}>
-                            SKU
-                          </th>
-                          <th style={{ padding: "10px 12px", fontWeight: 700, color: "#334155", width: "140px" }}>
-                            Variant Image
-                          </th>
-                          <th style={{ padding: "10px 12px", fontWeight: 700, color: "#334155", width: "65px", textAlign: "center" }}>
-                            Active
-                          </th>
-                          <th style={{ padding: "10px 12px", fontWeight: 700, color: "#334155", width: "50px", textAlign: "center" }}>
-                            Action
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variationsList.map((row, idx) => (
-                          <tr key={idx} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                            {/* Combination Pills */}
-                            <td style={{ padding: "10px 14px" }}>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                                {Object.entries(row.combination || {}).map(([attrK, valK]) => (
-                                  <span
-                                    key={attrK}
-                                    style={{
-                                      backgroundColor: "#EEF2FF",
-                                      color: "#3730A3",
-                                      padding: "3px 9px",
-                                      borderRadius: "6px",
-                                      fontWeight: 700,
-                                      fontSize: "0.76rem",
-                                      border: "1px solid #C7D2FE",
-                                    }}
-                                  >
-                                    <span style={{ color: "#6366F1", marginRight: "3px" }}>{attrK}:</span>
-                                    <span>{valK}</span>
+
+                  {/* Attributes List */}
+                  {customAttributes.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "32px",
+                        textAlign: "center",
+                        backgroundColor: "#F8FAFC",
+                        borderRadius: "6px",
+                        border: "1px dashed #CBD5E1",
+                        color: "#64748B",
+                        fontSize: "0.84rem",
+                      }}
+                    >
+                      <p style={{ margin: "0 0 8px 0", fontWeight: 700, color: "#1D2327" }}>
+                        No attributes configured yet.
+                      </p>
+                      <p style={{ margin: 0, fontSize: "0.8rem" }}>
+                        Click <strong>&quot;Add attribute&quot;</strong> above, or click one of the quick presets like <strong>+ Fabric Colour</strong> or <strong>+ Control Mechanism</strong>.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                      {customAttributes.map((attr, idx) => {
+                        const isExpanded = attr.isExpanded !== false;
+                        const suggestions = getSuggestedValuesForAttr(attr.name).filter(
+                          (s) => !attr.values.includes(s)
+                        );
+
+                        return (
+                          <div
+                            key={attr.id}
+                            style={{
+                              backgroundColor: "#FFFFFF",
+                              border: "1px solid #CCD0D4",
+                              borderRadius: "4px",
+                              boxShadow: "0 1px 1px rgba(0,0,0,0.04)",
+                            }}
+                          >
+                            {/* Attribute Header */}
+                            <div
+                              style={{
+                                padding: "10px 14px",
+                                backgroundColor: "#F6F7F7",
+                                borderBottom: isExpanded ? "1px solid #DCDCDE" : "none",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => updateAttributeField(attr.id, "isExpanded", !isExpanded)}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ color: "#8C8F94", fontSize: "0.8rem", fontWeight: 700 }}>
+                                  #{idx + 1}
+                                </span>
+                                <strong style={{ fontSize: "0.86rem", color: "#1D2327" }}>
+                                  {attr.name.trim() ? attr.name : "New Attribute"}
+                                </strong>
+                                {attr.usedForVariations !== false && (
+                                  <span style={{ fontSize: "0.72rem", backgroundColor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", padding: "1px 6px", borderRadius: "3px" }}>
+                                    Used for variations
                                   </span>
-                                ))}
-                              </div>
-                            </td>
-
-                            {/* Price */}
-                            <td style={{ padding: "8px 12px" }}>
-                              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                                <span style={{ position: "absolute", left: "8px", fontSize: "0.78rem", color: "#64748B" }}>₹</span>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={row.price}
-                                  onChange={(e) => updateVariationRow(idx, "price", e.target.value)}
-                                  style={{
-                                    width: "100%",
-                                    padding: "6px 8px 6px 18px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #CBD5E1",
-                                    fontSize: "0.82rem",
-                                    fontWeight: 700,
-                                    color: "#0F172A",
-                                  }}
-                                />
-                              </div>
-                            </td>
-
-                            {/* Orig Price */}
-                            <td style={{ padding: "8px 12px" }}>
-                              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                                <span style={{ position: "absolute", left: "8px", fontSize: "0.78rem", color: "#94A3B8" }}>₹</span>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={row.original_price}
-                                  onChange={(e) => updateVariationRow(idx, "original_price", e.target.value)}
-                                  placeholder="Optional"
-                                  style={{
-                                    width: "100%",
-                                    padding: "6px 8px 6px 18px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #CBD5E1",
-                                    fontSize: "0.8rem",
-                                  }}
-                                />
-                              </div>
-                            </td>
-
-                            {/* Stock */}
-                            <td style={{ padding: "8px 12px" }}>
-                              <input
-                                type="number"
-                                value={row.stock}
-                                onChange={(e) => updateVariationRow(idx, "stock", e.target.value)}
-                                style={{
-                                  width: "100%",
-                                  padding: "6px 8px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #CBD5E1",
-                                  fontSize: "0.82rem",
-                                }}
-                              />
-                            </td>
-
-                            {/* SKU */}
-                            <td style={{ padding: "8px 12px" }}>
-                              <input
-                                type="text"
-                                value={row.sku}
-                                onChange={(e) => updateVariationRow(idx, "sku", e.target.value)}
-                                style={{
-                                  width: "100%",
-                                  padding: "6px 8px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #CBD5E1",
-                                  fontSize: "0.76rem",
-                                  fontFamily: "monospace",
-                                }}
-                              />
-                            </td>
-
-                            {/* Variant Image */}
-                            <td style={{ padding: "8px 12px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                {row.image ? (
-                                  <img
-                                    src={row.image}
-                                    alt="Variant"
-                                    style={{ width: "28px", height: "28px", borderRadius: "4px", objectFit: "cover" }}
-                                  />
-                                ) : (
-                                  <div
-                                    style={{
-                                      width: "28px",
-                                      height: "28px",
-                                      borderRadius: "4px",
-                                      backgroundColor: "#F1F5F9",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      color: "#94A3B8",
-                                    }}
-                                  >
-                                    <ImageIcon size={14} />
-                                  </div>
                                 )}
-                                <input
-                                  type="text"
-                                  value={row.image}
-                                  onChange={(e) => updateVariationRow(idx, "image", e.target.value)}
-                                  placeholder="/assets/..."
-                                  style={{
-                                    flex: 1,
-                                    padding: "6px 8px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #CBD5E1",
-                                    fontSize: "0.75rem",
-                                  }}
-                                />
                               </div>
-                            </td>
 
-                            {/* Active */}
-                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                              <input
-                                type="checkbox"
-                                checked={row.is_active}
-                                onChange={(e) => updateVariationRow(idx, "is_active", e.target.checked)}
-                                style={{ accentColor: "#FF4035", width: "16px", height: "16px", cursor: "pointer" }}
-                              />
-                            </td>
+                              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeCustomAttribute(attr.id);
+                                  }}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "#B32D2E",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    textDecoration: "underline",
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                                <span style={{ color: "#8C8F94", fontSize: "0.8rem" }}>
+                                  {isExpanded ? "▲" : "▼"}
+                                </span>
+                              </div>
+                            </div>
 
-                            {/* Action */}
-                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                              <button
-                                type="button"
-                                onClick={() => removeVariationRow(idx)}
-                                style={{
-                                  background: "none",
-                                  border: "none",
-                                  color: "#EF4444",
-                                  cursor: "pointer",
-                                  padding: "4px",
-                                }}
-                                title="Remove variation"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                            {/* Attribute Body (when expanded) */}
+                            {isExpanded && (
+                              <div style={{ padding: "16px" }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "14px" }}>
+                                  {/* Name */}
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#1D2327", marginBottom: "4px" }}>
+                                      Name:
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={attr.name}
+                                      onChange={(e) => updateAttributeName(attr.id, e.target.value)}
+                                      placeholder="e.g. Fabric Colour, Control Mechanism, Size..."
+                                      style={{
+                                        width: "100%",
+                                        maxWidth: "360px",
+                                        padding: "6px 10px",
+                                        fontSize: "0.84rem",
+                                        borderRadius: "4px",
+                                        border: "1px solid #8C8F94",
+                                      }}
+                                    />
+                                  </div>
 
-                {/* Storefront Customer Experience Preview Card */}
-                <div
-                  style={{
-                    marginTop: "18px",
-                    padding: "14px 18px",
-                    backgroundColor: "#F0F9FF",
-                    border: "1px solid #BAE6FD",
-                    borderRadius: "10px",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "12px",
-                  }}
-                >
-                  <Eye size={18} style={{ color: "#0284C7", marginTop: "2px", flexShrink: 0 }} />
-                  <div>
-                    <h5 style={{ margin: "0 0 4px 0", fontSize: "0.82rem", fontWeight: 700, color: "#0369A1" }}>
-                      How this appears to buyers on your website:
-                    </h5>
-                    <p style={{ margin: 0, fontSize: "0.76rem", color: "#0C4A6E", lineHeight: "1.4" }}>
-                      Customers first pick their options (e.g. <strong>Fabric Colour</strong>, then <strong>Control Mechanism</strong>) using interactive pill buttons.
-                      If <em>Made to Measure (Custom Sizing)</em> is enabled below, customers will see a clean dropdown allowing them to choose either standard sizing or enter custom window dimensions!
-                    </p>
+                                  {/* Value(s) Piped Input */}
+                                  <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                                      <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1D2327", margin: 0 }}>
+                                        Value(s):
+                                      </label>
+                                      <span style={{ fontSize: "0.72rem", color: "#64748B" }}>
+                                        Enter values separated by &quot;|&quot; (e.g. <code>Warm White | Mist Grey | Slate Charcoal</code>)
+                                      </span>
+                                    </div>
+                                    <textarea
+                                      rows={2}
+                                      value={attr.rawPipedValue !== undefined ? attr.rawPipedValue : (attr.values || []).join(" | ")}
+                                      onChange={(e) => updateAttributePipedValue(attr.id, e.target.value)}
+                                      placeholder="Warm White | Mist Grey | Slate Charcoal"
+                                      style={{
+                                        width: "100%",
+                                        padding: "8px 10px",
+                                        fontSize: "0.82rem",
+                                        borderRadius: "4px",
+                                        border: "1px solid #8C8F94",
+                                        fontFamily: "inherit",
+                                        lineHeight: 1.4,
+                                      }}
+                                    />
+
+                                    {/* Suggested Terms Row */}
+                                    {suggestions.length > 0 && (
+                                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}>
+                                        <span style={{ fontSize: "0.72rem", color: "#64748B", fontWeight: 700 }}>
+                                          Suggested terms:
+                                        </span>
+                                        {suggestions.slice(0, 7).map((sug) => (
+                                          <button
+                                            key={sug}
+                                            type="button"
+                                            onClick={() => appendSuggestedValueToAttr(attr.id, sug)}
+                                            style={{
+                                              fontSize: "0.72rem",
+                                              padding: "2px 8px",
+                                              backgroundColor: "#F0F0F1",
+                                              color: "#1D2327",
+                                              border: "1px solid #CBD5E1",
+                                              borderRadius: "12px",
+                                              cursor: "pointer",
+                                              fontWeight: 600,
+                                            }}
+                                            title={`Add ${sug}`}
+                                          >
+                                            + {sug}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Checkboxes (WooCommerce Standard) */}
+                                  <div style={{ display: "flex", gap: "20px", alignItems: "center", marginTop: "4px", flexWrap: "wrap" }}>
+                                    <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "#1D2327", cursor: "pointer" }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={attr.isVisible !== false}
+                                        onChange={(e) => updateAttributeField(attr.id, "isVisible", e.target.checked)}
+                                        style={{ accentColor: "#2271B1" }}
+                                      />
+                                      <span>Visible on the product page</span>
+                                    </label>
+
+                                    <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "#1D2327", cursor: "pointer", fontWeight: 700 }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={attr.usedForVariations !== false}
+                                        onChange={(e) => updateAttributeField(attr.id, "usedForVariations", e.target.checked)}
+                                        style={{ accentColor: "#2271B1" }}
+                                      />
+                                      <span>Used for variations</span>
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Attributes Save Button & Next Step */}
+                  <div style={{ marginTop: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", borderTop: "1px solid #E2E8F0", paddingTop: "16px" }}>
+                    <button
+                      type="button"
+                      onClick={handleSaveAttributes}
+                      style={{
+                        padding: "8px 18px",
+                        backgroundColor: "#2271B1",
+                        color: "#FFFFFF",
+                        border: "none",
+                        borderRadius: "4px",
+                        fontSize: "0.84rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Save attributes
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSaveAttributes();
+                        setWooActiveTab("variations");
+                      }}
+                      style={{
+                        padding: "8px 18px",
+                        backgroundColor: "#FFFFFF",
+                        color: "#2271B1",
+                        border: "1px solid #2271B1",
+                        borderRadius: "4px",
+                        fontSize: "0.84rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <span>Proceed to Variations Tab</span>
+                      <ChevronRight size={15} />
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* TAB 2: VARIATIONS */}
+              {wooActiveTab === "variations" && (
+                <div style={{ padding: "20px" }}>
+                  {/* WooCommerce Variation Actions Bar */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "10px",
+                      marginBottom: "16px",
+                      backgroundColor: "#F6F7F7",
+                      padding: "10px 14px",
+                      border: "1px solid #DCDCDE",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    {/* Action 1: Variation Generation */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <select
+                        value={wooVariationAction}
+                        onChange={(e) => setWooVariationAction(e.target.value as any)}
+                        style={{
+                          padding: "6px 10px",
+                          fontSize: "0.82rem",
+                          borderRadius: "4px",
+                          border: "1px solid #8C8F94",
+                          backgroundColor: "#FFFFFF",
+                          color: "#2C3338",
+                        }}
+                      >
+                        <option value="generate">Generate variations from all attributes</option>
+                        <option value="add_manual">Add variation manually</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleExecuteVariationAction}
+                        style={{
+                          padding: "6px 14px",
+                          fontSize: "0.82rem",
+                          fontWeight: 700,
+                          backgroundColor: "#2271B1",
+                          color: "#FFFFFF",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Go
+                      </button>
+                    </div>
+
+                    {/* Action 2: Bulk Actions */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <select
+                        value={wooBulkAction}
+                        onChange={(e) => setWooBulkAction(e.target.value)}
+                        style={{
+                          padding: "6px 10px",
+                          fontSize: "0.82rem",
+                          borderRadius: "4px",
+                          border: "1px solid #8C8F94",
+                          backgroundColor: "#FFFFFF",
+                          color: "#2C3338",
+                        }}
+                      >
+                        <option value="">Bulk actions</option>
+                        <optgroup label="Pricing">
+                          <option value="set_regular_price">Set regular prices (₹)</option>
+                          <option value="set_sale_price">Set sale prices (₹)</option>
+                          <option value="copy_base_price">Copy product base price to all</option>
+                        </optgroup>
+                        <optgroup label="Inventory">
+                          <option value="set_stock">Set stock quantity</option>
+                          <option value="set_in_stock">Set status to: In stock</option>
+                          <option value="set_out_of_stock">Set status to: Out of stock</option>
+                        </optgroup>
+                        <optgroup label="Status & SKUs">
+                          <option value="auto_skus">Auto-generate clean SKUs</option>
+                          <option value="toggle_enabled">Toggle &apos;Enabled&apos; for all</option>
+                        </optgroup>
+                        <optgroup label="Delete">
+                          <option value="delete_all">Delete all variations</option>
+                        </optgroup>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleExecuteBulkAction}
+                        style={{
+                          padding: "6px 14px",
+                          fontSize: "0.82rem",
+                          fontWeight: 700,
+                          backgroundColor: "#F6F7F7",
+                          color: "#2271B1",
+                          border: "1px solid #2271B1",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Apply
+                      </button>
+                    </div>
+
+                    {/* Expand all / Close all */}
+                    <div style={{ display: "flex", gap: "8px", fontSize: "0.78rem" }}>
+                      <button
+                        type="button"
+                        onClick={() => setAllExpanded(true)}
+                        style={{ color: "#2271B1", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}
+                      >
+                        Expand all
+                      </button>
+                      <span style={{ color: "#8C8F94" }}>|</span>
+                      <button
+                        type="button"
+                        onClick={() => setAllExpanded(false)}
+                        style={{ color: "#2271B1", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}
+                      >
+                        Close all
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Variations List */}
+                  {variationsList.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "36px",
+                        textAlign: "center",
+                        backgroundColor: "#F8FAFC",
+                        borderRadius: "6px",
+                        border: "1px dashed #CBD5E1",
+                        color: "#64748B",
+                        fontSize: "0.84rem",
+                      }}
+                    >
+                      <p style={{ margin: "0 0 10px 0", fontWeight: 700, color: "#1D2327" }}>
+                        Before you can add a variation you need to add some variation attributes on the Attributes tab.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setWooActiveTab("attributes")}
+                        style={{
+                          padding: "6px 14px",
+                          backgroundColor: "#2271B1",
+                          color: "#FFFFFF",
+                          border: "none",
+                          borderRadius: "4px",
+                          fontSize: "0.82rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Go to Attributes Tab ➔
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {variationsList.map((row, idx) => {
+                        const isExpanded = Boolean(row.isExpanded);
+                        const activeVariationAttrs = customAttributes.filter(
+                          (a) => a.name.trim() !== "" && a.usedForVariations !== false
+                        );
+
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              backgroundColor: "#FFFFFF",
+                              border: "1px solid #CCD0D4",
+                              borderRadius: "4px",
+                              boxShadow: "0 1px 1px rgba(0,0,0,0.04)",
+                            }}
+                          >
+                            {/* Variation Row Header (WooCommerce Style) */}
+                            <div
+                              style={{
+                                padding: "10px 14px",
+                                backgroundColor: "#F6F7F7",
+                                borderBottom: isExpanded ? "1px solid #DCDCDE" : "none",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                flexWrap: "wrap",
+                                gap: "10px",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                                <span style={{ color: "#8C8F94", fontSize: "0.8rem", fontWeight: 700 }}>
+                                  #{idx + 1}
+                                </span>
+
+                                {/* Attribute Dropdowns (The hallmark of WooCommerce variations) */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                  {activeVariationAttrs.map((attr) => (
+                                    <div key={attr.id} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                      <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#50575E" }}>
+                                        {attr.name}:
+                                      </label>
+                                      <select
+                                        value={row.combination[attr.name] || ""}
+                                        onChange={(e) => updateVariationCombinationValue(idx, attr.name, e.target.value)}
+                                        style={{
+                                          padding: "4px 8px",
+                                          fontSize: "0.78rem",
+                                          borderRadius: "4px",
+                                          border: "1px solid #8C8F94",
+                                          backgroundColor: "#FFFFFF",
+                                          fontWeight: 600,
+                                          color: "#2C3338",
+                                        }}
+                                      >
+                                        <option value="">Any {attr.name}...</option>
+                                        {attr.values.map((v) => (
+                                          <option key={v} value={v}>
+                                            {v}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Right Snippet & Controls */}
+                              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                                <span style={{ fontSize: "0.78rem", color: "#64748B" }}>
+                                  SKU: <strong>{row.sku || "—"}</strong>
+                                </span>
+                                <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1D2327" }}>
+                                  ₹{row.price || "0.00"}
+                                </span>
+
+                                <label style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.78rem", color: "#1D2327", cursor: "pointer", fontWeight: 600 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={row.is_active}
+                                    onChange={(e) => updateVariationRow(idx, "is_active", e.target.checked)}
+                                    style={{ accentColor: "#2271B1" }}
+                                  />
+                                  <span>Enabled</span>
+                                </label>
+
+                                <button
+                                  type="button"
+                                  onClick={() => removeVariationRow(idx)}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "#B32D2E",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    textDecoration: "underline",
+                                  }}
+                                  title="Remove this variation"
+                                >
+                                  Remove
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRowExpanded(idx)}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "#50575E",
+                                    fontSize: "0.8rem",
+                                    cursor: "pointer",
+                                    padding: "2px 4px",
+                                  }}
+                                  title={isExpanded ? "Collapse" : "Expand"}
+                                >
+                                  {isExpanded ? "▲" : "▼"}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Variation Row Body (When Expanded) */}
+                            {isExpanded && (
+                              <div style={{ padding: "16px", backgroundColor: "#FFFFFF" }}>
+                                <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+                                  {/* Left: Variant Photo Box */}
+                                  <div style={{ width: "120px" }}>
+                                    <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#50575E", marginBottom: "4px" }}>
+                                      Variant Image:
+                                    </label>
+                                    <div
+                                      style={{
+                                        width: "120px",
+                                        height: "120px",
+                                        borderRadius: "4px",
+                                        border: "1px dashed #CCD0D4",
+                                        backgroundColor: "#F6F7F7",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        overflow: "hidden",
+                                        position: "relative",
+                                        marginBottom: "6px",
+                                      }}
+                                    >
+                                      {row.image ? (
+                                        <img
+                                          src={row.image}
+                                          alt="Variant thumbnail"
+                                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                        />
+                                      ) : (
+                                        <div style={{ textAlign: "center", color: "#8C8F94" }}>
+                                          <ImageIcon size={24} />
+                                          <div style={{ fontSize: "0.68rem", marginTop: "4px" }}>Set image</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      value={row.image}
+                                      onChange={(e) => updateVariationRow(idx, "image", e.target.value)}
+                                      placeholder="/assets/..."
+                                      style={{
+                                        width: "100%",
+                                        padding: "4px 6px",
+                                        fontSize: "0.72rem",
+                                        borderRadius: "3px",
+                                        border: "1px solid #8C8F94",
+                                      }}
+                                      title="Image path"
+                                    />
+                                  </div>
+
+                                  {/* Right: Pricing, SKU, Stock Grid */}
+                                  <div style={{ flex: 1, minWidth: "260px" }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginBottom: "12px" }}>
+                                      {/* SKU */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#50575E", marginBottom: "4px" }}>
+                                          SKU:
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={row.sku}
+                                          onChange={(e) => updateVariationRow(idx, "sku", e.target.value)}
+                                          placeholder="SKU"
+                                          style={{
+                                            width: "100%",
+                                            padding: "6px 8px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: "3px",
+                                            border: "1px solid #8C8F94",
+                                            fontFamily: "monospace",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* Regular Price */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#50575E", marginBottom: "4px" }}>
+                                          Regular price (₹) *:
+                                        </label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={row.price}
+                                          onChange={(e) => updateVariationRow(idx, "price", e.target.value)}
+                                          placeholder="e.g. 2499.00"
+                                          style={{
+                                            width: "100%",
+                                            padding: "6px 8px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: "3px",
+                                            border: "1px solid #8C8F94",
+                                            fontWeight: 700,
+                                            color: "#1D2327",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* Sale Price */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#50575E", marginBottom: "4px" }}>
+                                          Sale price (₹):
+                                        </label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={row.original_price}
+                                          onChange={(e) => updateVariationRow(idx, "original_price", e.target.value)}
+                                          placeholder="Optional"
+                                          style={{
+                                            width: "100%",
+                                            padding: "6px 8px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: "3px",
+                                            border: "1px solid #8C8F94",
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px" }}>
+                                      {/* Stock Quantity */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#50575E", marginBottom: "4px" }}>
+                                          Stock quantity:
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={row.stock}
+                                          onChange={(e) => updateVariationRow(idx, "stock", e.target.value)}
+                                          placeholder="e.g. 25"
+                                          style={{
+                                            width: "100%",
+                                            padding: "6px 8px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: "3px",
+                                            border: "1px solid #8C8F94",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* Stock Status */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#50575E", marginBottom: "4px" }}>
+                                          Stock status:
+                                        </label>
+                                        <select
+                                          value={row.is_active ? "instock" : "outofstock"}
+                                          onChange={(e) => updateVariationRow(idx, "is_active", e.target.value === "instock")}
+                                          style={{
+                                            width: "100%",
+                                            padding: "6px 8px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: "3px",
+                                            border: "1px solid #8C8F94",
+                                            backgroundColor: "#FFFFFF",
+                                          }}
+                                        >
+                                          <option value="instock">In stock</option>
+                                          <option value="outofstock">Out of stock</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Storefront Custom Sizing Reminder */}
+                  <div
+                    style={{
+                      marginTop: "20px",
+                      padding: "12px 16px",
+                      backgroundColor: "#F0F9FF",
+                      border: "1px solid #BAE6FD",
+                      borderRadius: "6px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <Info size={16} style={{ color: "#0284C7", flexShrink: 0 }} />
+                    <span style={{ fontSize: "0.78rem", color: "#0369A1" }}>
+                      <strong>Storefront Custom Sizing:</strong> Customers will see your configured variations (e.g. Fabric Colour &amp; Mechanism). If <em>Made to Measure (Custom Sizing)</em> is enabled below, customers will also be able to choose either standard sizing or enter their exact custom dimensions!
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
