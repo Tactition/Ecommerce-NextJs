@@ -2578,59 +2578,133 @@ export default function ProductForm({
                             {isExpanded && (
                               <div style={{ padding: "16px", backgroundColor: "#FFFFFF" }}>
                                 <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-                                  {/* Left: Variant Photo Box */}
-                                  <div style={{ width: "120px" }}>
-                                    <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#50575E", marginBottom: "4px" }}>
-                                      Variant Image:
-                                    </label>
-                                    <div
-                                      style={{
-                                        width: "120px",
-                                        height: "120px",
-                                        borderRadius: "4px",
-                                        border: "1px dashed #CCD0D4",
-                                        backgroundColor: "#F6F7F7",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        overflow: "hidden",
-                                        position: "relative",
-                                        marginBottom: "6px",
-                                      }}
-                                      onClick={() => {
-                                        document.getElementById(`var_img_file_${idx}`)?.click();
-                                      }}
-                                      title="Click to upload/set color shade image"
-                                    >
-                                      {row.image ? (
-                                        <img
-                                          src={row.image}
-                                          alt="Variant thumbnail"
-                                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                        />
-                                      ) : (
-                                        <div style={{ textAlign: "center", color: "#8C8F94" }}>
-                                          <ImageIcon size={22} />
-                                          <div style={{ fontSize: "0.68rem", marginTop: "2px", fontWeight: 600 }}>Set image</div>
-                                        </div>
-                                      )}
+                                  {/* Left: Variant Photos (Supports Multiple Images for Color Shades) */}
+                                  <div style={{ width: "160px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                                      <label style={{ fontSize: "0.74rem", fontWeight: 700, color: "#50575E", margin: 0 }}>
+                                        Variant Images:
+                                      </label>
+                                      <span style={{ fontSize: "0.68rem", color: "#64748B" }}>
+                                        {((row.image || "").split(",").filter((s) => s.trim().length > 0)).length} photo(s)
+                                      </span>
                                     </div>
+
+                                    {/* Thumbnail Chips Grid */}
+                                    {(() => {
+                                      const rowImages = (row.image || "")
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean);
+
+                                      return (
+                                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
+                                          {rowImages.map((imgUrl, imgIdx) => (
+                                            <div
+                                              key={imgIdx}
+                                              style={{
+                                                position: "relative",
+                                                width: "48px",
+                                                height: "48px",
+                                                borderRadius: "4px",
+                                                overflow: "hidden",
+                                                border: "1px solid #CBD5E1",
+                                                backgroundColor: "#F1F5F9",
+                                              }}
+                                            >
+                                              <img
+                                                src={imgUrl}
+                                                alt={`Variant photo ${imgIdx + 1}`}
+                                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const remaining = rowImages.filter((_, i) => i !== imgIdx).join(", ");
+                                                  updateVariationRow(idx, "image", remaining);
+                                                }}
+                                                style={{
+                                                  position: "absolute",
+                                                  top: 1,
+                                                  right: 1,
+                                                  width: "16px",
+                                                  height: "16px",
+                                                  borderRadius: "50%",
+                                                  backgroundColor: "rgba(0,0,0,0.75)",
+                                                  color: "#FFFFFF",
+                                                  border: "none",
+                                                  cursor: "pointer",
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  justifyContent: "center",
+                                                  fontSize: "10px",
+                                                  lineHeight: 1,
+                                                  padding: 0,
+                                                }}
+                                                title="Remove this photo"
+                                              >
+                                                ×
+                                              </button>
+                                            </div>
+                                          ))}
+
+                                          {/* Add More Photos Button */}
+                                          <div
+                                            onClick={() => {
+                                              document.getElementById(`var_img_file_${idx}`)?.click();
+                                            }}
+                                            style={{
+                                              width: rowImages.length > 0 ? "48px" : "100%",
+                                              height: rowImages.length > 0 ? "48px" : "64px",
+                                              borderRadius: "4px",
+                                              border: "1.5px dashed #CBD5E1",
+                                              backgroundColor: "#F8FAFC",
+                                              display: "flex",
+                                              flexDirection: "column",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              cursor: "pointer",
+                                              color: "#64748B",
+                                              fontSize: "0.68rem",
+                                              fontWeight: 600,
+                                              gap: "2px",
+                                              transition: "all 0.15s ease",
+                                            }}
+                                            title="Click to upload one or more photos for this shade"
+                                          >
+                                            <Plus size={rowImages.length > 0 ? 16 : 18} />
+                                            <span>{rowImages.length > 0 ? "Add" : "Upload Photos"}</span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })()}
+
                                     <input
                                       id={`var_img_file_${idx}`}
                                       type="file"
                                       accept="image/*"
+                                      multiple
                                       style={{ display: "none" }}
                                       onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
+                                        const files = Array.from(e.target.files || []);
+                                        if (files.length === 0) return;
                                         try {
-                                          const fd = new FormData();
-                                          fd.append("file", file);
-                                          const res = await fetch("/api/uploads", { method: "POST", body: fd });
-                                          const data = await res.json();
-                                          if (data.url) {
-                                            updateVariationRow(idx, "image", data.url);
+                                          const rowImages = (row.image || "")
+                                            .split(",")
+                                            .map((s) => s.trim())
+                                            .filter(Boolean);
+
+                                          const newUrls: string[] = [];
+                                          for (const file of files) {
+                                            const fd = new FormData();
+                                            fd.append("file", file);
+                                            const res = await fetch("/api/uploads", { method: "POST", body: fd });
+                                            const data = await res.json();
+                                            if (data.url) newUrls.push(data.url);
                                           }
+
+                                          const merged = Array.from(new Set([...rowImages, ...newUrls])).join(", ");
+                                          updateVariationRow(idx, "image", merged);
                                         } catch (err) {
                                           console.error("Variation image upload error:", err);
                                         }
@@ -2640,15 +2714,15 @@ export default function ProductForm({
                                       type="text"
                                       value={row.image}
                                       onChange={(e) => updateVariationRow(idx, "image", e.target.value)}
-                                      placeholder="/uploads/..."
+                                      placeholder="/uploads/1.png, /uploads/2.png"
                                       style={{
                                         width: "100%",
                                         padding: "4px 6px",
-                                        fontSize: "0.72rem",
+                                        fontSize: "0.7rem",
                                         borderRadius: "3px",
                                         border: "1px solid #8C8F94",
                                       }}
-                                      title="Image path"
+                                      title="Comma-separated image paths"
                                     />
                                   </div>
 

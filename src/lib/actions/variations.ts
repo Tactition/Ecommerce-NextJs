@@ -273,7 +273,7 @@ export async function saveProductVariationsAction(
           v.price || 0,
           v.original_price || null,
           v.stock || 0,
-          (v.image && v.image.trim() !== "" && !v.image.startsWith("/images/products/")) ? v.image.trim() : null,
+          (v.image && v.image.trim() !== "") ? v.image.trim() : null,
           v.is_active ? 1 : 0,
         ]
       );
@@ -538,7 +538,7 @@ export async function saveDynamicProductVariationsAction(
           v.price || 0,
           v.original_price || null,
           v.stock || 0,
-          (v.image && v.image.trim() !== "" && !v.image.startsWith("/images/products/")) ? v.image.trim() : null,
+          (v.image && v.image.trim() !== "") ? v.image.trim() : null,
           v.is_active ? 1 : 0,
         ]
       );
