@@ -805,14 +805,12 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   {/* ══════════════════════════════════════════════════════════════ */}
                   {/* SIZING & TRANSPARENT CUSTOM PRICE CALCULATION                  */}
                   {/* Shows exact rate, dimensions, and live math breakdown          */}
-                                    {/* ══════════════════════════════════════════════════════════════ */}
-                  {/* 1. PRODUCT VARIATIONS ADDED FROM ADMIN (FIRST)                  */}
-                  {/* Color, Fabric, Size, Control Mechanism, Finish, etc.            */}
+                                                      {/* ══════════════════════════════════════════════════════════════ */}
+                  {/* 1. ADMIN VARIATIONS (Color, Fabric, Control Mechanism...)       */}
                   {/* ══════════════════════════════════════════════════════════════ */}
-                  {product.has_variations && productAttributes.length > 0 && (
+                  {product.has_variations && nonSizeAttributes.length > 0 && (
                     <div className="product-details mb-3">
-                      {productAttributes.map((attr: { id: number; name: string; slug: string }) => {
-                        const isSizeAttr = sizeAttribute && attr.id === sizeAttribute.id;
+                      {nonSizeAttributes.map((attr: { id: number; name: string; slug: string }) => {
                         const attrValuesMap = new Map<number, string>();
                         (variations || []).forEach((v) => {
                           (v.values || []).forEach((val) => {
@@ -829,30 +827,20 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                               <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.92rem" }}>
                                 {attr.name}:
                               </span>
-                              {selectedAttributeValues[attr.id] && (!isSizeAttr || !isCustomMode) && (
+                              {selectedAttributeValues[attr.id] && (
                                 <span style={{ fontSize: "0.88rem", color: "var(--theme, #FF4035)", fontWeight: 600 }}>
                                   {attrValuesMap.get(selectedAttributeValues[attr.id])}
-                                </span>
-                              )}
-                              {isSizeAttr && isCustomMode && (
-                                <span style={{ fontSize: "0.82rem", color: "#DC2626", fontWeight: 700, backgroundColor: "#FEE2E2", padding: "1px 8px", borderRadius: "4px" }}>
-                                  Custom Fit Active
                                 </span>
                               )}
                             </div>
                             <div className="d-flex gap-2 flex-wrap">
                               {availableValues.map(([valId, valLabel]) => {
-                                const isSelected = (!isSizeAttr || !isCustomMode) && selectedAttributeValues[attr.id] === valId;
+                                const isSelected = selectedAttributeValues[attr.id] === valId;
                                 return (
                                   <button
                                     key={valId}
                                     type="button"
-                                    onClick={() => {
-                                      handleSelectAttributeValue(attr.id, valId);
-                                      if (isSizeAttr && isCustomMode) {
-                                        setSizingMode("standard");
-                                      }
-                                    }}
+                                    onClick={() => handleSelectAttributeValue(attr.id, valId)}
                                     style={{
                                       border: isSelected ? "2px solid var(--theme, #FF4035)" : "1.5px solid #CBD5E1",
                                       background: isSelected ? "var(--theme, #FF4035)" : "#FFFFFF",
@@ -878,112 +866,105 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                   )}
 
                   {/* ══════════════════════════════════════════════════════════════ */}
-                  {/* 2. CUSTOM SIZING DROPDOWN (Made to Measure / Custom Fit)        */}
-                  {/* Space-saving accordion: closed by default, expands on click     */}
+                  {/* 2. REAL SIZE DROPDOWN (Standard Sizes & Custom Sizing)          */}
                   {/* ══════════════════════════════════════════════════════════════ */}
-                  {isCustomSizingEnabled && (
-                    <div style={{ marginBottom: "24px", maxWidth: "540px" }}>
-                      <button
-                        type="button"
-                        onClick={() => setSizingMode((prev) => (prev === "custom" ? "standard" : "custom"))}
-                        aria-expanded={isCustomMode}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px 16px",
-                          backgroundColor: isCustomMode ? "#FFF7F7" : "#FFFFFF",
-                          border: isCustomMode ? "1.5px solid #FCA5A5" : "1.5px solid #CBD5E1",
-                          borderRadius: isCustomMode ? "10px 10px 0 0" : "10px",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          transition: "all 0.15s ease",
-                          boxShadow: isCustomMode ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{ fontSize: "1.2rem" }}>📐</span>
-                          <div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#0F172A" }}>
-                                Custom Size — Made to Measure
-                              </span>
-                              <span
-                                style={{
-                                  backgroundColor: isCustomMode ? "var(--theme, #FF4035)" : "#F1F5F9",
-                                  color: isCustomMode ? "#FFFFFF" : "#475569",
-                                  fontSize: "0.72rem",
-                                  fontWeight: 700,
-                                  padding: "2px 8px",
-                                  borderRadius: "4px",
-                                }}
-                              >
-                                ₹{customRate.toFixed(2)} / {customUnitLabel}
-                              </span>
-                            </div>
-                            <span style={{ fontSize: "0.75rem", color: "#64748B" }}>
-                              {hasStandardSizes
-                                ? "No standard size fits? Enter your exact custom window fit"
-                                : "Need custom dimensions? Enter your exact window or wall fit"}
-                            </span>
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span
-                            style={{
-                              backgroundColor: isCustomMode ? "#FEE2E2" : "#F1F5F9",
-                              color: isCustomMode ? "#DC2626" : "#475569",
-                              padding: "5px 12px",
-                              borderRadius: "6px",
-                              fontSize: "0.78rem",
-                              fontWeight: 700,
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "5px",
-                              border: isCustomMode ? "1px solid #FCA5A5" : "1px solid #E2E8F0",
-                            }}
-                          >
-                            <span>{isCustomMode ? "Close Custom Size ▲" : "Enter Custom Size ▼"}</span>
-                          </span>
-                        </div>
-                      </button>
+                  {(hasStandardSizes || isCustomSizingEnabled) && (
+                    <div className="mb-3" style={{ maxWidth: "480px" }}>
+                      <label style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1E293B", display: "block", marginBottom: "6px" }}>
+                        Size Option:
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={
+                            isCustomMode
+                              ? "__custom__"
+                              : sizeAttribute && selectedAttributeValues[sizeAttribute.id]
+                              ? selectedAttributeValues[sizeAttribute.id]
+                              : "__standard__"
+                          }
+                          onChange={(e) => {
+                            if (e.target.value === "__custom__") {
+                              setSizingMode("custom");
+                            } else {
+                              setSizingMode("standard");
+                              if (sizeAttribute && e.target.value !== "__standard__") {
+                                handleSelectAttributeValue(sizeAttribute.id, Number(e.target.value));
+                              }
+                            }
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px 40px 10px 14px",
+                            borderRadius: "8px",
+                            border: isCustomMode ? "1.5px solid var(--theme, #FF4035)" : "1.5px solid #CBD5E1",
+                            backgroundColor: "#FFFFFF",
+                            color: "#0F172A",
+                            fontSize: "0.92rem",
+                            fontWeight: 600,
+                            appearance: "none",
+                            cursor: "pointer",
+                            outline: "none",
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230F172A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "right 14px center",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                          }}
+                        >
+                          {hasStandardSizes ? (
+                            <>
+                              {standardSizes.map((sz) => (
+                                <option key={sz.id} value={sz.id}>
+                                  {sz.label} (Standard Size)
+                                </option>
+                              ))}
+                            </>
+                          ) : (
+                            <option value="__standard__">
+                              Standard Size (Included with Variation)
+                            </option>
+                          )}
+                          {isCustomSizingEnabled && (
+                            <option value="__custom__">
+                              📐 Custom Size — Made to Measure (₹{customRate.toFixed(2)} / {customUnitLabel})
+                            </option>
+                          )}
+                        </select>
+                      </div>
 
-                      {/* Dropdown Expanded: Dimension Inputs, Presets & Calculation Table */}
+                      {/* When Custom Sizing is Selected: Simple Clean Inputs */}
                       {isCustomMode && (
                         <div
                           style={{
-                            padding: "16px 18px",
-                            backgroundColor: "#FFFBFB",
-                            borderRadius: "0 0 10px 10px",
-                            border: "1.5px solid #FCA5A5",
-                            borderTop: "none",
-                            boxShadow: "0 4px 12px rgba(255, 64, 53, 0.08)",
+                            marginTop: "10px",
+                            padding: "14px 16px",
+                            backgroundColor: "#F8FAFC",
+                            borderRadius: "8px",
+                            border: "1.5px solid #CBD5E1",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
                           }}
                         >
-                          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                            <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#475569" }}>
-                              Enter your exact window or wall measurements:
+                          <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                              Enter Exact Dimensions:
                             </span>
-                            <div
+                            <span
                               style={{
-                                backgroundColor: "var(--theme, #FF4035)",
-                                color: "#FFFFFF",
-                                padding: "3px 9px",
-                                borderRadius: "6px",
-                                fontSize: "0.78rem",
-                                fontWeight: 800,
+                                fontSize: "0.76rem",
+                                fontWeight: 700,
+                                color: "var(--theme, #FF4035)",
+                                backgroundColor: "#FFF1F2",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
                               }}
                             >
                               Rate: ₹{customRate.toFixed(2)} / {customUnitLabel}
-                            </div>
+                            </span>
                           </div>
 
-                          {/* Inputs (Width & Height) */}
-                          <div className="row g-2 mb-3 align-items-center">
+                          <div className="row g-2 align-items-center mb-2">
                             {hasWidth && (
-                              <div className="col-sm-6 col-12">
-                                <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "4px" }}>
+                              <div className="col-6">
+                                <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#64748B", display: "block", marginBottom: "3px" }}>
                                   Width (Across) *
                                 </label>
                                 <div className="d-flex align-items-center gap-1">
@@ -996,16 +977,16 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                       placeholder="0"
                                       style={{
                                         width: "100%",
-                                        padding: "6px 28px 6px 8px",
+                                        padding: "6px 26px 6px 8px",
                                         borderRadius: "6px",
-                                        border: "1.5px solid #CBD5E1",
+                                        border: "1px solid #CBD5E1",
+                                        fontSize: "0.88rem",
                                         fontWeight: 700,
-                                        fontSize: "0.9rem",
                                         color: "#0F172A",
                                         outline: "none",
                                       }}
                                     />
-                                    <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                    <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
                                       ft
                                     </span>
                                   </div>
@@ -1019,29 +1000,26 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                       placeholder="0"
                                       style={{
                                         width: "100%",
-                                        padding: "6px 28px 6px 8px",
+                                        padding: "6px 26px 6px 8px",
                                         borderRadius: "6px",
-                                        border: "1.5px solid #CBD5E1",
+                                        border: "1px solid #CBD5E1",
+                                        fontSize: "0.88rem",
                                         fontWeight: 700,
-                                        fontSize: "0.9rem",
                                         color: "#0F172A",
                                         outline: "none",
                                       }}
                                     />
-                                    <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                    <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
                                       in
                                     </span>
                                   </div>
                                 </div>
-                                <span style={{ fontSize: "0.72rem", color: "#64748B", fontWeight: 600, display: "block", marginTop: "2px" }}>
-                                  = {totalWidthFeet.toFixed(2)} ft
-                                </span>
                               </div>
                             )}
 
-                            <div className={hasWidth ? "col-sm-6 col-12" : "col-12"}>
-                              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "4px" }}>
-                                {hasWidth ? "Height / Drop (Top to Bottom) *" : "Length *"}
+                            <div className={hasWidth ? "col-6" : "col-12"}>
+                              <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#64748B", display: "block", marginBottom: "3px" }}>
+                                {hasWidth ? "Height / Drop *" : "Length *"}
                               </label>
                               <div className="d-flex align-items-center gap-1">
                                 <div style={{ position: "relative", flex: 1 }}>
@@ -1053,16 +1031,16 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                     placeholder="0"
                                     style={{
                                       width: "100%",
-                                      padding: "6px 28px 6px 8px",
+                                      padding: "6px 26px 6px 8px",
                                       borderRadius: "6px",
-                                      border: "1.5px solid #CBD5E1",
+                                      border: "1px solid #CBD5E1",
+                                      fontSize: "0.88rem",
                                       fontWeight: 700,
-                                      fontSize: "0.9rem",
                                       color: "#0F172A",
                                       outline: "none",
                                     }}
                                   />
-                                  <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                  <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
                                     ft
                                   </span>
                                 </div>
@@ -1076,174 +1054,38 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                                     placeholder="0"
                                     style={{
                                       width: "100%",
-                                      padding: "6px 28px 6px 8px",
+                                      padding: "6px 26px 6px 8px",
                                       borderRadius: "6px",
-                                      border: "1.5px solid #CBD5E1",
+                                      border: "1px solid #CBD5E1",
+                                      fontSize: "0.88rem",
                                       fontWeight: 700,
-                                      fontSize: "0.9rem",
                                       color: "#0F172A",
                                       outline: "none",
                                     }}
                                   />
-                                  <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.75rem", fontWeight: 700 }}>
+                                  <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", color: "#64748B", fontSize: "0.72rem", fontWeight: 700 }}>
                                     in
                                   </span>
                                 </div>
                               </div>
-                              <span style={{ fontSize: "0.72rem", color: "#64748B", fontWeight: 600, display: "block", marginTop: "2px" }}>
-                                = {totalLengthFeet.toFixed(2)} ft
-                              </span>
                             </div>
                           </div>
 
-                          {/* Quick Presets */}
-                          <div className="d-flex align-items-center gap-2 mb-3 flex-wrap" style={{ fontSize: "0.75rem" }}>
-                            <span style={{ color: "#64748B", fontWeight: 700 }}>Quick Presets:</span>
-                            {quickPresets.map((preset) => (
-                              <button
-                                key={preset.label}
-                                type="button"
-                                onClick={() => {
-                                  setWidthFeet(preset.wFt);
-                                  setWidthInches(preset.wIn);
-                                  setLengthFeet(preset.lFt);
-                                  setLengthInches(preset.lIn);
-                                }}
-                                style={{
-                                  border: "1px solid #CBD5E1",
-                                  backgroundColor: "#FFFFFF",
-                                  color: "#334155",
-                                  borderRadius: "4px",
-                                  padding: "2px 8px",
-                                  fontSize: "0.74rem",
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Sizing & Pricing Calculation Dropdown */}
-                          <div
-                            style={{
-                              backgroundColor: "#FFFFFF",
-                              border: "1.5px solid #CBD5E1",
-                              borderRadius: "10px",
-                              overflow: "hidden",
-                              marginTop: "12px",
-                              marginBottom: "10px",
-                              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setShowPricingBreakdown((prev) => !prev)}
-                              aria-expanded={showPricingBreakdown}
-                              style={{
-                                width: "100%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                padding: "11px 14px",
-                                backgroundColor: showPricingBreakdown ? "#F1F5F9" : "#FFFFFF",
-                                border: "none",
-                                borderBottom: showPricingBreakdown ? "1.5px solid #CBD5E1" : "none",
-                                cursor: "pointer",
-                                textAlign: "left",
-                                transition: "all 0.15s ease",
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span style={{ fontSize: "1.1rem" }}>📊</span>
-                                <div>
-                                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#0F172A", display: "block" }}>
-                                    Sizing &amp; Pricing Calculation
-                                  </span>
-                                  <span style={{ fontSize: "0.74rem", color: "#64748B" }}>
-                                    Rate: ₹{customRate.toFixed(2)} / {customUnitLabel} • Total: {customTotalMeasurement} {customUnitLabel}
-                                  </span>
-                                </div>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span
-                                  style={{
-                                    backgroundColor: showPricingBreakdown ? "var(--theme, #FF4035)" : "#F1F5F9",
-                                    color: showPricingBreakdown ? "#FFFFFF" : "#0F172A",
-                                    padding: "5px 10px",
-                                    borderRadius: "6px",
-                                    fontSize: "0.76rem",
-                                    fontWeight: 700,
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                    border: showPricingBreakdown ? "none" : "1px solid #CBD5E1",
-                                  }}
-                                >
-                                  <span>{showPricingBreakdown ? "Hide Table ▲" : "View Table ▼"}</span>
-                                </span>
-                              </div>
-                            </button>
-
-                            {/* Dropdown Opened: Transparent Math & Calculation Breakdown */}
-                            {showPricingBreakdown && (
-                              <div style={{ padding: "14px 16px", backgroundColor: "#FFFFFF" }}>
-                                <div style={{ fontSize: "0.76rem", fontWeight: 800, color: "#64748B", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                                  Price Calculation Breakdown:
-                                </div>
-
-                                <table style={{ width: "100%", fontSize: "0.84rem", borderCollapse: "collapse", color: "#334155" }}>
-                                  <tbody>
-                                    <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
-                                      <td style={{ padding: "7px 0", color: "#64748B" }}>1. Total Area / Footage:</td>
-                                      <td style={{ padding: "7px 0", textAlign: "right", fontWeight: 700, color: "#0F172A" }}>
-                                        {hasWidth
-                                          ? `${totalWidthFeet.toFixed(2)} ft × ${totalLengthFeet.toFixed(2)} ft = ${customTotalMeasurement} ${customUnitLabel}`
-                                          : `${customTotalMeasurement} ${customUnitLabel}`}
-                                      </td>
-                                    </tr>
-                                    <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
-                                      <td style={{ padding: "7px 0", color: "#64748B" }}>2. Applied Rate:</td>
-                                      <td style={{ padding: "7px 0", textAlign: "right", fontWeight: 700, color: "#DC2626" }}>
-                                        ₹{customRate.toFixed(2)} per {customUnitLabel}
-                                      </td>
-                                    </tr>
-                                    <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
-                                      <td style={{ padding: "7px 0", color: "#64748B" }}>3. Measured Cost ({customTotalMeasurement} × ₹{customRate.toFixed(2)}):</td>
-                                      <td style={{ padding: "7px 0", textAlign: "right", fontWeight: 700, color: "#0F172A" }}>
-                                        ₹{rawCustomPrice.toFixed(2)}
-                                      </td>
-                                    </tr>
-                                    {customMinPriceApplied && (
-                                      <tr>
-                                        <td colSpan={2} style={{ padding: "6px 8px", backgroundColor: "#FEF3C7", color: "#92400E", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>
-                                          ℹ️ Minimum order base charge of <strong>₹{customMinPrice.toFixed(2)}</strong> applies for cuts under ₹{customMinPrice.toFixed(2)}.
-                                        </td>
-                                      </tr>
-                                    )}
-                                    <tr style={{ borderTop: "2px solid #CBD5E1" }}>
-                                      <td style={{ padding: "10px 0 0 0", fontWeight: 800, fontSize: "0.9rem", color: "#0F172A" }}>Final Calculated Price:</td>
-                                      <td style={{ padding: "10px 0 0 0", textAlign: "right", fontWeight: 900, fontSize: "1.2rem", color: "var(--theme, #FF4035)" }}>
-                                        ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-                          </div>
-
-                          <div style={{ fontSize: "0.73rem", color: "#059669", display: "flex", alignItems: "center", gap: "5px" }}>
-                            <span>✓</span>
-                            <span>Custom fabricated in Srinagar. Heavy-duty brackets &amp; hardware included.</span>
+                          {/* Live Calculated Price Summary */}
+                          <div className="d-flex align-items-center justify-content-between pt-2" style={{ borderTop: "1px solid #E2E8F0", fontSize: "0.82rem" }}>
+                            <span style={{ color: "#64748B" }}>
+                              Total Area: <strong>{customTotalMeasurement} {customUnitLabel}</strong>
+                            </span>
+                            <span style={{ fontWeight: 800, color: "var(--theme, #FF4035)", fontSize: "0.95rem" }}>
+                              Calculated: ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            </span>
                           </div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Quantity and Actions */}
+{/* Quantity and Actions */}
                   <div className="actions mb-4 d-flex align-items-center gap-4 flex-wrap">
                     <div className="quantity">
                       <p style={{ margin: "0 0 6px 0", fontWeight: 600, fontSize: "0.88rem", color: "#64748B" }}>
