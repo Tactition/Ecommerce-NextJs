@@ -1000,6 +1000,7 @@ export async function validateCustomPriceAction(params: {
   lengthInches?: number;
   widthFeet?: number;
   widthInches?: number;
+  isDealer?: boolean;
 }): Promise<{
   valid: boolean;
   rate: number;
@@ -1064,8 +1065,10 @@ export async function validateCustomPriceAction(params: {
     }
 
     const rawTotal = Number((billableMeasurement * rate).toFixed(2));
-    const calculatedPrice = minPrice > 0 ? Math.max(minPrice, rawTotal) : rawTotal;
-    const minPriceApplied = minPrice > 0 && rawTotal < minPrice;
+    // Minimum order price applies only to B2B portal dealers; retail/normal users can order even 1 piece at pure measured rate
+    const isDealer = Boolean(params.isDealer);
+    const calculatedPrice = (isDealer && minPrice > 0) ? Math.max(minPrice, rawTotal) : rawTotal;
+    const minPriceApplied = isDealer && minPrice > 0 && rawTotal < minPrice;
 
     return {
       valid: true,

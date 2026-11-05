@@ -1684,7 +1684,7 @@ export default function ProductForm({
                 {/* Minimum Charge */}
                 <div>
                   <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#334155", marginBottom: "6px" }}>
-                    Minimum Order Charge (₹)
+                    B2B Dealer Minimum Order Charge (₹)
                   </label>
                   <div style={{ position: "relative" }}>
                     <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontWeight: 700, color: "#64748B" }}>
@@ -1710,7 +1710,7 @@ export default function ProductForm({
                     />
                   </div>
                   <span style={{ fontSize: "0.75rem", color: "#64748B", display: "block", marginTop: "4px" }}>
-                    Baseline floor charge (₹0 for none)
+                    Applies to B2B portal dealer orders. Storefront retail customers can order even 1 piece.
                   </span>
                 </div>
               </div>

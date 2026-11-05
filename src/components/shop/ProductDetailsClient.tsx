@@ -256,8 +256,8 @@ export default function ProductDetailsClient({
   }
 
   const rawCustomPrice = Number((customTotalMeasurement * customRate).toFixed(2));
-  const customMinPriceApplied = customMinPrice > 0 && rawCustomPrice < customMinPrice;
-  const customEstimatedPrice = customMinPriceApplied ? customMinPrice : rawCustomPrice;
+  // Storefront normal users have no minimum order charge; they pay pure measured price for any quantity/piece
+  const customEstimatedPrice = rawCustomPrice;
 
   // Dynamic values
   const displayPrice = isCustomMode
@@ -336,10 +336,6 @@ export default function ProductDetailsClient({
         : `Linear Feet (${customLinearMode === "single_length" ? "Running Length" : "Length + Width"})`;
       attributeMap["Rate"] = `₹${customRate.toFixed(2)} / ${customUnitLabel}`;
 
-      if (customMinPriceApplied) {
-        attributeMap["Minimum Charge"] = `₹${customMinPrice.toFixed(2)} applied`;
-      }
-
       addToCart({
         productId: product.id,
         variationId: undefined,
@@ -363,8 +359,8 @@ export default function ProductDetailsClient({
           billableMeasurement: customTotalMeasurement,
           unitLabel: customUnitLabel,
           rate: customRate,
-          minPrice: customMinPrice,
-          minPriceApplied: customMinPriceApplied,
+          minPrice: 0,
+          minPriceApplied: false,
           calculatedPrice: customEstimatedPrice,
           formulaSummary: `${customFormulaText} × ₹${customRate} = ₹${customEstimatedPrice}`,
         },
@@ -484,7 +480,6 @@ export default function ProductDetailsClient({
       `• Billable ${customUnit === "sq_ft" ? "Total Area" : "Measurement"}: *${customTotalMeasurement} ${customUnitLabel}*`,
       `• Calculation Formula: ${customFormulaText}`,
       `• Applied Rate: ₹${customRate.toFixed(2)} / ${customUnitLabel}`,
-      customMinPriceApplied ? `• Minimum Base Order Charge: ₹${customMinPrice.toFixed(2)} (applied)` : null,
       ``,
       selectedAttrsSummary ? `🎨 *Selected Specifications / Finishes:*\n${selectedAttrsSummary}\n` : null,
       `💰 *Estimated Unit Price:* ₹${customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
@@ -796,23 +791,6 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                         <span>📐 Made to measure:</span>
                         <strong style={{ color: "#0F172A", fontWeight: 700 }}>₹{customRate.toFixed(2)}</strong>
                         <span style={{ color: "#64748B" }}>/ {customUnitLabel}</span>
-                      </span>
-                    )}
-
-                    {customMinPrice > 0 && isCustomSizingEnabled && (
-                      <span
-                        style={{
-                          backgroundColor: "#FEF9C3",
-                          color: "#854D0E",
-                          border: "1px solid #FEF08A",
-                          borderRadius: "4px",
-                          padding: "2px 6px",
-                          fontSize: "0.72rem",
-                          fontWeight: 600,
-                        }}
-                        title="Minimum base charge for small custom cuts"
-                      >
-                        Min. Order: ₹{customMinPrice.toFixed(0)}
                       </span>
                     )}
                   </div>
@@ -1149,14 +1127,34 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                             ))}
                           </div>
 
-                          {/* Live Calculated Price Summary */}
-                          <div className="d-flex align-items-center justify-content-between pt-2" style={{ borderTop: "1px solid #E2E8F0", fontSize: "0.78rem" }}>
-                            <span style={{ color: "#64748B" }}>
-                              Area: <strong style={{ color: "#0F172A" }}>{customTotalMeasurement} {customUnitLabel}</strong>
-                            </span>
-                            <span style={{ fontWeight: 700, color: "#0F172A", fontSize: "0.88rem" }}>
-                              Calculated: <strong style={{ color: "var(--theme, #FF4035)" }}>₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
-                            </span>
+                          {/* Custom Sizing Live Calculation Table */}
+                          <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #E2E8F0" }}>
+                            <table style={{ width: "100%", fontSize: "0.76rem", borderCollapse: "collapse", color: "#334155" }}>
+                              <tbody>
+                                <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
+                                  <td style={{ padding: "3px 0", color: "#64748B" }}>Total Area:</td>
+                                  <td style={{ padding: "3px 0", textAlign: "right", fontWeight: 600, color: "#0F172A" }}>
+                                    {hasWidth
+                                      ? `${totalWidthFeet.toFixed(2)} ft × ${totalLengthFeet.toFixed(2)} ft = ${customTotalMeasurement} ${customUnitLabel}`
+                                      : `${customTotalMeasurement} ${customUnitLabel}`}
+                                  </td>
+                                </tr>
+                                <tr style={{ borderBottom: "1px solid #F1F5F9" }}>
+                                  <td style={{ padding: "3px 0", color: "#64748B" }}>Applied Rate:</td>
+                                  <td style={{ padding: "3px 0", textAlign: "right", fontWeight: 600, color: "#0F172A" }}>
+                                    ₹{customRate.toFixed(2)} / {customUnitLabel}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td style={{ padding: "6px 0 2px 0", fontWeight: 700, fontSize: "0.8rem", color: "#0F172A" }}>
+                                    Calculated Price:
+                                  </td>
+                                  <td style={{ padding: "6px 0 2px 0", textAlign: "right", fontWeight: 800, fontSize: "0.95rem", color: "var(--theme, #FF4035)" }}>
+                                    ₹{customEstimatedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       )}
@@ -1316,7 +1314,7 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     <button
                       type="button"
                       onClick={isCustomMode ? handleSendWhatsApp : handleStandardWhatsAppQuote}
-                      title="Chat with Srinagar Showroom on WhatsApp"
+                      title="Get quote on WhatsApp"
                       style={{
                         cursor: "pointer",
                         height: "38px",
@@ -1334,43 +1332,8 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                       }}
                     >
                       <i className="fa-brands fa-whatsapp" style={{ fontSize: "1rem" }} />
-                      <span>Room Quote</span>
+                      <span>Get Quote</span>
                     </button>
-                  </div>
-
-                  {/* Srinagar & Kashmir Importer-Direct Trust Strip */}
-                  <div
-                    style={{
-                      marginTop: "16px",
-                      marginBottom: "8px",
-                      padding: "10px 14px",
-                      borderRadius: "8px",
-                      backgroundColor: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700, color: "#0F172A", fontSize: "0.78rem", marginBottom: "6px" }}>
-                      <i className="fa-solid fa-certificate text-danger" style={{ fontSize: "0.8rem" }} />
-                      <span>Wall Street Interiors — Importer-Direct Kashmir Advantage</span>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "6px", fontSize: "0.74rem", color: "#475569" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <i className="fa-solid fa-store" style={{ color: "#D4AF37", fontSize: "0.75rem" }} />
-                        <span><strong>Showroom:</strong> New Habba Kadal Bridge, Srinagar</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <i className="fa-solid fa-warehouse" style={{ color: "#D4AF37", fontSize: "0.75rem" }} />
-                        <span><strong>Godown:</strong> Fateh Kadal, Srinagar</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <i className="fa-solid fa-snowflake" style={{ color: "#2563EB", fontSize: "0.75rem" }} />
-                        <span><strong>Sub-zero Tested:</strong> Kashmir winter proof</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <i className="fa-brands fa-whatsapp" style={{ color: "#22C55E", fontSize: "0.78rem" }} />
-                        <span><strong>Direct Desk:</strong> +91 9018454526</span>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Product Details Footer & Social Share */}
