@@ -12,6 +12,7 @@ import {
   ExternalLink,
   ShieldCheck
 } from "lucide-react";
+import DealerLogoutButton from "@/components/dealer/DealerLogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,7 @@ export default async function DealerDashboardPage() {
             <Link href="/dealer/account" className="b2b-btn-secondary">
               <span>Account Settings</span>
             </Link>
+            <DealerLogoutButton />
           </div>
         </div>
 

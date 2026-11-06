@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertOctagon, ArrowLeft } from "lucide-react";
 import { getDealerSession } from "@/lib/auth/dealer";
 import { redirect } from "next/navigation";
+import DealerLogoutButton from "@/components/dealer/DealerLogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +129,9 @@ export default async function DealerSuspendedPage() {
           >
             <ArrowLeft size={16} /> Return to Homepage
           </Link>
+          <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #E2E8F0", display: "flex", justifyContent: "center" }}>
+            <DealerLogoutButton variant="link" label="Log Out / Switch Account" />
+          </div>
         </div>
       </div>
     </div>

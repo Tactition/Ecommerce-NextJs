@@ -11,6 +11,7 @@ import { getCart, removeFromCart, CartItem } from "@/lib/cart";
 import { getWishlist, saveWishlist, WishlistItem } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
 import LanguageTranslator from "@/components/common/LanguageTranslator";
+import DealerLogoutButton from "@/components/dealer/DealerLogoutButton";
 
 interface EcommerceHeaderProps {
   siteLogo?: string;
@@ -103,6 +104,20 @@ export default function EcommerceHeader({
   const [isCartBumping, setIsCartBumping] = useState(false);
   const [isWishlistBumping, setIsWishlistBumping] = useState(false);
   const [adminErrorNotice, setAdminErrorNotice] = useState(false);
+  const [dealer, setDealer] = useState<{ id: number; companyName: string; email: string; approvalStatus: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/dealer/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data.dealer) {
+          setDealer(data.dealer);
+        } else {
+          setDealer(null);
+        }
+      })
+      .catch(() => setDealer(null));
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("error=admin_required")) {
@@ -540,10 +555,21 @@ export default function EcommerceHeader({
               <i className="fa-solid fa-arrow-right-long"></i>
             </Link>
             <div className="wsi-cat-sidebar__dealer-note">
-              <span>Wholesale Buyer or Architect?</span>
-              <Link href="/dealer/login" onClick={() => setIsCategorySidebarOpen(false)}>
-                Dealer Portal &rarr;
-              </Link>
+              {dealer ? (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "8px" }}>
+                  <Link href="/dealer" onClick={() => setIsCategorySidebarOpen(false)} style={{ fontWeight: 700, color: "#10B981", fontSize: "0.85rem" }}>
+                    Trade: {dealer.companyName} &rarr;
+                  </Link>
+                  <DealerLogoutButton variant="link" label="Log Out" style={{ fontSize: "12px", color: "#EF4444", fontWeight: 700 }} />
+                </div>
+              ) : (
+                <>
+                  <span>Wholesale Buyer or Architect?</span>
+                  <Link href="/dealer/login" onClick={() => setIsCategorySidebarOpen(false)}>
+                    Dealer Portal &rarr;
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -706,6 +732,37 @@ export default function EcommerceHeader({
                   </div>
                 )}
               </div>
+
+              {/* Trade Dealer Banner in Drawer */}
+              {dealer && (
+                <div
+                  style={{
+                    margin: "12px 0 6px",
+                    padding: "10px 14px",
+                    backgroundColor: "rgba(16, 185, 129, 0.12)",
+                    border: "1px solid rgba(16, 185, 129, 0.25)",
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "10px",
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "#34D399", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Trade Partner
+                    </div>
+                    <Link
+                      href="/dealer"
+                      onClick={() => setIsOffcanvasOpen(false)}
+                      style={{ color: "#FFFFFF", fontSize: "0.84rem", fontWeight: 700, textDecoration: "none" }}
+                    >
+                      {dealer.companyName} &rarr;
+                    </Link>
+                  </div>
+                  <DealerLogoutButton variant="link" label="Log Out" style={{ fontSize: "12px", color: "#EF4444", fontWeight: 700 }} />
+                </div>
+              )}
 
               {/* Drawer Navigation Menu */}
               <div className="wsi-drawer-nav-section">
@@ -1027,27 +1084,59 @@ export default function EcommerceHeader({
               </div>
             </div>
             <div className="lang" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <Link
-                href="/dealer/login"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  color: "#FBBF24",
-                  textDecoration: "none",
-                  padding: "3px 10px",
-                  borderRadius: "6px",
-                  backgroundColor: "rgba(251, 191, 36, 0.12)",
-                  border: "1px solid rgba(251, 191, 36, 0.28)",
-                  transition: "all 0.2s ease",
-                }}
-                title="B2B Wholesale Trade Portal for Interior Contractors & Retailers"
-              >
-                <i className="fa-solid fa-briefcase"></i>
-                <span>Dealer Desk</span>
-              </Link>
+              {dealer ? (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                  <Link
+                    href="/dealer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#10B981",
+                      textDecoration: "none",
+                      padding: "3px 10px",
+                      borderRadius: "6px",
+                      backgroundColor: "rgba(16, 185, 129, 0.12)",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
+                      transition: "all 0.2s ease",
+                    }}
+                    title="Access B2B Dealer Portal Dashboard"
+                  >
+                    <i className="fa-solid fa-briefcase"></i>
+                    <span>Trade: {dealer.companyName}</span>
+                  </Link>
+                  <DealerLogoutButton
+                    variant="link"
+                    label="Log Out"
+                    showIcon={false}
+                    style={{ fontSize: "11px", color: "#EF4444", fontWeight: 700, textDecoration: "underline" }}
+                  />
+                </div>
+              ) : (
+                <Link
+                  href="/dealer/login"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#FBBF24",
+                    textDecoration: "none",
+                    padding: "3px 10px",
+                    borderRadius: "6px",
+                    backgroundColor: "rgba(251, 191, 36, 0.12)",
+                    border: "1px solid rgba(251, 191, 36, 0.28)",
+                    transition: "all 0.2s ease",
+                  }}
+                  title="B2B Wholesale Trade Portal for Interior Contractors & Retailers"
+                >
+                  <i className="fa-solid fa-briefcase"></i>
+                  <span>Dealer Desk</span>
+                </Link>
+              )}
               <LanguageTranslator />
               <div className="user">
                 {isAuthenticated ? (

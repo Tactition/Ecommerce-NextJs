@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   Loader2 
 } from "lucide-react";
+import DealerLogoutButton from "@/components/dealer/DealerLogoutButton";
 
 export default function DealerAccountClient({ dealer, addresses }: { dealer: any; addresses: any[] }) {
   const [contactSuccess, setContactSuccess] = useState(false);
@@ -99,7 +100,7 @@ export default function DealerAccountClient({ dealer, addresses }: { dealer: any
     <div className="b2b-portal-wrapper">
       <div className="b2b-container" style={{ maxWidth: "900px" }}>
         {/* Navigation Breadcrumb */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
           <Link
             href="/dealer"
             style={{
@@ -114,15 +115,18 @@ export default function DealerAccountClient({ dealer, addresses }: { dealer: any
           >
             <ArrowLeft size={16} /> Back to Dealer Desk
           </Link>
-          <span className={`b2b-badge ${
-            (dealer.approval_status || dealer.status) === "APPROVED"
-              ? "b2b-badge-success"
-              : (dealer.approval_status || dealer.status) === "PENDING"
-              ? "b2b-badge-pending"
-              : "b2b-badge-danger"
-          }`}>
-            Status: {(dealer.approval_status || dealer.status) === "APPROVED" ? "Approved Trade Partner" : (dealer.approval_status || dealer.status)}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span className={`b2b-badge ${
+              (dealer.approval_status || dealer.status) === "APPROVED"
+                ? "b2b-badge-success"
+                : (dealer.approval_status || dealer.status) === "PENDING"
+                ? "b2b-badge-pending"
+                : "b2b-badge-danger"
+            }`}>
+              Status: {(dealer.approval_status || dealer.status) === "APPROVED" ? "Approved Trade Partner" : (dealer.approval_status || dealer.status)}
+            </span>
+            <DealerLogoutButton />
+          </div>
         </div>
 
         {/* Section 1: Business Profile (Locked Fields) */}
@@ -435,6 +439,21 @@ export default function DealerAccountClient({ dealer, addresses }: { dealer: any
                 Update Password
               </button>
             </form>
+          </div>
+        </div>
+
+        {/* Section 4: Session & Security */}
+        <div className="b2b-card" style={{ border: "1.5px solid #FEE2E2", backgroundColor: "#FEF2F2" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+            <div>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#991B1B", margin: "0 0 4px 0" }}>
+                Sign Out of Trade Portal
+              </h3>
+              <p style={{ color: "#7F1D1D", fontSize: "0.82rem", margin: 0 }}>
+                End your current dealer wholesale session on this device. You will need your registered trade credentials to log back in.
+              </p>
+            </div>
+            <DealerLogoutButton variant="button" label="Log Out of Dealer Account" />
           </div>
         </div>
       </div>
