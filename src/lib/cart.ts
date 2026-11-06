@@ -33,6 +33,8 @@ export interface CartItem {
   customDetails?: CustomSizingDetails;
   sku?: string | null;
   maxStock?: number;
+  moq?: number;
+  isWholesale?: boolean;
 }
 
 const CART_STORAGE_KEY = "wallstreet_cart_v1";

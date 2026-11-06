@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCart, clearCart, CartItem } from "@/lib/cart";
+import { useDealerAuth } from "@/components/auth/DealerAuthProvider";
 import { createOrderAction, PlacedOrder, getOrderByNumberAction } from "@/lib/actions/orders";
 
 const INDIAN_STATES = [
@@ -49,6 +50,7 @@ const VALID_COUPONS: Record<string, { percent: number; label: string }> = {
 
 export default function CheckoutClient() {
   const router = useRouter();
+  const { dealer, isApproved: isDealerApproved } = useDealerAuth();
 
   // Cart state
   const [items, setItems] = useState<CartItem[]>([]);
@@ -133,6 +135,24 @@ export default function CheckoutClient() {
     window.addEventListener("cart-updated", handleCartSync);
     return () => window.removeEventListener("cart-updated", handleCartSync);
   }, []);
+
+  // Pre-fill dealer profile details when logged in as approved trade partner
+  useEffect(() => {
+    if (isDealerApproved && dealer) {
+      if (dealer.companyName && !companyName) setCompanyName(dealer.companyName);
+      if (dealer.gstNumber && !gstin) setGstin(dealer.gstNumber);
+      if (dealer.email && !email) setEmail(dealer.email);
+      if (dealer.contactName && !firstName) {
+        const parts = dealer.contactName.trim().split(" ");
+        setFirstName(parts[0] || dealer.companyName);
+        if (parts.length > 1) {
+          setLastName(parts.slice(1).join(" "));
+        } else {
+          setLastName("Trade Partner");
+        }
+      }
+    }
+  }, [isDealerApproved, dealer, companyName, gstin, email, firstName]);
 
   // Financial Calculations
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -234,6 +254,17 @@ export default function CheckoutClient() {
     if (items.length === 0) {
       setSubmitError("Your cart is empty. Please add products before checking out.");
       return;
+    }
+
+    // Strict B2B Dealer MOQ verification
+    if (isDealerApproved) {
+      const violatedItem = items.find((i) => i.quantity < Math.max(1, Number(i.moq) || 1));
+      if (violatedItem) {
+        const requiredMoq = Math.max(1, Number(violatedItem.moq) || 1);
+        setSubmitError(`Cannot place order: "${violatedItem.name}" requires a minimum B2B order of ${requiredMoq} units (currently ${violatedItem.quantity}). Please return to cart and update the quantity.`);
+        window.scrollTo({ top: 300, behavior: "smooth" });
+        return;
+      }
     }
 
     if (!validateForm()) {

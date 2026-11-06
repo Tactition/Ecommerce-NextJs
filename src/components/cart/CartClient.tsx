@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useDealerAuth } from "@/components/auth/DealerAuthProvider";
 import {
   getCart,
   saveCart,
@@ -17,6 +18,7 @@ import { validateCustomPriceAction } from "@/lib/actions/products";
 export default function CartClient() {
   const router = useRouter();
   const { requireAuth } = useAuth();
+  const { dealer, isApproved: isDealerApproved } = useDealerAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [couponCode, setCouponCode] = useState("");
@@ -158,6 +160,15 @@ export default function CartClient() {
   const shippingFee = 0; // Complimentary white glove delivery
   const total = Math.max(0, subtotal - discountAmount + shippingFee);
 
+  // MOQ violation check for approved B2B dealers
+  const hasMoqViolations = Boolean(
+    isDealerApproved &&
+      safeItems.some((item) => {
+        const itemMoq = Math.max(1, Number(item?.moq) || 1);
+        return Number(item?.quantity || 1) < itemMoq;
+      })
+  );
+
   if (!isLoaded) {
     return (
       <div className="cart-wrapper section-padding fix bg-white">
@@ -214,6 +225,29 @@ export default function CartClient() {
           </div>
         )}
 
+        {/* B2B Minimum Order Quantity Banner */}
+        {isDealerApproved && hasMoqViolations && (
+          <div
+            style={{
+              padding: "14px 20px",
+              backgroundColor: "#FEF2F2",
+              color: "#991B1B",
+              borderRadius: "8px",
+              marginBottom: "20px",
+              border: "1.5px solid #F87171",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <i className="fa-solid fa-triangle-exclamation" style={{ color: "#DC2626", fontSize: "1.3rem", flexShrink: 0 }}></i>
+            <div>
+              <strong>B2B Minimum Order Alert:</strong> One or more items in your cart do not meet the minimum order quantity requirement for trade partners. Please update item quantities to at least the minimum to proceed to checkout.
+            </div>
+          </div>
+        )}
+
         <div className="row">
           <div className="col-lg-12 col-md-12 col-sm-12 col-12">
             <div className="table_desc">
@@ -230,9 +264,11 @@ export default function CartClient() {
                   </thead>
                   <tbody>
                     {items.map((item) => {
+                      const itemMoq = isDealerApproved ? Math.max(1, Number(item?.moq) || 1) : 1;
+                      const isItemMoqViolated = isDealerApproved && item.quantity < itemMoq;
                       const itemTotal = item.price * item.quantity;
                       return (
-                        <tr key={item.id}>
+                        <tr key={item.id} style={{ backgroundColor: isItemMoqViolated ? "#FEF2F2" : undefined }}>
                           <td className="product_thumb d-flex align-items-center">
                             <Link href={`/product/${item.slug}`}>
                               {item.image ? (
@@ -261,13 +297,35 @@ export default function CartClient() {
                               )}
                             </Link>
                             <div className="ms-3 text-start">
-                              <Link
-                                className="product-name"
-                                href={`/product/${item.slug}`}
-                                style={{ fontWeight: 600, color: "#0F172A", display: "block" }}
-                              >
-                                {item.name}
-                              </Link>
+                              <div className="d-flex align-items-center gap-2">
+                                <Link
+                                  className="product-name"
+                                  href={`/product/${item.slug}`}
+                                  style={{ fontWeight: 600, color: "#0F172A", display: "inline-block" }}
+                                >
+                                  {item.name}
+                                </Link>
+                                {(item.isWholesale || isDealerApproved) && (
+                                  <span
+                                    style={{
+                                      fontSize: "0.68rem",
+                                      backgroundColor: "#ECFDF5",
+                                      color: "#065F46",
+                                      border: "1px solid #A7F3D0",
+                                      padding: "1px 6px",
+                                      borderRadius: "4px",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    B2B Rate
+                                  </span>
+                                )}
+                              </div>
+                              {isItemMoqViolated && (
+                                <div style={{ marginTop: "4px", fontSize: "0.76rem", color: "#DC2626", fontWeight: 700 }}>
+                                  ⚠️ Below B2B Minimum: {itemMoq} units required
+                                </div>
+                              )}
                               {item.customDetails?.isCustom ? (
                                 <div className="mt-2" style={{ backgroundColor: "var(--bg-1, #FFF5F4)", border: "1px solid rgba(255, 64, 53, 0.22)", borderRadius: "8px", padding: "8px 12px", maxWidth: "420px" }}>
                                   <div className="d-flex align-items-center gap-2 mb-1">
@@ -357,6 +415,26 @@ export default function CartClient() {
                                 </button>
                               </div>
                             </div>
+                            {isItemMoqViolated && (
+                              <div style={{ marginTop: "4px" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleManualQuantity(item.id, itemMoq)}
+                                  style={{
+                                    padding: "2px 8px",
+                                    borderRadius: "4px",
+                                    backgroundColor: "#DC2626",
+                                    color: "#FFFFFF",
+                                    border: "none",
+                                    fontSize: "0.7rem",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Set to min ({itemMoq})
+                                </button>
+                              </div>
+                            )}
                           </td>
                           <td className="product_total">₹{itemTotal.toFixed(2)}</td>
                           <td className="product_remove">
@@ -470,13 +548,30 @@ export default function CartClient() {
                 <button
                   type="button"
                   onClick={() => {
-                    requireAuth("checkout", () => router.push("/checkout"));
+                    if (isDealerApproved) {
+                      if (hasMoqViolations) {
+                        alert("Cannot proceed to checkout: One or more products in your cart do not meet the minimum B2B order quantity requirement for trade partners. Please adjust item quantities to at least the minimum.");
+                        return;
+                      }
+                      router.push("/checkout");
+                    } else {
+                      requireAuth("checkout", () => router.push("/checkout"));
+                    }
                   }}
                   className="theme-btn style6 text-center w-100"
-                  style={{ border: "none", cursor: "pointer" }}
+                  style={{
+                    border: "none",
+                    cursor: hasMoqViolations ? "not-allowed" : "pointer",
+                    backgroundColor: hasMoqViolations ? "#94A3B8" : undefined,
+                  }}
                 >
-                  Proceed to Checkout
+                  {hasMoqViolations ? "⚠️ Minimum Order Required to Checkout" : "Proceed to Checkout"}
                 </button>
+                {isDealerApproved && hasMoqViolations && (
+                  <div style={{ marginTop: "8px", fontSize: "0.78rem", color: "#DC2626", fontWeight: 600, textAlign: "center" }}>
+                    Please adjust items marked in red to meet their minimum B2B order requirements.
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -127,6 +127,8 @@ export const productSchema = z.object({
   short_description: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   price: z.coerce.number().min(0, "Price must be non-negative."),
+  default_wholesale_price: z.coerce.number().optional().nullable(),
+  min_order_quantity: z.coerce.number().min(1).default(1),
   original_price: z.coerce.number().optional().nullable(),
   discount_percent: z.coerce.number().default(0),
   rating: z.coerce.number().min(1).max(5).default(5),

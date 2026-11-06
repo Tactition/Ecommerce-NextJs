@@ -159,6 +159,25 @@ export async function createOrderAction(data: CreateOrderInput): Promise<{
       return { success: false, error: "Your cart is empty. Please add items before checking out." };
     }
 
+    // 1b. Server-side B2B Minimum Order Quantity (MOQ) validation
+    if (isB2B === 1) {
+      for (const item of data.items) {
+        const [prodRows] = await pool.query<RowDataPacket[]>(
+          "SELECT id, name, min_order_quantity FROM products WHERE id = ? LIMIT 1",
+          [item.productId]
+        );
+        if (prodRows && prodRows.length > 0) {
+          const reqMoq = Math.max(1, Number(prodRows[0].min_order_quantity) || 1);
+          if (item.quantity < reqMoq) {
+            return {
+              success: false,
+              error: `Minimum order requirement not met: "${prodRows[0].name}" requires at least ${reqMoq} units for B2B trade orders (received ${item.quantity}).`,
+            };
+          }
+        }
+      }
+    }
+
     // 2. Financial calculation
     const subtotal = data.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const discountAmount = data.discountPercent && data.discountPercent > 0

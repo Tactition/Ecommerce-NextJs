@@ -10,6 +10,7 @@ import { ContactNumberItem, ContactEmailItem } from "@/types";
 import { getCart, removeFromCart, CartItem } from "@/lib/cart";
 import { getWishlist, saveWishlist, WishlistItem } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useDealerAuth } from "@/components/auth/DealerAuthProvider";
 import LanguageTranslator from "@/components/common/LanguageTranslator";
 
 interface EcommerceHeaderProps {
@@ -86,6 +87,7 @@ export default function EcommerceHeader({
 }: EcommerceHeaderProps) {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
+  const { dealer, isApproved: isDealerApproved } = useDealerAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [liveSearchResults, setLiveSearchResults] = useState<{
@@ -1028,25 +1030,25 @@ export default function EcommerceHeader({
             </div>
             <div className="lang" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <Link
-                href="/dealer/login"
+                href={isDealerApproved ? "/dealer" : "/dealer/login"}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "6px",
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: "#FBBF24",
+                  color: isDealerApproved ? "#10B981" : "#FBBF24",
                   textDecoration: "none",
                   padding: "3px 10px",
                   borderRadius: "6px",
-                  backgroundColor: "rgba(251, 191, 36, 0.12)",
-                  border: "1px solid rgba(251, 191, 36, 0.28)",
+                  backgroundColor: isDealerApproved ? "rgba(16, 185, 129, 0.12)" : "rgba(251, 191, 36, 0.12)",
+                  border: isDealerApproved ? "1px solid rgba(16, 185, 129, 0.35)" : "1px solid rgba(251, 191, 36, 0.28)",
                   transition: "all 0.2s ease",
                 }}
-                title="B2B Wholesale Trade Portal for Interior Contractors & Retailers"
+                title={isDealerApproved ? `Logged in: ${dealer?.companyName || "B2B Trade Partner"}` : "B2B Wholesale Trade Portal for Interior Contractors & Retailers"}
               >
-                <i className="fa-solid fa-briefcase"></i>
-                <span>Dealer Desk</span>
+                <i className={isDealerApproved ? "fa-solid fa-shield-check" : "fa-solid fa-briefcase"}></i>
+                <span>{isDealerApproved ? `Trade Partner (${dealer?.companyName ? dealer.companyName.slice(0, 12) : "B2B"})` : "Dealer Desk"}</span>
               </Link>
               <LanguageTranslator />
               <div className="user">

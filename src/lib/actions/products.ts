@@ -19,6 +19,8 @@ export interface Product {
   short_description: string | null;
   description: string | null;
   price: number;
+  default_wholesale_price?: number | null;
+  min_order_quantity?: number | null;
   original_price: number | null;
   discount_percent: number;
   rating: number;
@@ -89,6 +91,8 @@ const fetchBestSellerProductsUncached = async (): Promise<Product[]> => {
       short_description: r.short_description,
       description: null,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -142,6 +146,8 @@ const fetchFeaturedProductsUncached = async (): Promise<Product[]> => {
       short_description: r.short_description,
       description: null,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -199,6 +205,8 @@ const fetchPopularProductsUncached = async (): Promise<Product[]> => {
       short_description: r.short_description,
       description: null,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -252,6 +260,8 @@ const fetchOnSaleProductsUncached = async (): Promise<Product[]> => {
       short_description: r.short_description,
       description: null,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -376,6 +386,8 @@ const fetchProductBySlugUncached = async (slug: string): Promise<Product | null>
       short_description: r.short_description,
       description: r.description,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -431,6 +443,8 @@ const fetchProductsByIdsUncached = async (ids: number[]): Promise<Product[]> => 
       short_description: r.short_description,
       description: r.description,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -514,6 +528,8 @@ const fetchAllProductsUncached = async (): Promise<Product[]> => {
       short_description: r.short_description,
       description: null,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -620,6 +636,8 @@ export async function getAllProducts(filters?: {
       short_description: r.short_description,
       description: r.description,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -662,6 +680,8 @@ const fetchRelatedProductsUncached = async (categorySlug: string, currentProduct
       short_description: r.short_description,
       description: r.description,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -755,6 +775,8 @@ export async function getAllProductsAdmin(): Promise<Product[]> {
       short_description: r.short_description,
       description: null,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -803,6 +825,8 @@ export async function getProductByIdAdmin(id: number): Promise<Product | null> {
       short_description: r.short_description,
       description: r.description,
       price: Number(r.price),
+      default_wholesale_price: r.default_wholesale_price !== null && r.default_wholesale_price !== undefined ? Number(r.default_wholesale_price) : null,
+      min_order_quantity: r.min_order_quantity !== null && r.min_order_quantity !== undefined ? Number(r.min_order_quantity) : 1,
       original_price: r.original_price ? Number(r.original_price) : null,
       discount_percent: Number(r.discount_percent || 0),
       rating: Number(r.rating || 5),
@@ -849,6 +873,8 @@ export async function saveProductAction(formData: FormData) {
     short_description: formData.get("short_description") || null,
     description: formData.get("description") || null,
     price: formData.get("price"),
+    default_wholesale_price: formData.get("default_wholesale_price") || null,
+    min_order_quantity: formData.get("min_order_quantity") || 1,
     original_price: formData.get("original_price") || null,
     discount_percent: formData.get("discount_percent") || 0,
     rating: formData.get("rating") || 5,
@@ -901,7 +927,7 @@ export async function saveProductAction(formData: FormData) {
         `UPDATE products SET
           name = ?, slug = ?, category_slug = ?, category_name = ?,
           subcategory_slug = ?, subcategory_name = ?,
-          short_description = ?, description = ?, price = ?, original_price = ?,
+          short_description = ?, description = ?, price = ?, default_wholesale_price = ?, min_order_quantity = ?, original_price = ?,
           discount_percent = ?, rating = ?, reviews_count = ?, image = ?, gallery_images = ?,
           badge = ?, brand = ?, is_best_seller = ?, is_featured = ?,
           is_popular = ?, is_on_sale = ?, has_variations = ?,
@@ -912,7 +938,7 @@ export async function saveProductAction(formData: FormData) {
         [
           p.name, p.slug, p.category_slug, p.category_name,
           p.subcategory_slug || null, p.subcategory_name || null,
-          p.short_description || null, p.description || null, p.price, p.original_price || null,
+          p.short_description || null, p.description || null, p.price, p.default_wholesale_price || null, p.min_order_quantity || 1, p.original_price || null,
           p.discount_percent, p.rating, p.reviews_count, p.image, galleryImagesJson,
           p.badge || null, p.brand || null, p.is_best_seller, p.is_featured,
           p.is_popular, p.is_on_sale, p.has_variations ? 1 : 0,
@@ -925,15 +951,15 @@ export async function saveProductAction(formData: FormData) {
       const [insertRes] = await pool.execute<ResultSetHeader>(
         `INSERT INTO products (
           name, slug, category_slug, category_name, subcategory_slug, subcategory_name,
-          short_description, description, price, original_price, discount_percent, rating,
+          short_description, description, price, default_wholesale_price, min_order_quantity, original_price, discount_percent, rating,
           reviews_count, image, gallery_images, badge, brand, is_best_seller, is_featured,
           is_popular, is_on_sale, has_variations, allow_custom_sizing, custom_size_rate, custom_size_unit,
           custom_size_min_price, custom_size_linear_mode, stock, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           p.name, p.slug, p.category_slug, p.category_name,
           p.subcategory_slug || null, p.subcategory_name || null,
-          p.short_description || null, p.description || null, p.price, p.original_price || null,
+          p.short_description || null, p.description || null, p.price, p.default_wholesale_price || null, p.min_order_quantity || 1, p.original_price || null,
           p.discount_percent, p.rating, p.reviews_count, p.image, galleryImagesJson,
           p.badge || null, p.brand || null, p.is_best_seller, p.is_featured,
           p.is_popular, p.is_on_sale, p.has_variations ? 1 : 0,

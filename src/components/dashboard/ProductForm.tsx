@@ -55,6 +55,7 @@ export interface DynamicVariationRow {
   id?: number;
   sku: string;
   price: string;
+  wholesale_price?: string;
   original_price: string;
   stock: string;
   image: string;
@@ -216,6 +217,16 @@ export default function ProductForm({
   const [price, setPrice] = useState(
     initialProduct?.price !== undefined ? String(initialProduct.price) : "25.00"
   );
+  const [defaultWholesalePrice, setDefaultWholesalePrice] = useState(
+    initialProduct?.default_wholesale_price !== undefined && initialProduct?.default_wholesale_price !== null
+      ? String(initialProduct.default_wholesale_price)
+      : ""
+  );
+  const [minOrderQuantity, setMinOrderQuantity] = useState(
+    initialProduct?.min_order_quantity !== undefined && initialProduct?.min_order_quantity !== null
+      ? String(initialProduct.min_order_quantity)
+      : "1"
+  );
   const [originalPrice, setOriginalPrice] = useState(
     initialProduct?.original_price ? String(initialProduct.original_price) : ""
   );
@@ -356,6 +367,7 @@ export default function ProductForm({
           id: v.id,
           sku: v.sku || "",
           price: String(v.price),
+          wholesale_price: v.wholesale_price !== null && v.wholesale_price !== undefined ? String(v.wholesale_price) : "",
           original_price: v.original_price ? String(v.original_price) : "",
           stock: String(v.stock),
           image: v.image && v.image !== initialProduct?.image && !v.image.startsWith("/images/products/") ? v.image : "",
@@ -428,6 +440,7 @@ export default function ProductForm({
       return {
         sku: `${baseSkuPrefix}-${skuSuffix}`,
         price: defaultVarPrice,
+        wholesale_price: defaultWholesalePrice || "",
         original_price: originalPrice || "",
         stock: defaultVarStock,
         image: image || "",
@@ -673,6 +686,7 @@ export default function ProductForm({
       {
         sku: `${baseSkuPrefix}-${randomSuffix}`,
         price: price || "25.00",
+        wholesale_price: defaultWholesalePrice || "",
         original_price: originalPrice || "",
         stock: stock || "20",
         image: image || "",
@@ -779,6 +793,8 @@ export default function ProductForm({
     }
 
     formData.append("price", price);
+    formData.append("default_wholesale_price", defaultWholesalePrice);
+    formData.append("min_order_quantity", minOrderQuantity || "1");
     formData.append("original_price", originalPrice);
     formData.append("discount_percent", discountPercent);
     formData.append("stock", stock);
@@ -845,6 +861,7 @@ export default function ProductForm({
                 id: v.id,
                 sku: (v.sku || "").trim() || `${(slug || name || "PROD").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
                 price: parseFloat(v.price) || parseFloat(price) || 0,
+                wholesale_price: v.wholesale_price ? parseFloat(v.wholesale_price) : (defaultWholesalePrice ? parseFloat(defaultWholesalePrice) : null),
                 original_price: v.original_price ? parseFloat(v.original_price) : null,
                 stock: parseInt(v.stock, 10) || 0,
                 image: finalImg,
@@ -1474,6 +1491,114 @@ export default function ProductForm({
                   outline: "none",
                 }}
               />
+            </div>
+          </div>
+
+          {/* B2B Dealer / Wholesale Pricing & MOQ Adjustment */}
+          <div
+            style={{
+              marginTop: "18px",
+              padding: "16px 18px",
+              backgroundColor: "#F8FAFC",
+              borderRadius: "10px",
+              border: "1px solid #E2E8F0",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "1.1rem" }}>🏷️</span>
+              <strong style={{ fontSize: "0.9rem", color: "#0F172A" }}>
+                B2B Trade Partner / Dealer Pricing & Minimum Order
+              </strong>
+              <span
+                style={{
+                  fontSize: "0.72rem",
+                  padding: "2px 8px",
+                  borderRadius: "999px",
+                  backgroundColor: "rgba(16, 185, 129, 0.12)",
+                  color: "#065F46",
+                  fontWeight: 700,
+                }}
+              >
+                B2B Portal Adjustments
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    color: "#334155",
+                    marginBottom: "5px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  B2B Dealer Price (₹)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={defaultWholesalePrice}
+                  onChange={(e) => setDefaultWholesalePrice(e.target.value)}
+                  placeholder="e.g. 2138.00"
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "7px",
+                    border: "1px solid #CBD5E1",
+                    fontSize: "0.86rem",
+                    fontWeight: 600,
+                    color: "#0F172A",
+                    outline: "none",
+                    backgroundColor: "#FFFFFF",
+                  }}
+                />
+                <span style={{ fontSize: "0.74rem", color: "#64748B", display: "block", marginTop: "4px" }}>
+                  Exclusive trade price shown to approved dealers when logged in. Storefront retail customers see retail price.
+                </span>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    color: "#334155",
+                    marginBottom: "5px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  B2B Dealer Minimum Order Quantity (Units)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={minOrderQuantity}
+                  onChange={(e) => setMinOrderQuantity(e.target.value)}
+                  placeholder="e.g. 5"
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "7px",
+                    border: "1px solid #CBD5E1",
+                    fontSize: "0.86rem",
+                    fontWeight: 600,
+                    color: "#0F172A",
+                    outline: "none",
+                    backgroundColor: "#FFFFFF",
+                  }}
+                />
+                <span style={{ fontSize: "0.74rem", color: "#64748B", display: "block", marginTop: "4px" }}>
+                  Minimum order units enforced for B2B dealers. Retail customers can order even 1 piece.
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -2790,6 +2915,30 @@ export default function ProductForm({
                                             fontSize: "0.8rem",
                                             borderRadius: "3px",
                                             border: "1px solid #8C8F94",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* B2B Dealer Price */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#065F46", marginBottom: "4px" }}>
+                                          B2B Dealer rate (₹):
+                                        </label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={row.wholesale_price || ""}
+                                          onChange={(e) => updateVariationRow(idx, "wholesale_price", e.target.value)}
+                                          placeholder="Optional dealer price"
+                                          style={{
+                                            width: "100%",
+                                            padding: "6px 8px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: "3px",
+                                            border: "1px solid #10B981",
+                                            backgroundColor: "#F0FDF4",
+                                            fontWeight: 700,
+                                            color: "#065F46",
                                           }}
                                         />
                                       </div>

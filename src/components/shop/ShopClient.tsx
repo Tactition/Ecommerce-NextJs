@@ -8,6 +8,7 @@ import { Product, ProductCategory } from "@/lib/actions/products";
 import { addToCart } from "@/lib/cart";
 import { addToWishlist, toggleWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useDealerAuth } from "@/components/auth/DealerAuthProvider";
 
 const ProductImageGallery = dynamic(() => import("@/components/shop/ProductImageGallery"), { ssr: false });
 import {
@@ -82,6 +83,7 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
 
   // Pagination State
   const { requireAuth } = useAuth();
+  const { dealer, isApproved: isDealerApproved } = useDealerAuth();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(12);
 
@@ -117,18 +119,30 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
   };
 
   const handleAddToCart = (p: Product) => {
-    if (!requireAuth("cart")) return;
+    if (!isDealerApproved && !requireAuth("cart")) return;
+    const itemMoq = isDealerApproved ? Math.max(1, Number(p.min_order_quantity) || 1) : 1;
+    const finalPrice = isDealerApproved && p.default_wholesale_price && Number(p.default_wholesale_price) > 0
+      ? Number(p.default_wholesale_price)
+      : Number(p.price);
+
     addToCart({
       productId: p.id,
       name: p.name,
       slug: p.slug,
-      price: p.price,
-      originalPrice: p.original_price,
-      quantity: 1,
+      price: finalPrice,
+      originalPrice: isDealerApproved ? Number(p.price) : p.original_price,
+      quantity: itemMoq,
       image: p.image,
       maxStock: p.stock,
+      moq: itemMoq,
+      isWholesale: isDealerApproved,
     });
-    showToast(`Added "${p.name}" to your shopping cart!`, "cart");
+    showToast(
+      isDealerApproved && itemMoq > 1
+        ? `Added ${itemMoq}x "${p.name}" (B2B MOQ met at ₹${finalPrice}/unit) to cart!`
+        : `Added "${p.name}" to your shopping cart!`,
+      "cart"
+    );
   };
 
   const handleAddToWishlist = (p: Product) => {
@@ -1292,9 +1306,11 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
                 /* GRID VIEW (3 Columns with Full-Bleed Image Presentation) */
                 <div className="row g-3 g-md-4">
                   {paginatedProducts.map((p) => {
+                    const isWholesale = Boolean(isDealerApproved && p.default_wholesale_price && Number(p.default_wholesale_price) > 0);
+                    const price = isWholesale ? Number(p.default_wholesale_price) : (Number(p.price) || 0);
+                    const originalPrice = isWholesale ? Number(p.price) : (p.original_price ? Number(p.original_price) : null);
+                    const productMoq = isDealerApproved ? Math.max(1, Number(p.min_order_quantity) || 1) : 1;
                     const hasDiscount = Boolean(p.discount_percent && p.discount_percent > 0);
-                    const originalPrice = p.original_price ? Number(p.original_price) : null;
-                    const price = Number(p.price) || 0;
 
                     return (
                       <div key={p.id} className="col-xl-4 col-md-6 col-6">
@@ -1407,12 +1423,24 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
                             {/* Price & Action Button */}
                             <div className="wsi-shop-card__bottom">
                               <div className="wsi-shop-card__price-wrap">
-                                <span className="wsi-shop-card__price">
-                                  ₹{price.toLocaleString("en-IN")}
-                                </span>
+                                <div className="d-flex align-items-center gap-1 flex-wrap">
+                                  <span className="wsi-shop-card__price">
+                                    ₹{price.toLocaleString("en-IN")}
+                                  </span>
+                                  {isWholesale && (
+                                    <span style={{ fontSize: "0.65rem", backgroundColor: "#ECFDF5", color: "#065F46", padding: "1px 5px", borderRadius: "3px", fontWeight: 700 }}>
+                                      B2B Rate
+                                    </span>
+                                  )}
+                                </div>
                                 {originalPrice && originalPrice > price && (
                                   <span className="wsi-shop-card__price-orig">
-                                    ₹{originalPrice.toLocaleString("en-IN")}
+                                    {isWholesale ? `Retail ₹${originalPrice.toLocaleString("en-IN")}` : `₹${originalPrice.toLocaleString("en-IN")}`}
+                                  </span>
+                                )}
+                                {isDealerApproved && productMoq > 1 && (
+                                  <span style={{ fontSize: "0.68rem", color: "#64748B", fontWeight: 600, display: "block" }}>
+                                    MOQ: {productMoq} pcs
                                   </span>
                                 )}
                               </div>
@@ -1436,9 +1464,11 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
                 /* LIST VIEW (Full-Bleed Horizontal Card) */
                 <div className="d-flex flex-column gap-4">
                   {paginatedProducts.map((p) => {
+                    const isWholesale = Boolean(isDealerApproved && p.default_wholesale_price && Number(p.default_wholesale_price) > 0);
+                    const price = isWholesale ? Number(p.default_wholesale_price) : (Number(p.price) || 0);
+                    const originalPrice = isWholesale ? Number(p.price) : (p.original_price ? Number(p.original_price) : null);
+                    const productMoq = isDealerApproved ? Math.max(1, Number(p.min_order_quantity) || 1) : 1;
                     const hasDiscount = Boolean(p.discount_percent && p.discount_percent > 0);
-                    const originalPrice = p.original_price ? Number(p.original_price) : null;
-                    const price = Number(p.price) || 0;
 
                     return (
                       <div key={p.id} className="wsi-shop-list-card">
@@ -1512,12 +1542,24 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
 
                           <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-auto">
                             <div className="wsi-shop-card__price-wrap">
-                              <span className="wsi-shop-card__price">
-                                ₹{price.toLocaleString("en-IN")}
-                              </span>
+                              <div className="d-flex align-items-center gap-1 flex-wrap">
+                                <span className="wsi-shop-card__price">
+                                  ₹{price.toLocaleString("en-IN")}
+                                </span>
+                                {isWholesale && (
+                                  <span style={{ fontSize: "0.68rem", backgroundColor: "#ECFDF5", color: "#065F46", padding: "1px 6px", borderRadius: "4px", fontWeight: 700 }}>
+                                    B2B Rate
+                                  </span>
+                                )}
+                              </div>
                               {originalPrice && originalPrice > price && (
                                 <span className="wsi-shop-card__price-orig">
-                                  ₹{originalPrice.toLocaleString("en-IN")}
+                                  {isWholesale ? `Retail ₹${originalPrice.toLocaleString("en-IN")}` : `₹${originalPrice.toLocaleString("en-IN")}`}
+                                </span>
+                              )}
+                              {isDealerApproved && productMoq > 1 && (
+                                <span style={{ fontSize: "0.72rem", color: "#64748B", fontWeight: 600, display: "block" }}>
+                                  B2B Minimum Order: {productMoq} units
                                 </span>
                               )}
                             </div>
@@ -1763,30 +1805,35 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
                 </div>
 
                 {/* Price */}
-                <div className="d-flex align-items-baseline gap-3 mb-4">
-                  <span style={{ fontSize: "1.85rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
-                    ₹{Number(quickViewProduct.price).toLocaleString("en-IN")}
-                  </span>
-                  {quickViewProduct.original_price && Number(quickViewProduct.original_price) > Number(quickViewProduct.price) && (
-                    <span style={{ textDecoration: "line-through", color: "#94A3B8", fontSize: "1.15rem", fontWeight: 500 }}>
-                      ₹{Number(quickViewProduct.original_price).toLocaleString("en-IN")}
-                    </span>
-                  )}
-                  {quickViewProduct.discount_percent > 0 && (
-                    <span
-                      style={{
-                        fontSize: "0.82rem",
-                        fontWeight: 800,
-                        color: "#FFFFFF",
-                        backgroundColor: "#FF4035",
-                        padding: "3px 10px",
-                        borderRadius: "9999px",
-                      }}
-                    >
-                      Save {quickViewProduct.discount_percent}%
-                    </span>
-                  )}
-                </div>
+                {(() => {
+                  const isWholesale = Boolean(isDealerApproved && quickViewProduct.default_wholesale_price && Number(quickViewProduct.default_wholesale_price) > 0);
+                  const qvPrice = isWholesale ? Number(quickViewProduct.default_wholesale_price) : Number(quickViewProduct.price);
+                  const qvOrig = isWholesale ? Number(quickViewProduct.price) : (quickViewProduct.original_price ? Number(quickViewProduct.original_price) : null);
+                  const qvMoq = isDealerApproved ? Math.max(1, Number(quickViewProduct.min_order_quantity) || 1) : 1;
+
+                  return (
+                    <div className="d-flex align-items-baseline gap-3 mb-4 flex-wrap">
+                      <span style={{ fontSize: "1.85rem", fontWeight: 900, color: "var(--theme, #FF4035)" }}>
+                        ₹{qvPrice.toLocaleString("en-IN")}
+                      </span>
+                      {isWholesale && (
+                        <span style={{ fontSize: "0.78rem", backgroundColor: "#ECFDF5", color: "#065F46", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>
+                          B2B Trade Rate
+                        </span>
+                      )}
+                      {qvOrig && qvOrig > qvPrice && (
+                        <span style={{ textDecoration: "line-through", color: "#94A3B8", fontSize: "1.15rem", fontWeight: 500 }}>
+                          {isWholesale ? `Retail ₹${qvOrig.toLocaleString("en-IN")}` : `₹${qvOrig.toLocaleString("en-IN")}`}
+                        </span>
+                      )}
+                      {isDealerApproved && qvMoq > 1 && (
+                        <span style={{ fontSize: "0.78rem", backgroundColor: "#F1F5F9", color: "#334155", padding: "2px 8px", borderRadius: "4px", fontWeight: 600 }}>
+                          📦 Minimum B2B Order: {qvMoq} units
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <p style={{ color: "#475569", fontSize: "0.95rem", lineHeight: 1.65, marginBottom: "28px" }}>
                   {quickViewProduct.short_description || quickViewProduct.description || "Bespoke architectural fixture and custom furniture designed to elevate contemporary residential and luxury commercial spaces."}
