@@ -8,7 +8,6 @@ import { ProductVariation, ProductAttribute } from "@/lib/actions/variations";
 import { addToCart } from "@/lib/cart";
 import { toggleWishlist, isInWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useDealerAuth } from "@/components/auth/DealerAuthProvider";
 import ProductImageGallery from "@/components/shop/ProductImageGallery";
 import { isColorAttribute, getColorHex, formatDescriptionHtml } from "@/lib/colorShades";
 
@@ -38,7 +37,6 @@ export default function ProductDetailsClient({
 }: ProductDetailsClientProps) {
   const router = useRouter();
   const { requireAuth } = useAuth();
-  const { dealer, isApproved: isDealerApproved } = useDealerAuth();
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"desc" | "specs" | "reviews">("desc");
   const [inWishlist, setInWishlist] = useState(false);
@@ -324,64 +322,25 @@ export default function ProductDetailsClient({
   }
 
   const rawCustomPrice = Number((customTotalMeasurement * customRate).toFixed(2));
-  // B2B Dealer check & MOQ resolution
-  const isApprovedDealer = Boolean(isDealerApproved);
-  const moq = isApprovedDealer ? Math.max(1, Number(product.min_order_quantity) || 1) : 1;
+  // Storefront normal users have no minimum order charge; they pay pure measured price for any quantity/piece
+  const customEstimatedPrice = rawCustomPrice;
 
-  // Custom sizing minimum charge: applies to B2B dealer orders when configured in admin
-  const customMinChargeApplied = isApprovedDealer && customMinPrice > 0 && rawCustomPrice < customMinPrice;
-  const customEstimatedPrice = customMinChargeApplied ? customMinPrice : rawCustomPrice;
-
-  // Base retail unit and original price
-  const retailUnitPrice = currentVariation ? Number(currentVariation.price) : Number(product.price);
-  const retailOriginalPrice = currentVariation
-    ? currentVariation.original_price ? Number(currentVariation.original_price) : null
-    : product.original_price ? Number(product.original_price) : null;
-
-  // B2B Dealer unit price resolution (adjusted from admin panel)
-  let dealerUnitPrice = retailUnitPrice;
-  if (isApprovedDealer) {
-    if (currentVariation && currentVariation.wholesale_price && Number(currentVariation.wholesale_price) > 0) {
-      dealerUnitPrice = Number(currentVariation.wholesale_price);
-    } else if (product.default_wholesale_price && Number(product.default_wholesale_price) > 0) {
-      if (currentVariation && Number(currentVariation.price) !== Number(product.price) && Number(product.price) > 0) {
-        const discountRatio = (Number(product.price) - Number(product.default_wholesale_price)) / Number(product.price);
-        dealerUnitPrice = Math.max(1, Math.round(retailUnitPrice * (1 - discountRatio)));
-      } else {
-        dealerUnitPrice = Number(product.default_wholesale_price);
-      }
-    }
-  }
-
-  // Active display values
+  // Dynamic values
   const displayPrice = isCustomMode
     ? customEstimatedPrice
-    : isApprovedDealer
-    ? dealerUnitPrice
-    : retailUnitPrice;
-
+    : currentVariation
+    ? currentVariation.price
+    : product.price;
   const displayOriginalPrice = isCustomMode
     ? null
-    : isApprovedDealer && retailUnitPrice > displayPrice
-    ? retailUnitPrice
-    : retailOriginalPrice;
-
-  const tradeSavingsPercent = isApprovedDealer && retailUnitPrice > displayPrice
-    ? Math.round(((retailUnitPrice - displayPrice) / retailUnitPrice) * 100)
-    : 0;
-
+    : currentVariation
+    ? currentVariation.original_price
+    : product.original_price;
   const displayStock = isCustomMode ? 99 : currentVariation ? currentVariation.stock : product.stock;
   const isOutOfStock = !isCustomMode && displayStock <= 0;
   const displaySku = isCustomMode
     ? `${currentVariation?.sku || `WSI-${product.id.toString().padStart(5, "0")}`}-CUSTOM`
     : currentVariation?.sku || `WSI-${product.id.toString().padStart(5, "0")}`;
-
-  // Synchronize initial dealer quantity with MOQ
-  useEffect(() => {
-    if (isApprovedDealer && moq > 1) {
-      setQuantity((currentQty) => (currentQty < moq ? moq : currentQty));
-    }
-  }, [isApprovedDealer, moq]);
 
   // Review submission state
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -446,15 +405,7 @@ export default function ProductDetailsClient({
   };
 
   const handleAddToCart = (): boolean => {
-    if (!isApprovedDealer && !requireAuth("cart")) {
-      return false;
-    }
-
-    // Strict MOQ Check for B2B Dealers:
-    if (isApprovedDealer && quantity < moq) {
-      alert(`⚠️ Minimum Order Requirement: As an approved B2B Trade Partner, the minimum order for "${product.name}" is ${moq} units. You currently have ${quantity} selected. Please increase your quantity to proceed.`);
-      showNotification(`⚠️ Minimum B2B order of ${moq} units required. Quantity adjusted to ${moq}.`);
-      setQuantity(moq);
+    if (!requireAuth("cart")) {
       return false;
     }
 
@@ -521,8 +472,6 @@ export default function ProductDetailsClient({
         },
         sku: displaySku,
         maxStock: 99,
-        moq: isApprovedDealer ? moq : 1,
-        isWholesale: isApprovedDealer,
       });
 
       showNotification(
@@ -559,8 +508,6 @@ export default function ProductDetailsClient({
       attributes: Object.keys(attributeMap).length > 0 ? attributeMap : undefined,
       sku: displaySku,
       maxStock: displayStock,
-      moq: isApprovedDealer ? moq : 1,
-      isWholesale: isApprovedDealer,
     });
 
     const attrSummary = Object.entries(attributeMap)
@@ -574,14 +521,7 @@ export default function ProductDetailsClient({
   };
 
   const handleBuyNow = () => {
-    if (isApprovedDealer && quantity < moq) {
-      alert(`⚠️ Minimum Order Requirement: As an approved B2B Trade Partner, the minimum order for "${product.name}" is ${moq} units. You currently have ${quantity} selected. Please increase your quantity to proceed.`);
-      showNotification(`⚠️ Order quantity below minimum (${moq} units required for B2B).`);
-      setQuantity(moq);
-      return;
-    }
-
-    if (!isApprovedDealer && !requireAuth("checkout")) {
+    if (!requireAuth("checkout")) {
       return;
     }
     const success = handleAddToCart();
@@ -910,32 +850,8 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     )}
                   </div>
 
-                  {/* B2B Dealer Trade Partner Indicator */}
-                  {isApprovedDealer && (
-                    <div style={{ width: "100%", marginBottom: "8px" }}>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "4px 12px",
-                          borderRadius: "999px",
-                          backgroundColor: "rgba(16, 185, 129, 0.12)",
-                          border: "1px solid rgba(16, 185, 129, 0.35)",
-                          color: "#065F46",
-                          fontSize: "0.8rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.02em",
-                        }}
-                      >
-                        <i className="fa-solid fa-shield-check" style={{ color: "#10B981" }}></i>
-                        B2B Trade Partner Pricing &bull; {dealer?.companyName || "Approved Dealer"}
-                      </span>
-                    </div>
-                  )}
-
                   {/* Price Area with Transparent Rate */}
-                  <div className="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                  <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
                     <h2
                       className="product-price"
                       style={{
@@ -949,12 +865,6 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                       ₹{Number(displayPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </h2>
 
-                    {isApprovedDealer && (
-                      <span style={{ fontSize: "0.82rem", color: "#64748B", fontWeight: 700 }}>
-                        / unit (Wholesale)
-                      </span>
-                    )}
-
                     {displayOriginalPrice && Number(displayOriginalPrice) > Number(displayPrice) && (
                       <span
                         style={{
@@ -964,39 +874,7 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                           fontWeight: 400,
                         }}
                       >
-                        {isApprovedDealer ? `Retail: ₹${Number(displayOriginalPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : `₹${Number(displayOriginalPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
-                      </span>
-                    )}
-
-                    {isApprovedDealer && tradeSavingsPercent > 0 && (
-                      <span
-                        style={{
-                          backgroundColor: "#FEF2F2",
-                          color: "#DC2626",
-                          border: "1px solid #FECACA",
-                          padding: "2px 8px",
-                          borderRadius: "6px",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Save {tradeSavingsPercent}%
-                      </span>
-                    )}
-
-                    {isApprovedDealer && moq > 1 && (
-                      <span
-                        style={{
-                          backgroundColor: "#F1F5F9",
-                          color: "#334155",
-                          border: "1px solid #CBD5E1",
-                          padding: "2px 8px",
-                          borderRadius: "6px",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                        }}
-                      >
-                        📦 Min B2B Order: {moq} units
+                        ₹{Number(displayOriginalPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </span>
                     )}
 
@@ -1022,23 +900,6 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                       </span>
                     )}
                   </div>
-
-                  {customMinChargeApplied && (
-                    <div
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        backgroundColor: "#FFFBEB",
-                        border: "1px solid #FDE68A",
-                        color: "#92400E",
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        marginBottom: "12px",
-                      }}
-                    >
-                      ℹ️ Minimum B2B order charge of ₹{customMinPrice.toFixed(2)} applied for custom dimensioning.
-                    </div>
-                  )}
 
                   {/* Short Description formatted cleanly as per entered in admin */}
                   <div
@@ -1473,72 +1334,6 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                     </div>
                   )}
 
-                  {/* B2B MOQ Alert Banner */}
-                  {isApprovedDealer && quantity < moq && (
-                    <div
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        padding: "10px 14px",
-                        borderRadius: "8px",
-                        backgroundColor: "#FEF2F2",
-                        border: "1.5px solid #F87171",
-                        color: "#991B1B",
-                        fontSize: "0.84rem",
-                        fontWeight: 600,
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <i className="fa-solid fa-triangle-exclamation" style={{ color: "#DC2626", fontSize: "1.1rem", flexShrink: 0 }}></i>
-                      <div style={{ flex: 1 }}>
-                        <span>
-                          Minimum B2B order requirement is <strong>{moq} units</strong>. You currently have <strong>{quantity} unit(s)</strong> selected.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(moq)}
-                        style={{
-                          padding: "4px 12px",
-                          borderRadius: "6px",
-                          backgroundColor: "#DC2626",
-                          color: "#FFFFFF",
-                          border: "none",
-                          fontSize: "0.76rem",
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Set to {moq} units
-                      </button>
-                    </div>
-                  )}
-
-                  {isApprovedDealer && quantity >= moq && moq > 1 && (
-                    <div
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        backgroundColor: "#ECFDF5",
-                        border: "1px solid #A7F3D0",
-                        color: "#065F46",
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        marginBottom: "10px",
-                      }}
-                    >
-                      <i className="fa-solid fa-circle-check" style={{ color: "#10B981" }}></i>
-                      <span>B2B Minimum Order requirement satisfied ({quantity} units selected at ₹{displayPrice.toFixed(2)}/unit).</span>
-                    </div>
-                  )}
-
                   {/* Quantity and Actions */}
                   <div className="actions mb-3 d-flex align-items-center gap-2 flex-wrap">
                     {/* Compact Quantity */}
@@ -1713,26 +1508,6 @@ Could you please share availability, wholesale/retail pricing, and delivery/meas
                       <span>Get Quote</span>
                     </button>
                   </div>
-
-                  {/* B2B Live Order Total Preview */}
-                  {isApprovedDealer && (
-                    <div
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: "6px",
-                        backgroundColor: "#F8FAFC",
-                        border: "1px solid #E2E8F0",
-                        fontSize: "0.82rem",
-                        color: "#475569",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      B2B Estimated Order Total ({quantity} units × ₹{displayPrice.toFixed(2)}):{" "}
-                      <strong style={{ color: "var(--theme, #FF4035)", fontSize: "0.95rem" }}>
-                        ₹{(quantity * displayPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </strong>
-                    </div>
-                  )}
 
                   {/* Product Details Footer & Social Share */}
                   <div

@@ -8,7 +8,6 @@ import LayoutShell from "@/components/layout/LayoutShell";
 import { getSiteSettings } from "@/lib/actions/settings";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import { DealerAuthProvider } from "@/components/auth/DealerAuthProvider";
 import FloatingWhatsApp from "@/components/common/FloatingWhatsApp";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -202,12 +201,10 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <AuthProvider>
-          <DealerAuthProvider>
-            <LayoutShell header={<Header />} footer={<Footer />}>
-              {children}
-            </LayoutShell>
-            <FloatingWhatsApp whatsappNumber={settings.whatsapp_number} />
-          </DealerAuthProvider>
+          <LayoutShell header={<Header />} footer={<Footer />}>
+            {children}
+          </LayoutShell>
+          <FloatingWhatsApp whatsappNumber={settings.whatsapp_number} />
         </AuthProvider>
       </body>
     </html>

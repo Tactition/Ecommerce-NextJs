@@ -36,7 +36,6 @@ export interface ProductVariation {
   product_id: number;
   sku: string | null;
   price: number;
-  wholesale_price?: number | null;
   original_price: number | null;
   stock: number;
   image: string | null;
@@ -102,11 +101,11 @@ const fetchProductVariationsUncached = async (
 ): Promise<ProductVariation[]> => {
   try {
     const query = includeInactive
-      ? `SELECT id, product_id, sku, price, wholesale_price, original_price, stock, image, is_active
+      ? `SELECT id, product_id, sku, price, original_price, stock, image, is_active
          FROM product_variations
          WHERE product_id = ?
          ORDER BY id ASC`
-      : `SELECT id, product_id, sku, price, wholesale_price, original_price, stock, image, is_active
+      : `SELECT id, product_id, sku, price, original_price, stock, image, is_active
          FROM product_variations
          WHERE product_id = ? AND is_active = 1
          ORDER BY id ASC`;
@@ -154,7 +153,6 @@ const fetchProductVariationsUncached = async (
         product_id: r.product_id,
         sku: r.sku,
         price: Number(r.price),
-        wholesale_price: r.wholesale_price !== null && r.wholesale_price !== undefined ? Number(r.wholesale_price) : null,
         original_price: r.original_price ? Number(r.original_price) : null,
         stock: Number(r.stock),
         image: r.image || null,
@@ -228,7 +226,6 @@ export interface SaveVariationInput {
   id?: number;
   sku?: string | null;
   price: number;
-  wholesale_price?: number | null;
   original_price?: number | null;
   stock: number;
   image?: string | null;
@@ -268,13 +265,12 @@ export async function saveProductVariationsAction(
 
     for (const v of variations) {
       const [vRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO product_variations (product_id, sku, price, wholesale_price, original_price, stock, image, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO product_variations (product_id, sku, price, original_price, stock, image, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           productId,
           v.sku || null,
           v.price || 0,
-          v.wholesale_price || null,
           v.original_price || null,
           v.stock || 0,
           (v.image && v.image.trim() !== "") ? v.image.trim() : null,
@@ -331,7 +327,6 @@ export interface DynamicVariationRowInput {
   id?: number;
   sku?: string | null;
   price: number;
-  wholesale_price?: number | null;
   original_price?: number | null;
   stock: number;
   image?: string | null;
@@ -535,13 +530,12 @@ export async function saveDynamicProductVariationsAction(
     // Insert new variations
     for (const v of workingVariations) {
       const [vRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO product_variations (product_id, sku, price, wholesale_price, original_price, stock, image, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO product_variations (product_id, sku, price, original_price, stock, image, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           productId,
           v.sku || null,
           v.price || 0,
-          v.wholesale_price || null,
           v.original_price || null,
           v.stock || 0,
           (v.image && v.image.trim() !== "") ? v.image.trim() : null,
